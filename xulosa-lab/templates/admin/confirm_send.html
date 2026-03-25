@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+  <h2>Xulosani Telegram orqali yuborish</h2>
+
+  <p>
+    <b>{{ xulosa.buyurtmachi }}</b> uchun
+    <b>{{ xulosa.namuna_raqami }}</b> raqamli xulosa yuborilsinmi?
+  </p>
+
+  {% if xulosa.yuborilgan %}
+    <p style="color:red; font-weight:700;">
+      ⚠️ Diqqat! Bu xulosa avval yuborilgan.
+      Qayta yubormoqchimisiz?
+    </p>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="submit" value="✅ Ha, yuborilsin" class="default">
+    <a href="{% url 'admin:lab_xulosa_changelist' %}" class="button cancel-link">
+      ❌ Bekor qilish
+    </a>
+  </form>
+{% endblock %}

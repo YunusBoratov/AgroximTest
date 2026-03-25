@@ -1,0 +1,47 @@
+<h2>Laboratoriya uchun tayyor shartnomalar</h2>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>ID</th>
+        <th>Buyurtmachi</th>
+        <th>Summa</th>
+        <th>Sana</th>
+        <th>Natija</th>
+        <th>Xulosa</th>
+        <th>PDF</th>
+    </tr>
+    {% for s in shartnomalar %}
+    <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.buyurtmachi }}</td>
+        <td>{{ s.jami_summa }}</td>
+        <td>{{ s.sana }}</td>
+        <td>
+            <a href="{% url 'natija_kiritish' s.id %}">
+                Natija kiritish
+            </a>
+        </td>
+
+        {% with namuna=s.namunalar.first %}
+            {% if namuna and namuna.xulosa %}
+                <td>
+                    <a href="{% url 'xulosa_korish' namuna.xulosa.id %}">
+                        Xulosa
+                    </a>
+                </td>
+                <td>
+                    <a href="{% url 'xulosa_pdf' namuna.xulosa.id %}" target="_blank">
+                        PDF
+                    </a>
+                </td>
+            {% else %}
+                <td>-</td>
+                <td>-</td>
+            {% endif %}
+        {% endwith %}
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="5">Hozircha tayyor shartnoma yo‘q</td>
+    </tr>
+    {% endfor %}
+</table>

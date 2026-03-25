@@ -1,0 +1,36 @@
+<h2>Shartnomalar Monitoringi</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>ID</th>
+        <th>Buyurtmachi</th>
+        <th>Jami summa</th>
+        <th>To‘langan</th>
+        <th>Status</th>
+        <th>Sana</th>
+        <th>To‘lov kiritish</th>
+    </tr>
+
+    {% for s in shartnomalar %}
+    <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.buyurtmachi }}</td>
+        <td>{{ s.jami_summa }}</td>
+        <td>{{ s.tolangan_summa }}</td>
+        <td>{{ s.get_status_display }}</td>
+        <td>{{ s.sana }}</td>
+
+        <td>
+            {% if s.status != "tolangan" %}
+            <form method="post" action="{% url 'tolov_kiritish' s.id %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="number" name="summa" step="0.01" placeholder="Summa" style="width:90px;">
+                <button type="submit">Kiritish</button>
+            </form>
+            {% else %}
+                To‘liq to‘langan
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>

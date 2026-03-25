@@ -1,0 +1,51 @@
+<h2>Xulosa yaratish</h2>
+
+<p><b>Ariza raqami:</b> {{ namuna.ariza_raqami }}</p>
+<p><b>Namuna turi:</b> {{ namuna.namuna_turi }}</p>
+
+<form method="post">
+{% csrf_token %}
+
+<h3>Sinov ma'lumotlari</h3>
+
+<label>Sinov o'tkazilgan sana:</label><br>
+<input type="date" name="sinov_otkazilgan_sana"><br><br>
+
+<label>Sinov o'tkazilgan joy:</label><br>
+<input type="text" name="sinov_joy"><br><br>
+
+<label>Namuna og'irligi (kg):</label><br>
+<input type="text" name="namuna_ogirligi"><br><br>
+
+<label>Namuna olish bayonnomasi raqami:</label><br>
+<input type="text" name="bayonnoma_raqami"><br><br>
+
+<label>Bayonnoma sanasi:</label><br>
+<input type="date" name="bayonnoma_sana"><br><br>
+
+<label>Tashqi yetkazib beruvchilar tahlil natijalari:</label><br>
+<input type="text" name="tashqi_tahlil_natija"><br><br>
+
+<h3>Atrof muhit</h3>
+
+<label>Harorat (°S):</label><br>
+<input type="text" name="harorat"><br><br>
+
+<label>Havoning nisbiy namligi (%):</label><br>
+<input type="text" name="namlik"><br><br>
+
+<h3>Namuna tavsifi</h3>
+
+<label>Namuna nomi, tavsifi, holati:</label><br>
+<textarea name="namuna_tavsifi" rows="4" cols="60"></textarea><br><br>
+
+<h3>Xulosa matni</h3>
+
+<label>Xulosa matni (UZ):</label><br>
+<textarea name="matn" rows="6" cols="60"></textarea><br><br>
+
+<form method="POST">
+    {% csrf_token %}
+    <textarea name="sinov_otkazuvchi"></textarea>
+    <button type="submit">Saqlash</button>
+</form>

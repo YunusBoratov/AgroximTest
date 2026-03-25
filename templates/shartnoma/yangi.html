@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Yangi Shartnoma</title>
+</head>
+<body>
+
+<h2>Yangi Shartnoma</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    <label>Namuna soni:</label>
+    <input type="number" name="namuna_soni" value="1" min="1" required>
+    <br><br>
+
+    <label>Buyurtmachi nomi:</label>
+    <input type="text" name="buyurtmachi"><br><br>
+
+    <label>INN:</label>
+    <input type="text" name="inn"><br><br>
+
+    <label>Telefon:</label>
+    <input type="text" name="telefon"><br><br>
+
+    <hr>
+
+    <div id="namuna_container"></div>
+
+    <h3>Shartnoma jami: <span id="umumiy_jami">0</span> so'm</h3>
+
+    <button type="submit">Shartnomani yaratish</button>
+</form>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+const narxnomalar = [
+{% for narx in narxnomalar %}
+{
+    id: "{{ narx.id }}",
+    nomi: "{{ narx.korsatkich_nomi|escapejs }}",
+    narx: "{{ narx.narx }}",
+    tur: "{{ narx.namuna_turi|lower }}"
+},
+{% endfor %}
+];
+
+const namunaInput = document.querySelector('input[name="namuna_soni"]');
+const container = document.getElementById("namuna_container");
+
+function generateNamunaBlocks(count) {
+    container.innerHTML = "";
+
+    for (let i = 1; i <= count; i++) {
+
+        let block = document.createElement("div");
+
+        block.innerHTML = `
+            <hr>
+            <h3>Namuna ${i}</h3>
+
+            <label>Namuna turi:</label>
+            <select name="namuna_${i}_turi" onchange="filterNarxlar(${i})" required>
+                <option value="mineral">Mineral</option>
+                <option value="pestitsid">Pestitsid</option>
+            </select>
+
+            <h4>Ko‘rsatkichlar:</h4>
+            <div id="narxlar_${i}"></div>
+        `;
+
+        container.appendChild(block);
+        filterNarxlar(i);
+    }
+}
+
+window.filterNarxlar = function(index) {
+    const select = document.querySelector(`select[name="namuna_${index}_turi"]`);
+    const boxContainer = document.getElementById(`narxlar_${index}`);
+    const tanlanganTur = select.value;
+
+    console.log("Tanlangan:", tanlanganTur);
+    console.log("Massiv:", narxnomalar);
+
+    const filtrlangan = narxnomalar.filter(n =>
+        n.tur && n.tur.trim().toLowerCase() === tanlanganTur.trim().toLowerCase()
+    );
+
+    boxContainer.innerHTML = filtrlangan.map(n => `
+        <label>
+            <input type="checkbox"
+                   name="namuna_${index}_narxlar"
+                   value="${n.id}"
+                   data-narx="${n.narx}"
+                   onchange="hisoblaJami()">
+            ${n.nomi} — ${n.narx} so'm
+        </label><br>
+    `).join("");
+}
+
+window.hisoblaJami = function() {
+    let jami = 0;
+
+    document.querySelectorAll("input[type='checkbox']:checked").forEach(cb => {
+        jami += parseFloat(cb.dataset.narx);
+    });
+
+    document.getElementById("umumiy_jami").innerText = jami;
+}
+
+namunaInput.addEventListener("input", function() {
+    generateNamunaBlocks(this.value);
+});
+
+generateNamunaBlocks(1);
+
+});
+</script>
+
+</body>
+</html>

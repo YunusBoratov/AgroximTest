@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Xulosa tasdiqlash</title>
+  <style>
+    :root{
+      --bg:#f3f5fb;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --ok:#0a7a3d;
+      --bad:#b00020;
+      --brand:#1f3a8a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap{
+      max-width: 940px;
+      margin: 24px auto;
+      padding: 0 14px;
+    }
+    .card{
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    .header{
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display:flex;
+      gap:14px;
+      align-items:center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      min-width: 260px;
+    }
+    .logo{
+      width:44px;
+      height:44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--brand), #2563eb);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-weight:700;
+      letter-spacing:.5px;
+      user-select:none;
+    }
+    .title h1{
+      margin:0;
+      font-size:18px;
+      line-height:1.2;
+    }
+    .title p{
+      margin:4px 0 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: #f9fafb;
+      white-space: nowrap;
+    }
+    .badge.ok{ color: var(--ok); }
+    .badge.bad{ color: var(--bad); }
+
+    .content{ padding: 18px 20px 22px; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 10px;
+    }
+    @media (max-width: 760px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+    .box{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
+    }
+    .box h2{
+      margin:0 0 10px 0;
+      font-size: 15px;
+    }
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    td{
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    td:first-child{
+      width: 42%;
+      color: #111827;
+      font-weight: 700;
+    }
+    .muted{ color: var(--muted); }
+    .ok{ color: var(--ok); font-weight: 800; }
+    .bad{ color: var(--bad); font-weight: 800; }
+
+    .footer{
+      padding: 14px 20px;
+      border-top: 1px solid var(--line);
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap: wrap;
+      background: #fafafa;
+    }
+    .token{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .btns{ display:flex; gap:10px; flex-wrap: wrap; }
+    button{
+      cursor:pointer;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight:700;
+    }
+    button:hover{ background:#f3f4f6; }
+
+    /* Print */
+    @media print{
+      body{ background:#fff; }
+      .wrap{ margin:0; max-width: none; padding:0; }
+      .card{ box-shadow:none; border-radius:0; }
+      .btns{ display:none; }
+      .badge{ border: 1px solid #ddd; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="header">
+        <div class="brand">
+          <div class="logo">ATM</div>
+          <div class="title">
+            <h1>Agrokimyoviy tahlil markazi</h1>
+            <p>Xulosa QR orqali tasdiqlash sahifasi</p>
+          </div>
+        </div>
+
+        {% if xulosa.moslik == 'mos' %}
+          <div class="badge ok">✅ Tasdiqlandi: Mos</div>
+        {% elif xulosa.moslik == 'mos_emas' %}
+          <div class="badge bad">⚠️ Tasdiqlandi: Mos emas</div>
+        {% else %}
+          <div class="badge">ℹ️ Tasdiqlandi: Moslik kiritilmagan</div>
+        {% endif %}
+      </div>
+
+      <div class="content">
+        <div class="grid">
+          <div class="box">
+            <h2>Asosiy ma’lumotlar</h2>
+            <table>
+              <tr><td>Namuna raqami</td><td>{{ xulosa.namuna_raqami }}</td></tr>
+              <tr><td>Buyurtmachi</td><td>{{ xulosa.buyurtmachi }}</td></tr>
+              <tr><td>Sana</td><td>{{ xulosa.sana }}</td></tr>
+              <tr><td>Status</td><td>{{ xulosa.get_status_display }}</td></tr>
+            </table>
+          </div>
+
+          <div class="box">
+            <h2>Natijalar</h2>
+            <table>
+              <tr><td>Azot</td><td>{{ xulosa.azot|default:"-" }}</td></tr>
+              <tr><td>Fosfor</td><td>{{ xulosa.fosfor|default:"-" }}</td></tr>
+              <tr><td>Kaliy</td><td>{{ xulosa.kaliy|default:"-" }}</td></tr>
+              <tr><td>Namlik</td><td>{{ xulosa.namlik|default:"-" }}</td></tr>
+            </table>
+            <p class="muted" style="margin:10px 0 0 0; font-size:12px;">
+              Eslatma: Ushbu sahifa QR orqali xulosaning haqiqiyligini tekshirish uchun mo‘ljallangan.
+            </p>
+          </div>
+        </div>
+
+        {% if xulosa.xulosa_matni %}
+          <div class="box" style="margin-top:14px;">
+            <h2>Xulosa matni</h2>
+            <div style="line-height:1.55;">
+              {{ xulosa.xulosa_matni|linebreaksbr }}
+            </div>
+          </div>
+        {% endif %}
+      </div>     
+
+    {% if can_download %}
+      <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="{{ pdf_url }}" target="_blank"
+          style="padding:10px 14px; background:#1f6feb; color:white; border-radius:10px; text-decoration:none;">
+          📄 PDF yuklab olish
+        </a>
+
+        <a href="{{ docx_url }}" target="_blank"
+          style="padding:10px 14px; background:#2da44e; color:white; border-radius:10px; text-decoration:none;">
+          📝 DOCX yuklab olish
+        </a>
+      </div>
+    {% else %}
+      <p style="margin-top:14px; color:#b00020; font-weight:700;">
+        ⛔ Hujjat hali tayyor emas. PDF/DOCX faqat “tayyor” bo‘lganda ochiladi.
+      </p>
+    {% endif %}
+
+      <div class="footer">
+        <div>
+          <div class="muted" style="font-weight:700; font-size:12px; margin-bottom:6px;">Tasdiqlash tokeni</div>
+          <div class="token">{{ xulosa.verify_token }}</div>
+        </div>
+        <div class="btns">
+          {% if can_download %}
+            <a href="{{ pdf_url }}" style="text-decoration:none;">
+              <button type="button">📕 PDF yuklab olish</button>
+            </a>
+            <a href="{{ docx_url }}" style="text-decoration:none;">
+              <button type="button">📄 DOCX yuklab olish</button>
+            </a>
+          {% else %}
+            <span class="muted" style="font-weight:700;">
+              📌 Hujjat hali tayyor emas. Yuklab olish mavjud emas.
+            </span>
+          {% endif %}
+
+          <button type="button" onclick="window.print()">🖨️ Chop etish</button>
+          <button type="button" onclick="location.reload()">🔄 Yangilash</button>
+      </div>
+      <div class="muted" style="font-size:12px;">
+        Tekshirildi: {{ checked_at|date:"d.m.Y H:i" }}
+      </div>
+
+
+      </div>
+    </div>
+  </div>
+</body>
+</html>
