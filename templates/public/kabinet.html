@@ -1,0 +1,28 @@
+{% extends "public_base.html" %}{% load i18n ui %}
+{% block title %}{% trans "Kabinet" %}{% endblock %}
+{% block content %}
+<section class="box">
+  <div class="page-head">
+    <h1 class="page-title">{% trans "Arizalar" %}</h1>
+    <a class="btn btn-primary" href="{% url 'ariza_yangi' %}">+ {% trans "Yangi ariza" %}</a>
+  </div>
+  <div class="table-wrap">
+  <table class="t">
+    <thead><tr><th>N</th><th>{% trans "Ariza raqami" %}</th><th>{% trans "Namuna turi" %}</th><th>{% trans "Namuna soni" %}</th><th>{% trans "Yuborilgan vaqt" %}</th><th>{% trans "Holati" %}</th><th>{% trans "Xulosa" %}</th></tr></thead>
+    <tbody>
+    {% for a in arizalar %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td class="bold"><a class="row-link" href="{% url 'ariza_detail' a.pk %}">{{ a.raqam }}</a></td>
+        <td>{{ a.namuna_turi }}</td>
+        <td>{{ a.namuna_soni }}</td>
+        <td class="dt">{{ a.created_at|dt }}<br>{{ a.created_at|tm }}</td>
+        <td>{% include "parts/mijoz_holat.html" %}</td>
+        <td>{% for n in a.namunalar.all %}{% if n.xulosa and n.lab_holat == "berildi" %}<a class="act" href="#" title="{{ n.xulosa.raqam }}">{% include "parts/icon.html" with name="file" %}</a>{% endif %}{% empty %}—{% endfor %}</td>
+      </tr>
+    {% empty %}<tr><td class="empty" colspan="7">{% trans "Hozircha arizalar yo'q" %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

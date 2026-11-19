@@ -1,0 +1,7 @@
+{% load i18n %}{% with sh=a.shartnomalar.all|first %}
+{% if a.holat == "rad" %}<span class="badge grey">{% trans "Rad etilgan" %}</span>
+{% elif a.holat == "yangi" %}<span class="badge yellow">{% trans "Ko'rib chiqilmoqda" %}</span>
+{% elif not sh %}<span class="badge yellow">{% trans "Namuna qabul qilindi, shartnoma tayyorlanmoqda" %}</span>
+{% elif sh.tolov_holati != "tolangan" %}<span class="badge red">{{ sh.get_tolov_holati_display }}</span>
+{% else %}<span class="badge green">{% trans "Tahlil jarayonida" %}</span>{% endif %}
+{% endwith %}

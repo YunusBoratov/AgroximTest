@@ -87,8 +87,8 @@ else:
 
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"
-LOGOUT_REDIRECT_URL = "login"
+LOGIN_REDIRECT_URL = "bosh"
+LOGOUT_REDIRECT_URL = "bosh"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 6}},
@@ -114,3 +114,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Biznes qoidalari
 TAHLIL_BOSHLASH_MIN_FOIZ = 30  # tahlil kamida 30% to'lovdan keyin boshlanadi
+XULOSA_YUBORISH_MIN_FOIZ = 100  # xulosa buyurtmachiga faqat to'liq to'lovdan keyin
+
+# Markaz ma'lumotlari (sayt sarlavhasida)
+MARKAZ = {
+    "nomi": "Agrokimyoviy Tahlil Markazi",
+    "shior": "Tuproq yagona boylik",
+    "telefonlar": ["+998 71 260 42 20", "+998 71 203 14 14 (1015)"],
+    "manzil": "Toshkent vil. Qibray tum. Bobur ko'ch. 8-uy. 111215",
+}
+TUPROQ_TAHLILI_URL = env("TUPROQ_TAHLILI_URL", "#")
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 80 * 1024 * 1024

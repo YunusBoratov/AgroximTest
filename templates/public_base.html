@@ -1,0 +1,53 @@
+{% load static i18n %}<!doctype html>
+{% get_current_language as LANG %}
+<html lang="{{ LANG }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}{% endblock %} — {{ MARKAZ.nomi }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="public">
+<header class="site-head">
+  <div class="site-head-in">
+    <a class="site-brand" href="{% url 'bosh' %}">
+      <img src="{% static 'img/logo.png' %}" alt="">
+      <span><b>{{ MARKAZ.nomi }}</b><small>{% trans "Agrokimyoviy laboratoriya tahlillari" %}</small><em>{{ MARKAZ.shior }}</em></span>
+    </a>
+    <div class="site-info">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z"/></svg>
+      <span><b>{% trans "Qo'ng'iroq qiling:" %}</b>{% for t in MARKAZ.telefonlar %}<br>{{ t }}{% endfor %}</span>
+    </div>
+    <div class="site-info">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+      <span><b>{% trans "Manzil:" %}</b><br>{{ MARKAZ.manzil }}</span>
+    </div>
+    <div class="site-actions">
+      <form class="lang" action="{% url 'set_language' %}" method="post">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <select name="language" onchange="this.form.submit()">{% get_available_languages as langs %}
+          {% for code, name in langs %}<option value="{{ code }}" {% if code == LANG %}selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+      </form>
+      {% if request.user.is_authenticated %}
+        <a class="btn btn-light" href="{% url 'kabinet' %}">{% trans "Kabinet" %}</a>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-light" type="submit">{% trans "Chiqish" %}</button></form>
+      {% else %}
+        <a class="btn btn-light" href="{% url 'login' %}">{% trans "Kirish" %}</a>
+        <a class="btn btn-primary" href="{% url 'royxat' %}">{% trans "Ro'yxatdan o'tish" %}</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+<main class="site-main">
+  <div class="site-tabs">
+    <a href="{{ TUPROQ_URL }}">{% trans "Tuproq tahlili" %}</a>
+    <a class="active" href="{% url 'bosh' %}">{% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}</a>
+  </div>
+  {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

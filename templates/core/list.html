@@ -22,7 +22,7 @@
     <tbody>
     {% for obj, cells in rows %}
       <tr><td>{{ page.start_index|add:forloop.counter0 }}</td>
-      {% for col, val, badge_cls in cells %}{% include "parts/cell.html" %}{% endfor %}
+      {% for col, val, badge_cls, link in cells %}{% include "parts/cell.html" %}{% endfor %}
       </tr>
     {% empty %}
       <tr><td class="empty" colspan="{{ columns|length|add:1 }}">{% trans "Ma'lumot topilmadi" %}</td></tr>

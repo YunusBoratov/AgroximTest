@@ -30,3 +30,18 @@ def tm(v):
     if not v:
         return ""
     return timezone.localtime(v).strftime("%H:%M:%S")
+
+
+@register.filter
+def is_str(v):
+    return isinstance(v, str)
+
+
+@register.filter
+def make_list_words(s):
+    return s.split()
+
+
+@register.filter
+def field(form, name):
+    return form[name]

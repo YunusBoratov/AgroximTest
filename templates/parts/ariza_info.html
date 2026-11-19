@@ -1,0 +1,29 @@
+{% load i18n ui %}
+<div class="info-grid">
+  <div><span>{% trans "Ariza turi" %}</span><b>{{ ariza.get_turi_display }}</b></div>
+  <div><span>{% if ariza.turi == "ixtiyoriy" %}{% trans "JSHSHIR" %}{% else %}{% trans "INN" %}{% endif %}</span><b>{{ ariza.inn }}</b></div>
+  {% if ariza.buyurtmachi_nomi %}<div><span>{% trans "Buyurtmachi nomi" %}</span><b>{{ ariza.buyurtmachi_nomi }}</b></div>{% endif %}
+  <div><span>{% trans "F.I.SH." %}</span><b>{{ ariza.fish }}</b></div>
+  <div><span>{% trans "Telefon" %}</span><b>{{ ariza.telefon }}</b></div>
+  <div><span>{% trans "Namuna turi" %}</span><b>{{ ariza.namuna_turi }} ({{ ariza.get_kategoriya_display }})</b></div>
+  <div><span>{% trans "Namuna soni" %}</span><b>{{ ariza.namuna_soni }}</b></div>
+  {% if ariza.namuna_nomi %}<div><span>{% trans "Namuna nomi" %}</span><b>{{ ariza.namuna_nomi }}</b></div>{% endif %}
+  {% if ariza.partiya_raqami %}<div><span>{% trans "Partiya raqami (LOT)" %}</span><b>{{ ariza.partiya_raqami }}</b></div>{% endif %}
+  {% if ariza.invoys_raqami %}<div><span>{% trans "Invoys raqami" %}</span><b>{{ ariza.invoys_raqami }}</b></div>{% endif %}
+  {% if ariza.chegara_maskani %}<div><span>{% trans "Chegara maskani" %}</span><b>{{ ariza.chegara_maskani }}</b></div>{% endif %}
+  <div><span>{% trans "Yuborilgan vaqt" %}</span><b>{{ ariza.created_at|dt }} {{ ariza.created_at|tm }}</b></div>
+  {% if ariza.rad_sababi %}<div class="full"><span>{% trans "Rad etish sababi" %}</span><b>{{ ariza.rad_sababi }}</b></div>{% endif %}
+</div>
+{% if ariza.manzil or ariza.hisob_raqam or ariza.bank %}
+<h3 class="box-title">{% trans "Rekvizitlar" %}</h3>
+<div class="info-grid">
+  {% if ariza.manzil %}<div><span>{% trans "Manzil" %}</span><b>{{ ariza.manzil }}</b></div>{% endif %}
+  {% if ariza.rahbar %}<div><span>{% trans "Rahbar" %}</span><b>{{ ariza.rahbar }}</b></div>{% endif %}
+  {% if ariza.hisob_raqam %}<div><span>{% trans "Hisob raqami" %}</span><b>{{ ariza.hisob_raqam }}</b></div>{% endif %}
+  {% if ariza.bank %}<div><span>{% trans "Bank" %}</span><b>{{ ariza.bank }}</b></div>{% endif %}
+  {% if ariza.mfo %}<div><span>MFO</span><b>{{ ariza.mfo }}</b></div>{% endif %}
+  {% if ariza.oked %}<div><span>OKED</span><b>{{ ariza.oked }}</b></div>{% endif %}
+</div>
+{% endif %}
+<h3 class="box-title">{% trans "Hujjatlar" %}</h3>
+<div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.fayl.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% empty %}<span class="help">{% trans "Hujjat yuklanmagan" %}</span>{% endfor %}</div>

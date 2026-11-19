@@ -13,6 +13,7 @@
     <input type="hidden" name="next" value="{{ next }}">
     <button class="btn btn-primary" type="submit">{% trans "Kirish" %}</button>
     <a class="btn btn-oneid" href="{% url 'oneid_login' %}">ONE ID</a>
+    <p class="sub" style="margin-top:16px">{% trans "Buyurtmachimisiz?" %} <a class="row-link" href="{% url 'royxat' %}">{% trans "Ro'yxatdan o'ting" %}</a></p>
   </form>
 </div>
 {% endblock %}

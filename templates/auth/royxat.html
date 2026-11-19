@@ -1,0 +1,17 @@
+{% extends "public_base.html" %}{% load i18n %}
+{% block title %}{% trans "Ro'yxatdan o'tish" %}{% endblock %}
+{% block content %}
+<form class="box narrow" method="post">{% csrf_token %}
+  <h1 class="page-title">{% trans "Ro'yxatdan o'tish" %}</h1>
+  <p class="help">{% trans "Telefon raqamingiz tizimga kirish uchun login bo'ladi." %}</p>
+  <div class="form-grid g2">
+    {% for field in form %}<div class="fld" data-r="{{ field.name }}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+  </div>
+  <div class="btn-row" style="margin-top:20px"><button class="btn btn-primary btn-wide" type="submit">{% trans "Ro'yxatdan o'tish" %}</button>
+    <a class="btn btn-light" href="{% url 'login' %}">{% trans "Menda hisob bor" %}</a></div>
+</form>
+<script>
+const t = document.getElementById("id_turi"), org = document.querySelector('[data-r="tashkilot_nomi"]');
+function f(){ org.hidden = t.value !== "yuridik"; } t.addEventListener("change", f); f();
+</script>
+{% endblock %}

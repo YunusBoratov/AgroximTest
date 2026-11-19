@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<section class="card">
+  <div class="page-head">
+    <h1 class="page-title">{{ title }} <span class="badge {% if ariza.holat == 'yangi' %}red{% elif ariza.holat == 'qabul' %}green{% else %}grey{% endif %}">{{ ariza.get_holat_display }}</span></h1>
+    {% if can_accept %}<div class="btn-row"><a class="btn btn-green" href="{% url 'ariza_qabul' ariza.pk %}">{% trans "Namunani qabul qilish" %}</a></div>{% endif %}
+  </div>
+  {% include "parts/ariza_info.html" %}
+  {% if can_accept %}
+  <details class="rad-box"><summary>{% trans "Arizani rad etish" %}</summary>
+    <form method="post" action="{% url 'ariza_rad' ariza.pk %}">{% csrf_token %}{{ rad_form.sabab }}
+      <button class="btn btn-grey" type="submit" style="margin-top:8px">{% trans "Rad etish" %}</button></form>
+  </details>{% endif %}
+</section>
+{% if namunalar %}
+<section class="card">
+  <h2 class="section-title">{% trans "Namunalar" %}</h2>
+  <table class="t"><thead><tr><th>N</th><th>{% trans "Nomi" %}</th><th>{% trans "Namuna olgan" %}</th><th>{% trans "Og'irligi / hajmi" %}</th><th>{% trans "Qabul qilingan" %}</th><th>{% trans "Holati" %}</th></tr></thead>
+  <tbody>{% for n in namunalar %}<tr><td>{{ n }}</td><td>{{ n.nomi }}</td><td>{{ n.namuna_olgan }}</td><td>{{ n.ogirligi|default:"—" }}</td><td class="dt">{{ n.qabul_vaqti|dt }}<br>{{ n.qabul_vaqti|tm }}</td><td>{{ n.get_lab_holat_display }}</td></tr>{% endfor %}</tbody></table>
+</section>{% endif %}
+{% endblock %}

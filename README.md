@@ -15,7 +15,7 @@ python manage.py boshlangich --demo
 python manage.py runserver
 ```
 
-`boshlangich` buyrug'i namuna turlarini yuklaydi va `docs/shablonlar/narxnoma_jadvali.xlsx` dan narxnomani import qiladi.
+`boshlangich` buyrug'i namuna turlarini yuklaydi va `docs/shablonlar/narxnoma_jadvali.xlsx` hamda `narxnoma_pestitsid.xlsx` dan narxnomani import qiladi.
 `--demo` qo'shilsa, har bir rol uchun sinov foydalanuvchilari va namunaviy arizalar yaratiladi (parol: `demo12345`):
 
 | Login | Rol |
@@ -28,6 +28,8 @@ python manage.py runserver
 | `namuna` | Namuna qabul qilib oluvchi |
 
 Testlar: `python manage.py test`
+
+Mijozlar `/royxatdan-otish/` sahifasida telefon raqami va parol bilan ro'yxatdan o'tadi (OneID kalitlari olingach qo'shiladi).
 
 ## Ishlab chiqarish sozlamalari (environment)
 
@@ -45,7 +47,7 @@ Testlar: `python manage.py test`
 ## Bosqichlar
 
 - [x] **1-bosqich:** modellar, rollar, login, dizayn (sidebar, jadvallar, filtrlar, Excel), monitoring panellari, xodimlar, narxnoma
-- [ ] **2-bosqich:** mijoz sayti (3 xil ariza + hujjat yuklash), ro'yxatdan o'tish, namuna qabul qiluvchi ishi
+- [x] **2-bosqich:** mijoz sayti (3 xil ariza + hujjat yuklash), ro'yxatdan o'tish (telefon + parol), kabinet, namuna qabul qiluvchi ishi (qabul / rad / namuna yaratish / tahrirlash)
 - [ ] **3-bosqich:** shartnoma tuzish (narxnomadan ko'rsatkich tanlash), shartnoma PDF, buxgalteriya to'lovlari, Click
 - [ ] **4-bosqich:** laboratoriya jarayoni, natija kiritish, xulosa DOCX/PDF + QR, mijoz kabineti
 - [ ] **5-bosqich:** OneID, SMS va Telegram bildirishnomalari, rus tili tarjimasi, serverga joylash

@@ -39,15 +39,23 @@ class Narxnoma(models.Model):
     class SinovObyekti(models.TextChoices):
         MINERAL = "mineral", _("Mineral o'g'itlar")
         ORGANIK = "organik", _("Organik o'g'itlar")
-        KIMYOVIY = "kimyoviy", _("Kimyoviy vositalar")
+        PESTITSID = "pestitsid", _("Pestitsidlar")
         TUPROQ = "tuproq", _("Tuproqlar")
+        OZIQ_OVQAT = "oziq_ovqat", _("Qishloq xo'jalik va oziq-ovqat mahsulotlari")
         UMUMIY = "umumiy", _("Mineral o'g'itlar, tuproq, qishloq xo'jalik mahsulotlari")
         BOSHQA = "boshqa", _("Boshqa")
+
+    # Qaysi laboratoriya qaysi obyektlarni shartnomaga qo'sha oladi
+    KATEGORIYA_OBYEKTLARI = {
+        "mineral": ["mineral", "organik", "tuproq", "umumiy", "boshqa"],
+        "kimyoviy": ["pestitsid", "tuproq", "oziq_ovqat", "umumiy", "boshqa"],
+    }
 
     tartib = models.PositiveIntegerField(_("Tartib raqami"), default=0)
     parametr = models.CharField(_("Aniqlanadigan tavsif (parametr) nomi"), max_length=1000)
     tahlil_usuli = models.CharField(_("Tahlil usuli"), max_length=500, blank=True)
-    sinov_obyekti = models.CharField(_("Sinov obyekti"), max_length=20, choices=SinovObyekti.choices)
+    sinov_obyekti = models.CharField(_("Sinov obyekti turi"), max_length=20, choices=SinovObyekti.choices)
+    obyekt_nomi = models.CharField(_("Sinovlar obyektining nomi"), max_length=500, blank=True)
     narx = models.DecimalField(_("Narxi, so'm"), max_digits=14, decimal_places=2)
     har_namunaga = models.BooleanField(
         _("Har bir namunaga hisoblanadi"), default=True,
@@ -117,11 +125,19 @@ class Ariza(models.Model):
     telefon = models.CharField(_("Telefon"), max_length=30)
     manzil = models.CharField(_("Manzil"), max_length=500, blank=True)
 
+    # Shartnoma uchun rekvizitlar (mijoz kiritadi, buxgalter to'g'irlashi mumkin)
+    rahbar = models.CharField(_("Rahbar F.I.SH."), max_length=255, blank=True)
+    hisob_raqam = models.CharField(_("Hisob raqami (X/R)"), max_length=40, blank=True)
+    bank = models.CharField(_("Bank"), max_length=255, blank=True)
+    mfo = models.CharField(_("MFO"), max_length=10, blank=True)
+    oked = models.CharField(_("OKED"), max_length=10, blank=True)
+
     # Namuna ma'lumotlari
     namuna_soni = models.PositiveIntegerField(_("Namuna soni"), default=1)
     namuna_turi = models.ForeignKey(NamunaTuri, verbose_name=_("Namuna turi"), on_delete=models.PROTECT)
     namuna_nomi = models.CharField(_("Namuna nomi"), max_length=255, blank=True)
-    partiya_raqami = models.CharField(_("Partiya raqami"), max_length=100, blank=True)
+    partiya_raqami = models.CharField(_("Partiya raqami (LOT)"), max_length=100, blank=True)
+    invoys_raqami = models.CharField(_("Invoys raqami"), max_length=100, blank=True)
     chegara_maskani = models.CharField(_("Chegara maskani / ombor"), max_length=255, blank=True)
 
     holat = models.CharField(_("Holati"), max_length=20, choices=Holat.choices, default=Holat.YANGI)
@@ -130,6 +146,7 @@ class Ariza(models.Model):
         null=True, blank=True, related_name="+",
     )
     qabul_vaqti = models.DateTimeField(_("Qabul qilingan vaqt"), null=True, blank=True)
+    rad_sababi = models.CharField(_("Rad etish sababi"), max_length=500, blank=True)
     created_at = models.DateTimeField(_("Yaratilgan vaqt"), default=timezone.now)
 
     class Meta:
@@ -176,6 +193,24 @@ ZARUR_HUJJATLAR = {
     ArizaTuri.DAVLAT: [ArizaHujjat.Turi.GUVOHNOMA, ArizaHujjat.Turi.ANALIZ],
     ArizaTuri.IXTIYORIY: [ArizaHujjat.Turi.GUVOHNOMA],
 }
+
+# Har bir ariza turi formada qaysi maydonlarni ko'rsatadi (dizayn bo'yicha)
+ARIZA_MAYDONLARI = {
+    ArizaTuri.IMPORTYOR: {
+        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "namuna_turi", "namuna_nomi",
+                     "chegara_maskani"],
+        "ixtiyoriy": ["partiya_raqami", "invoys_raqami"],
+    },
+    ArizaTuri.DAVLAT: {
+        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "namuna_turi"],
+        "ixtiyoriy": ["namuna_nomi", "partiya_raqami"],
+    },
+    ArizaTuri.IXTIYORIY: {
+        "majburiy": ["inn", "fish", "telefon", "namuna_soni", "namuna_turi"],
+        "ixtiyoriy": ["namuna_nomi"],
+    },
+}
+REKVIZIT_MAYDONLARI = ["manzil", "rahbar", "hisob_raqam", "bank", "mfo", "oked"]
 
 
 # ---------------------------------------------------------------------------
@@ -311,9 +346,10 @@ class Namuna(models.Model):
     tartib = models.PositiveIntegerField(_("Namuna tartib raqami"), default=1)
     namuna_turi = models.ForeignKey(NamunaTuri, verbose_name=_("Namuna turi"), on_delete=models.PROTECT)
     nomi = models.CharField(_("Namuna nomi"), max_length=255, blank=True)
+    tavsifi = models.CharField(_("Namuna tavsifi"), max_length=500, blank=True)
     tasir_etuvchi_modda = models.CharField(_("Ta'sir etuvchi modda"), max_length=500, blank=True)
     namuna_olgan = models.CharField(_("Namuna olgan mas'ul xodim"), max_length=255, blank=True)
-    ogirligi = models.CharField(_("Namuna og'irligi (kg)"), max_length=50, blank=True)
+    ogirligi = models.CharField(_("Og'irligi / hajmi"), max_length=50, blank=True)
 
     qabul_qilgan = models.ForeignKey(
         settings.AUTH_USER_MODEL, verbose_name=_("Qabul qilgan"), on_delete=models.SET_NULL,
@@ -350,15 +386,13 @@ class Xulosa(models.Model):
     namuna = models.OneToOneField(Namuna, on_delete=models.CASCADE, related_name="xulosa")
     raqam = models.CharField(_("Xulosa raqami"), max_length=30, unique=True, editable=False)
     sinov_sanasi = models.DateTimeField(_("Sinov o'tkazilgan sana"), null=True, blank=True)
-    sinov_joyi = models.CharField(_("Sinov o'tkazilgan joy"), max_length=255, default="Tahlil laboratoriyasi")
-    bayonnoma = models.CharField(_("Namuna olish bayonnomasi raqami va sanasi"), max_length=255, blank=True)
-    tashqi_natijalar = models.CharField(
-        _("Tashqi yetkazib beruvchilardan taqdim qilinadigan tahlil natijalari"), max_length=100, blank=True
-    )
-    harorat = models.CharField(_("Harorat, °C"), max_length=50, default="T=(24±1) °C")
-    namlik = models.CharField(_("Havoning nisbiy namligi, %"), max_length=50, default="W=(45±1) %")
-    sinov_otkazuvchilar = models.CharField(_("Sinov o'tkazuvchilar"), max_length=500, blank=True)
-    tasdiqlagan = models.CharField(_("Tasdiqlagan (laboratoriya mudiri)"), max_length=255, blank=True)
+    sinov_joyi = models.CharField(_("Sinov joyi"), max_length=255, default="Tahlil laboratoriyasi")
+    dalolatnoma = models.CharField(_("Dalolatnoma №"), max_length=100, blank=True)
+    harorat = models.CharField(_("Harorat"), max_length=50, default="T=(23±1)°C")
+    namlik = models.CharField(_("Havoning nisbiy namligi"), max_length=50, default="W=(45±1)%")
+    tasdiqlagan = models.CharField(_("Laboratoriya mudiri"), max_length=255, blank=True)
+    bosh_agrokimyogar = models.CharField(_("Bosh agrokimyogar"), max_length=255, blank=True)
+    yetakchi_agrokimyogar = models.CharField(_("Yetakchi agrokimyogar"), max_length=255, blank=True)
 
     verify_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     yaratgan = models.ForeignKey(
@@ -386,9 +420,10 @@ class XulosaNatija(models.Model):
     xulosa = models.ForeignKey(Xulosa, on_delete=models.CASCADE, related_name="natijalar")
     tartib = models.PositiveIntegerField(default=1)
     korsatkich = models.CharField(_("Ko'rsatkich nomi, o'lchov birligi"), max_length=500)
-    sinov_usuli = models.CharField(_("Sinov usuli"), max_length=255, blank=True)
-    meyor = models.CharField(_("Me'yorlangan qiymat"), max_length=255, blank=True)
-    natija = models.CharField(_("Sinov natijasi"), max_length=255, blank=True)
+    meyor = models.CharField(_("Me'yoriy qiymat"), max_length=255, blank=True)
+    natija = models.CharField(_("Sinov natijasi (Xcp ± Upac)"), max_length=255, blank=True)
+    sinov_usuli = models.CharField(_("Sinov usuli (ND hujjati)"), max_length=255, blank=True)
+    muvofiqlik = models.CharField(_("Muvofiqlik haqida qaror"), max_length=100, blank=True)
 
     class Meta:
         ordering = ["tartib", "id"]

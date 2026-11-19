@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<section class="card"><div class="page-head"><h1 class="page-title">{% trans "Arizani shakllantirish" %}</h1></div>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+  {% include "parts/ariza_fields.html" %}
+  <div class="btn-row"><button class="btn btn-primary" type="submit">{% trans "Saqlash va davom etish" %}</button></div>
+</form></section>
+{% endblock %}

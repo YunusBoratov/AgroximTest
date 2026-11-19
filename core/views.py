@@ -121,7 +121,7 @@ def dashboard(request):
 def ariza_list(request):
     qs = Ariza.objects.select_related("namuna_turi").prefetch_related("hujjatlar")
     cols = [
-        Column(_("Ariza raqami"), "raqam", "bold"),
+        Column(_("Ariza raqami"), "raqam", "bold", url=lambda o: reverse("ariza_detail", args=[o.pk])),
         Column(_("Ariza turi"), "get_turi_display"),
         Column(_("Buyurtmachi nomi"), "buyurtmachi_nomi"),
         Column(_("F.I.SH."), "fish"),
@@ -136,6 +136,9 @@ def ariza_list(request):
         Column(_("Zarur hujjatlar"), lambda o: o.hujjatlar.all(), "file"),
         Column(_("Holati"), "get_holat_display", "badge", badge=badge("holat")),
     ]
+    if user_role(request.user) in (NQ, SA):
+        cols.append(Column("", lambda o: [(_("Qabul qilish"), reverse("ariza_qabul", args=[o.pk]), "check", "btn")]
+                           if o.holat == Ariza.Holat.YANGI else [], "actions", excel=False))
     f = Filters(search_fields=["raqam", "buyurtmachi_nomi", "fish", "inn", "telefon", "namuna_nomi"],
                 date_field="created_at", holat_field="holat", holat_choices=Ariza.Holat.choices,
                 turi_field="turi")
@@ -146,7 +149,7 @@ def ariza_list(request):
 def namuna_list(request):
     qs = Namuna.objects.select_related("ariza", "namuna_turi").prefetch_related("ariza__hujjatlar")
     cols = [
-        Column(_("Ariza raqami"), "ariza.raqam", "bold"),
+        Column(_("Ariza raqami"), "__str__", "bold", url=lambda o: reverse("ariza_detail", args=[o.ariza_id])),
         Column(_("Ariza turi"), "ariza.get_turi_display"),
         Column(_("Namuna olgan mas'ul xodim"), "namuna_olgan"),
         Column(_("Chegara maskani yoki ombor nomi"), "ariza.chegara_maskani"),
@@ -158,6 +161,11 @@ def namuna_list(request):
         Column(_("Mavjud hujjatlar"), lambda o: o.ariza.hujjatlar.all(), "file"),
         Column(_("Holati"), "get_lab_holat_display", "badge", badge=badge("lab_holat")),
     ]
+    if user_role(request.user) in (NQ, SA):
+        cols.append(Column("", lambda o: [
+            (_("Tahrirlash"), reverse("namuna_edit", args=[o.pk]), "edit", ""),
+            (_("O'chirish"), reverse("namuna_delete", args=[o.pk]), "delete", "danger post"),
+        ] if o.lab_holat == Namuna.LabHolat.YANGI and not o.shartnoma_id else [], "actions", excel=False))
     f = Filters(search_fields=["ariza__raqam", "ariza__buyurtmachi_nomi", "ariza__fish", "ariza__inn", "nomi"],
                 date_field="qabul_vaqti", holat_field="lab_holat", holat_choices=Namuna.LabHolat.choices,
                 turi_field="ariza__turi")
@@ -278,10 +286,3 @@ def narxnoma_form(request, pk=None):
         "title": _("Narxnoma") + (f" — {_('Tahrirlash')}" if obj else f" — {_('Qo‘shish')}"),
         "form": form, "back": reverse("narxnoma_list"),
     })
-
-
-@login_required
-def kabinet(request):
-    """Mijoz kabineti (2-bosqichda to'liq bo'ladi)."""
-    arizalar = Ariza.objects.filter(mijoz=request.user).prefetch_related("namunalar__xulosa")
-    return render(request, "core/kabinet.html", {"title": _("Kabinet"), "arizalar": arizalar})

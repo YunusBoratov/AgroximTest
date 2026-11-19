@@ -1,0 +1,81 @@
+{% load i18n ui %}
+{# Uch xil ariza turi uchun umumiy maydonlar. JS turiga qarab ko'rsatadi/yashiradi. #}
+<div class="box">
+  <div class="box-head">
+    <div class="fld"><label>{% trans "Buyurtmachi" %}</label>
+      <select name="turi" id="id_turi" class="input">
+        {% for val, label in turi_choices %}<option value="{{ val }}" {% if form.turi == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    {% if show_kabinet %}<a class="pill" href="{% url 'kabinet' %}">{% trans "Kabinet" %}</a>{% endif %}
+  </div>
+  {% if form.non_field_errors %}<ul class="messages"><li class="error">{{ form.non_field_errors|join:" " }}</li></ul>{% endif %}
+  <div class="form-grid g3">
+    {% for name in "inn buyurtmachi_nomi fish telefon namuna_soni chegara_maskani namuna_turi partiya_raqami namuna_nomi invoys_raqami"|make_list_words %}
+      {% with field=form|field:name %}
+      <div class="fld" data-field="{{ name }}">
+        <label for="{{ field.id_for_label }}" data-label-ixtiyoriy="{% trans 'JSHSHIR / ID' %}">{% if name == "inn" %}{% trans "INN" %}{% else %}{{ field.label }}{% endif %}<i class="req">*</i></label>
+        {{ field }}{{ field.errors }}
+      </div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+
+<div class="box">
+  <h3 class="box-title">{% trans "Zarur hujjatlar" %}</h3>
+  <div class="form-grid g3">
+    {% for name in "guvohnoma invoys analiz qoshimcha"|make_list_words %}
+      {% with field=form|field:name %}
+      <div class="fld" data-hujjat="{{ name }}">
+        <label>{{ field.label }}<i class="req">*</i></label>
+        <label class="upload"><span class="upload-name" data-empty="{% trans 'Qo‘shing' %}">{% trans "Qo'shing" %}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
+          {{ field }}</label>
+        {{ field.errors }}
+      </div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+  <p class="help">{% trans "PDF, JPG, PNG, Word yoki Excel, har biri 15 MB gacha." %}</p>
+</div>
+
+<details class="box" id="rekvizit-box" {% if form.errors %}open{% endif %}>
+  <summary class="box-title">{% trans "Shartnoma uchun rekvizitlar" %} <small>({% trans "ixtiyoriy, keyin buxgalteriya to'ldirishi mumkin" %})</small></summary>
+  <div class="form-grid g3">
+    {% for name in "manzil rahbar hisob_raqam bank mfo oked"|make_list_words %}
+      {% with field=form|field:name %}
+      <div class="fld" data-rekvizit="{{ name }}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+</details>
+
+<script>
+(function () {
+  const CFG = {{ config|safe }};
+  const sel = document.getElementById("id_turi");
+  function apply() {
+    const c = CFG[sel.value];
+    document.querySelectorAll("[data-field]").forEach(el => {
+      const n = el.dataset.field, req = c.majburiy.includes(n);
+      el.hidden = !(req || c.ixtiyoriy.includes(n));
+      el.querySelector(".req").hidden = !req;
+      const lbl = el.querySelector("label");
+      if (n === "inn") lbl.firstChild.textContent = sel.value === "ixtiyoriy" ? lbl.dataset.labelIxtiyoriy : "INN";
+    });
+    document.querySelectorAll("[data-hujjat]").forEach(el => {
+      const n = el.dataset.hujjat;
+      el.hidden = !c.hujjatlar.includes(n);
+      el.querySelector(".req").hidden = !c.hujjat_shart.includes(n);
+    });
+    document.querySelectorAll("[data-rekvizit]").forEach(el => { el.hidden = !c.rekvizit.includes(el.dataset.rekvizit); });
+  }
+  sel.addEventListener("change", apply); apply();
+  document.querySelectorAll(".upload input[type=file]").forEach(inp => inp.addEventListener("change", () => {
+    const s = inp.closest(".upload").querySelector(".upload-name");
+    s.textContent = inp.files.length ? inp.files[0].name : s.dataset.empty;
+    inp.closest(".upload").classList.toggle("has", inp.files.length > 0);
+  }));
+})();
+</script>

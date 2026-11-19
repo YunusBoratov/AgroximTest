@@ -1,7 +1,7 @@
 {% load ui %}{% if col.kind == "datetime" %}<td class="dt">{{ val|dt }}<br>{{ val|tm }}</td>
 {% elif col.kind == "money" %}<td class="money">{{ val|money }}</td>
 {% elif col.kind == "badge" %}<td><span class="badge {{ badge_cls }}">{{ val }}</span></td>
-{% elif col.kind == "file" %}<td>{% for h in val %}<a class="file-link" href="{{ h.fayl.url }}" target="_blank" title="{{ h.get_turi_display }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></a>{% empty %}—{% endfor %}</td>
-{% elif col.kind == "actions" %}<td><a class="file-link" href="{{ val }}" title="Tahrirlash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></a></td>
-{% elif col.kind == "bold" %}<td class="bold">{{ val|default_if_none:"" }}</td>
-{% else %}<td>{{ val|default_if_none:""|default:"—" }}</td>{% endif %}
+{% elif col.kind == "file" %}<td>{% for h in val %}<a class="file-link" href="{{ h.fayl.url }}" target="_blank" title="{{ h.get_turi_display }}">{% include "parts/icon.html" with name="file" %}</a>{% empty %}—{% endfor %}</td>
+{% elif col.kind == "actions" %}<td class="actions">{% if val|is_str %}<a class="file-link" href="{{ val }}" title="Tahrirlash">{% include "parts/icon.html" with name="edit" %}</a>{% else %}{% for label, href, icon, style in val %}{% if "post" in style %}<form class="inline" method="post" action="{{ href }}" onsubmit="return confirm('{{ label }}?')">{% csrf_token %}<button class="act {{ style }}" title="{{ label }}">{% include "parts/icon.html" with name=icon %}</button></form>{% else %}<a class="act {{ style }}" href="{{ href }}" title="{{ label }}">{% include "parts/icon.html" with name=icon %}{% if style == "btn" %}<span>{{ label }}</span>{% endif %}</a>{% endif %}{% endfor %}{% endif %}</td>
+{% elif col.kind == "bold" %}<td class="bold">{% if link %}<a class="row-link" href="{{ link }}">{{ val|default_if_none:"" }}</a>{% else %}{{ val|default_if_none:"" }}{% endif %}</td>
+{% else %}<td>{% if link %}<a class="row-link" href="{{ link }}">{{ val|default_if_none:""|default:"—" }}</a>{% else %}{{ val|default_if_none:""|default:"—" }}{% endif %}</td>{% endif %}

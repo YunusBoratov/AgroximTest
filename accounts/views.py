@@ -7,7 +7,9 @@ from django.utils.translation import gettext as _
 from core.listing import Column, Filters, list_page
 from core.permissions import SA, role_required
 
-from .forms import LoginForm, XodimForm
+from django.contrib.auth import login
+
+from .forms import LoginForm, RoyxatForm, XodimForm
 from .models import STAFF_ROLES, Role, User
 
 
@@ -15,6 +17,18 @@ class LoginView(auth_views.LoginView):
     template_name = "auth/login.html"
     form_class = LoginForm
     redirect_authenticated_user = True
+
+
+def royxatdan_otish(request):
+    if request.user.is_authenticated:
+        return redirect("bosh")
+    form = RoyxatForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        login(request, user)
+        messages.success(request, _("Ro'yxatdan o'tdingiz. Endi ariza yuborishingiz mumkin."))
+        return redirect("ariza_yangi")
+    return render(request, "auth/royxat.html", {"form": form})
 
 
 def onaid_login(request):

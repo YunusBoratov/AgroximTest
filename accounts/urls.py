@@ -5,6 +5,7 @@ from . import views
 
 urlpatterns = [
     path("kirish/", views.LoginView.as_view(), name="login"),
+    path("royxatdan-otish/", views.royxatdan_otish, name="royxat"),
     path("kirish/oneid/", views.onaid_login, name="oneid_login"),
     path("chiqish/", LogoutView.as_view(), name="logout"),
     path("xodimlar/", views.xodim_list, name="xodim_list"),

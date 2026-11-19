@@ -21,6 +21,7 @@ class Column:
     title: str
     value: Callable[[Any], Any] | str
     kind: str = "text"  # text | datetime | money | badge | file | actions | bold
+    # actions: value -> [(yorliq, url, ikonka, uslub)] ; ikonka: edit|delete|check|eye|send|plus
     excel: bool = True
     badge: Callable[[Any], str] | None = None  # obj -> css klass (badge uchun)
     url: Callable[[Any], str] | None = None
@@ -131,7 +132,8 @@ def list_page(request, *, title, qs, columns, filters: Filters, template="core/l
         "title": title,
         "columns": columns,
         "page": page,
-        "rows": [(obj, [(c, c.get(obj), c.badge(obj) if c.badge else "") for c in columns])
+        "rows": [(obj, [(c, c.get(obj), c.badge(obj) if c.badge else "", c.url(obj) if c.url else "")
+                        for c in columns])
                  for obj in page.object_list],
         "total": page.paginator.count,
         "f": filters,

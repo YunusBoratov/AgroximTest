@@ -1,0 +1,8 @@
+{% extends "public_base.html" %}{% load i18n %}
+{% block content %}
+<section class="box">
+  <div class="page-head"><h1 class="page-title">{{ title }}</h1><a class="btn btn-light" href="{% url 'kabinet' %}">← {% trans "Kabinet" %}</a></div>
+  {% with a=ariza %}<p>{% include "parts/mijoz_holat.html" %}</p>{% endwith %}
+  {% include "parts/ariza_info.html" %}
+</section>
+{% endblock %}

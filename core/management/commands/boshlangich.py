@@ -62,8 +62,12 @@ def kirill_lotin(text):
 
 def sinov_obyekti(text):
     t = (text or "").lower()
-    if "қишлоқ" in t or "тупроқ." in t:
+    if "пестис" in t or "пестиц" in t:
+        return Narxnoma.SinovObyekti.PESTITSID
+    if "минерал" in t and "тупроқ" in t:
         return Narxnoma.SinovObyekti.UMUMIY
+    if "озиқ-овқат" in t or "сабзавот" in t or ("тупроқ" in t and "қишлоқ" in t):
+        return Narxnoma.SinovObyekti.OZIQ_OVQAT if "тупроқ" not in t else Narxnoma.SinovObyekti.UMUMIY
     if "органик" in t:
         return Narxnoma.SinovObyekti.ORGANIK
     if "тупроқ" in t:
@@ -71,6 +75,9 @@ def sinov_obyekti(text):
     if "минерал" in t:
         return Narxnoma.SinovObyekti.MINERAL
     return Narxnoma.SinovObyekti.BOSHQA
+
+
+NARXNOMA_FAYLLARI = ["narxnoma_jadvali.xlsx", "narxnoma_pestitsid.xlsx"]
 
 
 class Command(BaseCommand):
@@ -98,29 +105,37 @@ class Command(BaseCommand):
             return
         from openpyxl import load_workbook
 
-        path = Path(settings.BASE_DIR) / "docs" / "shablonlar" / "narxnoma_jadvali.xlsx"
-        ws = load_workbook(path, data_only=False).active
-        tartib, parametr, n = 0, "", 0
-        for row in ws.iter_rows(min_row=6, max_row=ws.max_row):
-            a, b, c, d, e = (cell.value for cell in row[:5])
-            if a == "Жами" or (not b and not c and e is None):
-                continue
-            if isinstance(a, int):
-                tartib = a
-            if b:
-                parametr = kirill_lotin(str(b).strip())
-            if e is None:
-                continue
-            bir_marta = "Намуна олиш" in str(b or "")
-            Narxnoma.objects.create(
-                tartib=0 if (b and "Намуна" in str(b)) else tartib,
-                parametr=parametr,
-                tahlil_usuli=kirill_lotin(str(c or "").replace("ГОСТ", "GOST").strip()),
-                sinov_obyekti=sinov_obyekti(d),
-                narx=Decimal(str(e)).quantize(Decimal("0.01")),
-                har_namunaga=not bir_marta,
-            )
-            n += 1
+        n = 0
+        for fayl in NARXNOMA_FAYLLARI:
+            ws = load_workbook(Path(settings.BASE_DIR) / "docs" / "shablonlar" / fayl).active
+            tartib, parametr, usul, obyekt = 0, "", "", ""
+            for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+                a, b, c, d, e = (cell.value for cell in row[:5])
+                if not isinstance(e, (int, float)):
+                    continue  # sarlavha, "Jami" va bo'sh qatorlar
+                if a not in (None, "") and str(a).strip().isdigit():
+                    tartib = int(str(a).strip())
+                if b:  # yangi parametr: usul ham yangidan olinadi (bo'sh bo'lishi mumkin)
+                    parametr = kirill_lotin(" ".join(str(b).split()))
+                    if parametr.startswith("Sb)"):
+                        parametr = "Surma (" + parametr
+                    usul = ""
+                if c:
+                    usul = kirill_lotin(" ".join(str(c).split()).replace("ГОСТ", "GOST"))
+                if d:
+                    obyekt = str(d).strip()
+                namuna = "намуна" in str(b or parametr).lower() and ("олиш" in str(b or "").lower()
+                                                                        or "тайёрлаш" in str(b or "").lower())
+                Narxnoma.objects.create(
+                    tartib=0 if namuna else tartib,
+                    parametr=parametr,
+                    tahlil_usuli=usul,
+                    sinov_obyekti=sinov_obyekti(obyekt),
+                    obyekt_nomi=kirill_lotin(obyekt).rstrip("."),
+                    narx=Decimal(str(e)).quantize(Decimal("0.01")),
+                    har_namunaga="олиш" not in str(b or "").lower(),
+                )
+                n += 1
         self.stdout.write(f"Narxnoma qatorlari: {n}")
 
     def demo(self):
