@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}{{ title }}{% endblock %} — {% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}</title>
+  <title>{% block title %}{{ title }}{% endblock %} — {{ MARKAZ.nomi }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
@@ -15,7 +15,7 @@
   <aside class="sidebar">
     <a class="brand" href="{% url 'dashboard' %}">
       <img src="{% static 'img/logo.png' %}" alt="">
-      <span>{% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}</span>
+      <span>{% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}<small class="org-sub">{{ MARKAZ.nomi }}</small></span>
     </a>
     <nav class="nav">
       {% for name, label in menu_items %}

@@ -118,11 +118,18 @@ XULOSA_YUBORISH_MIN_FOIZ = 100  # xulosa buyurtmachiga faqat to'liq to'lovdan ke
 
 # Markaz ma'lumotlari (sayt sarlavhasida)
 MARKAZ = {
-    "nomi": "Agrokimyoviy Tahlil Markazi",
+    "nomi": "Agrokimyo va tuproq tahlili markazi",
+    "nomi_ru": "Центр агрохимического и почвенного анализа",
     "shior": "Tuproq yagona boylik",
-    "telefonlar": ["+998 71 260 42 20", "+998 71 203 14 14 (1015)"],
-    "manzil": "Toshkent vil. Qibray tum. Bobur ko'ch. 8-uy. 111215",
+    "telefonlar": ["+998 71 203 14 14 (1015)", "+998 71 260 42 20"],
+    "manzil": "111215, Toshkent viloyati, Qibray tumani, Bobur ko'chasi, 8-uy",
+    "sayt": "www.agrokimlab.uz",
+    "email": "info@agrokimlab.uz",
 }
+
+# Shartnoma raqami: oddiy tartib raqami (har yili 1 dan). Joriy yil uchun boshlang'ich
+# raqamni admin panelda (Hisoblagich) yoki shu sozlama bilan belgilash mumkin.
+SHARTNOMA_RAQAM_BOSHLANISH = int(env("SHARTNOMA_RAQAM_BOSHLANISH", "0"))
 TUPROQ_TAHLILI_URL = env("TUPROQ_TAHLILI_URL", "#")
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 80 * 1024 * 1024

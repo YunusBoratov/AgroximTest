@@ -210,3 +210,10 @@ button.act { border: 0; background: none; cursor: pointer; }
   .site-head-in { gap: 12px; }
   .site-tabs a { font-size: 12px; }
 }
+
+/* Markaz nomi */
+.org-name { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--green); margin-top: 14px; }
+.auth-card .org-name + h1 { margin-top: 6px; }
+.brand span { display: flex; flex-direction: column; }
+.org-sub { font-weight: 500; color: var(--muted); font-size: 10.5px; margin-top: 3px; }
+.site-info a { color: var(--green); }

@@ -1,6 +1,6 @@
 # AgroximTest — Mineral o'g'it va kimyoviy vositalar tahlili
 
-Respublika agrokimyoviy tahlil markazi uchun platforma: ariza → namuna → shartnoma (oferta) →
+"Agrokimyo va tuproq tahlili markazi" uchun platforma: ariza → namuna → shartnoma (oferta) →
 to'lov → laboratoriya tahlili → xulosa (sinov bayonnomasi) → mijozga berish.
 
 Texnologiya: **Django 5.2**, server tomonida render qilinadigan sahifalar, **PostgreSQL** (ishlab chiqarishda)
@@ -38,7 +38,8 @@ Mijozlar `/royxatdan-otish/` sahifasida telefon raqami va parol bilan ro'yxatdan
 
 ## Biznes qoidalari
 
-- Raqamlash: ariza `ATM-A-2026-00001`, shartnoma `ATM m 2026 00001`, xulosa `ATM-P-2026-00001` (har yili qaytadan).
+- Raqamlash: ariza `ATM-A-2026-00001`, shartnoma oddiy tartib raqami (`381`), xulosa `ATM-P-2026-00001` (har yili qaytadan).
+  Joriy yil uchun shartnoma raqamini davom ettirish: admin paneldagi "Hisoblagich" yoki `SHARTNOMA_RAQAM_BOSHLANISH`.
 - Tahlil kamida **30%** to'lovdan keyin boshlanadi (`TAHLIL_BOSHLASH_MIN_FOIZ`).
 - Xulosa buyurtmachiga faqat **100%** to'lovdan keyin yuboriladi.
 - Bitta shartnomada bir nechta namuna bo'lishi mumkin; har bir namuna uchun alohida xulosa chiqadi.

@@ -3,6 +3,12 @@ from django.contrib import admin
 from . import models
 
 
+@admin.register(models.Hisoblagich)
+class HisoblagichAdmin(admin.ModelAdmin):
+    list_display = ("kalit", "yil", "qiymat")
+    list_editable = ("qiymat",)
+
+
 @admin.register(models.NamunaTuri)
 class NamunaTuriAdmin(admin.ModelAdmin):
     list_display = ("nomi", "kategoriya", "tartib", "aktiv")

@@ -80,16 +80,23 @@ class Hisoblagich(models.Model):
 
     kalit = models.CharField(max_length=50)
     yil = models.PositiveIntegerField()
-    qiymat = models.PositiveIntegerField(default=0)
+    qiymat = models.PositiveIntegerField(_("Oxirgi berilgan raqam"), default=0)
 
     class Meta:
         unique_together = ("kalit", "yil")
+        verbose_name = _("Hisoblagich (raqamlash)")
+        verbose_name_plural = _("Hisoblagichlar (raqamlash)")
+
+    def __str__(self):
+        return f"{self.kalit} {self.yil}: {self.qiymat}"
 
     @classmethod
-    def keyingi(cls, kalit):
+    def keyingi(cls, kalit, boshlanish=0):
+        """Navbatdagi raqam. `boshlanish` — yangi yil hisoblagichi shu raqamdan davom etadi."""
         yil = timezone.localdate().year
         with transaction.atomic():
-            obj, _ = cls.objects.select_for_update().get_or_create(kalit=kalit, yil=yil)
+            obj, _ = cls.objects.select_for_update().get_or_create(
+                kalit=kalit, yil=yil, defaults={"qiymat": boshlanish})
             obj.qiymat += 1
             obj.save(update_fields=["qiymat"])
             return yil, obj.qiymat
@@ -254,8 +261,8 @@ class Shartnoma(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.raqam:
-            yil, n = Hisoblagich.keyingi("shartnoma")
-            self.raqam = f"ATM m {yil} {n:05d}"
+            _yil, n = Hisoblagich.keyingi("shartnoma", boshlanish=settings.SHARTNOMA_RAQAM_BOSHLANISH)
+            self.raqam = str(n)
         super().save(*args, **kwargs)
 
     @property

@@ -42,7 +42,9 @@ class ModelTests(BaseTest):
         a = self._ariza()
         self.assertRegex(a.raqam, r"^ATM-A-\d{4}-\d{5}$")
         sh = Shartnoma.objects.create(ariza=a)
-        self.assertRegex(sh.raqam, r"^ATM m \d{4} \d{5}$")
+        self.assertRegex(sh.raqam, r"^\d+$")
+        sh2 = Shartnoma.objects.create(ariza=a)
+        self.assertEqual(int(sh2.raqam), int(sh.raqam) + 1)
 
     def test_narxnoma_import(self):
         self.assertGreater(Narxnoma.objects.count(), 40)

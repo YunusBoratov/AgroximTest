@@ -4,6 +4,7 @@
 <div class="auth-page">
   <form class="auth-card" method="post">{% csrf_token %}
     <img src="{% static 'img/logo.png' %}" alt="">
+    <div class="org-name">{{ MARKAZ.nomi }}</div>
     <h1>{% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}</h1>
     <p class="sub">{% trans "Login va parolni kiriting" %}</p>
     {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
