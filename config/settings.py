@@ -1,21 +1,26 @@
-from pathlib import Path
+"""
+AgroximTest — Mineral o'g'it va kimyoviy vositalar tahlili platformasi.
+
+Sozlamalar muhit o'zgaruvchilari (environment) orqali boshqariladi:
+  DJANGO_SECRET_KEY, DJANGO_DEBUG, DJANGO_ALLOWED_HOSTS,
+  DB_ENGINE=postgres (bo'lmasa SQLite), DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+"""
 import os
+from pathlib import Path
+
+from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-change-me"
 
-DEBUG = True
+def env(name, default=None):
+    return os.environ.get(name, default)
 
-# NGROK / local test uchun:
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", ".ngrok-free.dev"]
-CSRF_TRUSTED_ORIGINS = ["https://*.ngrok-free.dev"]
 
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-PUBLIC_BASE_URL = "https://vorticose-acanthocladous-ariah.ngrok-free.dev"
-
+SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-only-insecure-key-change-in-production")
+DEBUG = env("DJANGO_DEBUG", "1") == "1"
+ALLOWED_HOSTS = [h for h in env("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h]
+CSRF_TRUSTED_ORIGINS = [o for o in env("DJANGO_CSRF_ORIGINS", "").split(",") if o]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -24,17 +29,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "lab",
+    "django.contrib.humanize",
+    "accounts",
+    "core",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
-
-    # CSRF kerak (admin uchun)
     "django.middleware.csrf.CsrfViewMiddleware",
-
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -45,7 +50,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],  # verify.html shu yerda bo'ladi
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -53,6 +58,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "core.context_processors.sidebar",
             ],
         },
     },
@@ -60,47 +66,51 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if env("DB_ENGINE") == "postgres":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DB_NAME", "agroximtest"),
+            "USER": env("DB_USER", "agroximtest"),
+            "PASSWORD": env("DB_PASSWORD", ""),
+            "HOST": env("DB_HOST", "localhost"),
+            "PORT": env("DB_PORT", "5432"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
-AUTH_PASSWORD_VALIDATORS = []
+AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "login"
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 6}},
+]
 
 LANGUAGE_CODE = "uz"
+LANGUAGES = [
+    ("uz", _("O'zbekcha")),
+    ("ru", _("Русский")),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "Asia/Tashkent"
 USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]  # logo shu yerda bo'ladi (ixtiyoriy)
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
-# ===== NGROK HTTPS uchun (admin login 502/CSRF muammosini tuzatadi) =====
-CSRF_TRUSTED_ORIGINS = [
-    "https://*.ngrok-free.dev",
-    "https://*.ngrok.io",
-]
-
-
-# ===== Fayl yo'llari =====
-# DOCX template shu joyda bo'lsin:
-# templates/pdf/Xulosa_official_template_QR_visible.docx
-PDF_TEMPLATE_PATH = os.path.join(BASE_DIR, "templates", "pdf", "Xulosa_official_template.docx")
-
-# LibreOffice yo'li (Windows)
-SOFFICE_PATH = r"C:\Program Files\LibreOffice\program\soffice.exe"
-
-TELEGRAM_BOT_TOKEN = "5645632094:AAGApqFwL-WKC-ctS2A3vZnQVHlwJ-jq_8I"
-TELEGRAM_CHAT_ID = "1063436085"
-SITE_URL = "http://127.0.0.1:8000"
-# ===== MEDIA (DOCX, PDF) =====
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
-
-
+# Biznes qoidalari
+TAHLIL_BOSHLASH_MIN_FOIZ = 30  # tahlil kamida 30% to'lovdan keyin boshlanadi

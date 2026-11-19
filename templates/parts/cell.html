@@ -1,0 +1,7 @@
+{% load ui %}{% if col.kind == "datetime" %}<td class="dt">{{ val|dt }}<br>{{ val|tm }}</td>
+{% elif col.kind == "money" %}<td class="money">{{ val|money }}</td>
+{% elif col.kind == "badge" %}<td><span class="badge {{ badge_cls }}">{{ val }}</span></td>
+{% elif col.kind == "file" %}<td>{% for h in val %}<a class="file-link" href="{{ h.fayl.url }}" target="_blank" title="{{ h.get_turi_display }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></a>{% empty %}—{% endfor %}</td>
+{% elif col.kind == "actions" %}<td><a class="file-link" href="{{ val }}" title="Tahrirlash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></a></td>
+{% elif col.kind == "bold" %}<td class="bold">{{ val|default_if_none:"" }}</td>
+{% else %}<td>{{ val|default_if_none:""|default:"—" }}</td>{% endif %}

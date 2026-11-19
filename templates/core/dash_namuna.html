@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h2 class="section-title">{% trans "Arizalar" %}</h2>
+<div class="grid">
+  {% for label, n, href in cards %}
+  <a class="stat {% if forloop.first and n %}alert{% endif %}" href="{{ href }}"><div class="n">{{ n }}</div><div class="l">{{ label }}</div></a>
+  {% endfor %}
+</div>
+{% endblock %}

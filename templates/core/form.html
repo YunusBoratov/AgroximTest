@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<section class="card">
+  <div class="page-head"><h1 class="page-title">{{ title }}</h1></div>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% if form.non_field_errors %}<ul class="messages"><li class="error">{{ form.non_field_errors|join:" " }}</li></ul>{% endif %}
+    <div class="form-grid">
+      {% for field in form %}
+      <div class="fld {% if field.field.widget.input_type == 'textarea' or field.name == 'parametr' %}full{% endif %}">
+        {% if field.field.widget.input_type == "checkbox" %}
+          <label>{{ field }} {{ field.label }}</label>
+        {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}
+        {% endif %}
+        {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+        {{ field.errors }}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="btn-row" style="margin-top:22px">
+      <button class="btn btn-primary" type="submit">{% trans "Saqlash" %}</button>
+      <a class="btn btn-light" href="{{ back }}">{% trans "Bekor qilish" %}</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

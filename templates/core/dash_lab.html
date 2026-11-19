@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h2 class="section-title">{% trans "Shartnoma tuzilishi va bajarilishi" %}</h2>
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+  {% for label, n, href in shartnoma_cards %}
+  <a class="stat" href="{{ href }}"><div class="n">{{ n }}</div><div class="l">{{ label }}</div></a>
+  {% endfor %}
+</div>
+<h2 class="section-title">{% trans "Laboratoriya tahlil holati" %}</h2>
+<div class="grid">
+  {% for label, n, href in lab_cards %}
+  <a class="stat {% if forloop.first and n %}alert{% endif %}" href="{{ href }}"><div class="n">{{ n }}</div><div class="l">{{ label }}</div></a>
+  {% endfor %}
+</div>
+<h2 class="section-title">{% trans "Xulosa" %} ({{ xulosa_total }})</h2>
+{% for kat, items in turi_cards.items %}
+<div class="grid">
+  {% for t, n in items %}
+  <a class="stat" href="{% url 'xulosa_list' %}?q={{ t.nomi|urlencode }}"><div class="n">{{ n }}</div><div class="l">{{ t.nomi }}</div></a>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

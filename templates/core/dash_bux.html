@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<h2 class="section-title">{% trans "Shartnomalar jami" %}</h2>
+{% for label, cards in groups %}
+  <h3 class="section-title" style="font-size:14px">{{ label }}</h3>
+  <div class="grid">
+    {% for l, n, href in cards %}
+    <a class="stat" href="{{ href }}"><div class="n">{{ n }}</div><div class="l">{{ l }}</div></a>
+    {% endfor %}
+  </div>
+{% endfor %}
+{% endblock %}

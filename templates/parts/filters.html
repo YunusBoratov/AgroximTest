@@ -1,0 +1,32 @@
+{% load i18n %}
+{% if turi_tabs %}
+<div class="tabs">
+  {% for val, label in turi_tabs %}
+  <a class="tab {% if state.turi == val %}active{% endif %}" href="?turi={{ val }}">{{ label }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+<form class="filters" method="get">
+  {% if state.turi %}<input type="hidden" name="turi" value="{{ state.turi }}">{% endif %}
+  {% if request.GET.kategoriya %}<input type="hidden" name="kategoriya" value="{{ request.GET.kategoriya }}">{% endif %}
+  {% if f.search_fields %}
+  <div class="fld"><label>{% trans "Kalit so'zi bo'yicha qidiruv" %}</label>
+    <input name="q" value="{{ state.q }}" placeholder="{% trans 'Kalit so‘zini kiriting' %}"></div>
+  {% endif %}
+  {% if f.date_field %}
+  <div class="fld"><label>{% trans "Tuzilgan sanasi" %}</label><input type="date" name="dan" value="{{ state.dan }}"></div>
+  <div class="fld"><label>{% trans "Yakuniy muddat" %}</label><input type="date" name="gacha" value="{{ state.gacha }}"></div>
+  {% endif %}
+  {% if f.holat_field %}
+  <div class="fld"><label>{% trans "Holati" %}</label>
+    <select name="holat"><option value="">{% trans "Barchasi" %}</option>
+      {% for val, label in f.holat_choices %}<option value="{{ val }}" {% if state.holat == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></div>
+  {% endif %}
+  {% if f.summa_field %}
+  <div class="fld"><label>{% trans "Summasi" %}</label><input name="summa" value="{{ state.summa }}" placeholder="{% trans 'Summasini' %}"></div>
+  {% endif %}
+  <div class="search-btn"><button class="btn" type="submit">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+    {% trans "Qidirish" %}</button></div>
+</form>

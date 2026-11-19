@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load static i18n %}
+{% block title %}{% trans "Kirish" %}{% endblock %}
+{% block body %}
+<div class="auth-page">
+  <form class="auth-card" method="post">{% csrf_token %}
+    <img src="{% static 'img/logo.png' %}" alt="">
+    <h1>{% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}</h1>
+    <p class="sub">{% trans "Login va parolni kiriting" %}</p>
+    {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+    {% if form.non_field_errors %}<ul class="messages"><li class="error">{% trans "Login yoki parol noto'g'ri" %}</li></ul>{% endif %}
+    <div class="fld"><label for="id_username">{{ form.username.label }}</label>{{ form.username }}</div>
+    <div class="fld"><label for="id_password">{{ form.password.label }}</label>{{ form.password }}</div>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn btn-primary" type="submit">{% trans "Kirish" %}</button>
+    <a class="btn btn-oneid" href="{% url 'oneid_login' %}">ONE ID</a>
+  </form>
+</div>
+{% endblock %}

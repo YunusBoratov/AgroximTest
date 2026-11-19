@@ -1,0 +1,61 @@
+from django.contrib import admin
+
+from . import models
+
+
+@admin.register(models.NamunaTuri)
+class NamunaTuriAdmin(admin.ModelAdmin):
+    list_display = ("nomi", "kategoriya", "tartib", "aktiv")
+    list_filter = ("kategoriya",)
+
+
+@admin.register(models.Narxnoma)
+class NarxnomaAdmin(admin.ModelAdmin):
+    list_display = ("tartib", "parametr", "tahlil_usuli", "sinov_obyekti", "narx", "aktiv")
+    list_filter = ("sinov_obyekti", "aktiv")
+    search_fields = ("parametr", "tahlil_usuli")
+
+
+class HujjatInline(admin.TabularInline):
+    model = models.ArizaHujjat
+    extra = 0
+
+
+@admin.register(models.Ariza)
+class ArizaAdmin(admin.ModelAdmin):
+    list_display = ("raqam", "turi", "buyurtmachi_nomi", "fish", "namuna_turi", "holat", "created_at")
+    list_filter = ("turi", "holat", "kategoriya")
+    inlines = [HujjatInline]
+
+
+class BandInline(admin.TabularInline):
+    model = models.ShartnomaBand
+    extra = 0
+
+
+class TolovInline(admin.TabularInline):
+    model = models.Tolov
+    extra = 0
+
+
+@admin.register(models.Shartnoma)
+class ShartnomaAdmin(admin.ModelAdmin):
+    list_display = ("raqam", "ariza", "jami_summa", "tolangan_summa", "holat", "tolov_holati")
+    inlines = [BandInline, TolovInline]
+
+
+@admin.register(models.Namuna)
+class NamunaAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "namuna_turi", "nomi", "lab_holat", "qabul_vaqti")
+    list_filter = ("lab_holat",)
+
+
+class NatijaInline(admin.TabularInline):
+    model = models.XulosaNatija
+    extra = 0
+
+
+@admin.register(models.Xulosa)
+class XulosaAdmin(admin.ModelAdmin):
+    list_display = ("raqam", "namuna", "tayyor_at")
+    inlines = [NatijaInline]

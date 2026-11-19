@@ -1,0 +1,64 @@
+from functools import wraps
+
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.utils.translation import gettext_lazy as _
+
+from accounts.models import Role
+
+SA, AD, BX, LM, LK, NQ = (Role.SUPER_ADMIN, Role.ADMIN, Role.BUXGALTERIYA,
+                          Role.LAB_MINERAL, Role.LAB_KIMYO, Role.NAMUNA_QABUL)
+LAB = (LM, LK)
+ADMINS = (SA, AD)
+
+# (url nomi, yorliq, kimlarga ko'rinadi)
+MENU = [
+    ("dashboard", _("Monitoring"), ADMINS + (NQ,)),
+    ("dashboard", _("Asosiy panel"), (BX,) + LAB),
+    ("ariza_list", _("Ariza"), ADMINS + (NQ,)),
+    ("namuna_yaratish", _("Namuna yaratish"), (NQ,)),
+    ("namuna_list", _("Namuna"), ADMINS),
+    ("namuna_list", _("Namunalar"), (NQ,)),
+    ("shartnoma_list", _("Shartnoma tuzilishi va bajarilishi"), ADMINS + LAB),
+    ("oferta_list", _("Oferta"), ADMINS + (BX,)),
+    ("tahlil_holati", _("Laboratoriya tahlil holati"), ADMINS + LAB),
+    ("xulosa_list", _("Xulosa"), ADMINS + LAB),
+    ("narxnoma_list", _("Narxnoma"), ADMINS + (BX,)),
+    ("xodim_list", _("Xodimlar"), (SA,)),
+]
+
+
+def user_role(user):
+    if user.is_superuser:
+        return SA
+    return user.role
+
+
+def menu_for(user):
+    role = user_role(user)
+    seen, items = set(), []
+    for name, label, roles in MENU:
+        if role in roles and (name, str(label)) not in seen:
+            # bir xil url ikki marta chiqmasin (masalan Monitoring/Asosiy panel)
+            if any(i[0] == name for i in items):
+                continue
+            seen.add((name, str(label)))
+            items.append((name, label))
+    return items
+
+
+def role_required(*roles):
+    """Faqat ko'rsatilgan rollarga ruxsat (super admin har doim kiradi)."""
+
+    def deco(view):
+        @login_required
+        @wraps(view)
+        def wrapper(request, *args, **kwargs):
+            role = user_role(request.user)
+            if role != SA and role not in roles:
+                raise PermissionDenied
+            return view(request, *args, **kwargs)
+
+        return wrapper
+
+    return deco
