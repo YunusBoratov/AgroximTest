@@ -1,0 +1,77 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<section class="card">
+  <div class="page-head">
+    <h1 class="page-title">{{ title }}
+      <span class="badge {% if sh.holat == 'yuborilmagan' %}grey{% elif sh.holat == 'yuborilgan' %}yellow{% else %}green{% endif %}">{{ sh.get_holat_display }}</span>
+      <span class="badge {% if sh.tolov_holati == 'tolangan' %}green{% elif sh.tolov_holati == 'qisman' %}yellow{% else %}red{% endif %}">{{ sh.get_tolov_holati_display }}</span>
+    </h1>
+    <div class="btn-row">
+      <a class="btn btn-grey" href="{% url 'shartnoma_hujjat' sh.pk 'pdf' %}" target="_blank">PDF</a>
+      <a class="btn btn-grey" href="{% url 'shartnoma_hujjat' sh.pk 'docx' %}">Word</a>
+      {% if is_lab and sh.tahrirlash_mumkin %}
+        <a class="btn btn-light" href="{% url 'shartnoma_edit' sh.pk %}">{% trans "Ko'rsatkichlarni o'zgartirish" %}</a>
+        <form method="post" action="{% url 'shartnoma_yuborish' sh.pk %}">{% csrf_token %}<button class="btn btn-green">{% trans "Buxgalteriyaga yuborish" %}</button></form>
+      {% endif %}
+    </div>
+  </div>
+  <div class="info-grid">
+    <div><span>{% trans "Ariza" %}</span><b><a class="row-link" href="{% url 'ariza_detail' ariza.pk %}">{{ ariza.raqam }}</a> · {{ ariza.get_turi_display }}</b></div>
+    <div><span>{% trans "Buyurtmachi" %}</span><b>{{ ariza.buyurtmachi }}</b></div>
+    <div><span>{% trans "INN / JSHSHIR" %}</span><b>{{ ariza.inn }}</b></div>
+    <div><span>{% trans "Telefon" %}</span><b>{{ ariza.telefon }}</b></div>
+    <div><span>{% trans "Shakllantirilgan" %}</span><b>{{ sh.created_at|dt }} {{ sh.created_at|tm }}{% if sh.yaratgan %} · {{ sh.yaratgan }}{% endif %}</b></div>
+    {% if sh.yuborilgan_at %}<div><span>{% trans "Buxgalteriyaga yuborilgan" %}</span><b>{{ sh.yuborilgan_at|dt }} {{ sh.yuborilgan_at|tm }}</b></div>{% endif %}
+    {% if sh.qabul_at %}<div><span>{% trans "Buxgalter ko'rgan" %}</span><b>{{ sh.qabul_at|dt }} {{ sh.qabul_at|tm }}</b></div>{% endif %}
+  </div>
+  <div class="pay-summary">
+    <div><span>{% trans "Jami summa" %}</span><b>{{ sh.jami_summa|money }}</b></div>
+    <div><span>{% trans "To'langan" %}</span><b class="ok">{{ sh.tolangan_summa|money }}</b></div>
+    <div><span>{% trans "Qoldiq" %}</span><b class="{% if sh.qoldiq %}warn{% else %}ok{% endif %}">{{ sh.qoldiq|money }}</b></div>
+    <div class="bar-wrap"><span>{{ sh.tolangan_foiz }}%</span><div class="bar"><i style="width:{{ sh.tolangan_foiz|stringformat:'d' }}%"></i><em title="30%"></em></div>
+      <small class="help">{% if sh.tahlil_boshlash_mumkin %}✓ {% trans "Tahlil boshlash mumkin (30%+)" %}{% else %}{% trans "Tahlil kamida 30% to'lovdan keyin boshlanadi" %}{% endif %}{% if sh.xulosa_yuborish_mumkin %} · ✓ {% trans "Xulosani berish mumkin (100%)" %}{% endif %}</small></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 class="section-title">{% trans "Tekshiriladigan ko'rsatkichlar" %}</h2>
+  <table class="t">
+    <thead><tr><th>N</th><th>{% trans "Aniqlanadigan tavsif (parametr)" %}</th><th>{% trans "Tahlil usuli" %}</th><th>{% trans "Narxi, so'm" %}</th><th>{% trans "Namuna soni" %}</th><th>{% trans "Summa" %}</th></tr></thead>
+    <tbody>{% for b in bandlar %}<tr><td>{{ forloop.counter }}</td><td>{{ b.parametr }}</td><td>{{ b.tahlil_usuli|default:"—" }}</td><td class="money">{{ b.narx|money }}</td><td>{% if b.narxnoma.har_namunaga %}{{ b.namuna_soni }}{% else %}1{% endif %}</td><td class="money">{{ b.summa|money }}</td></tr>{% endfor %}
+    <tr><td></td><td colspan="4" class="bold">{% trans "Jami" %}</td><td class="money">{{ sh.jami_summa|money }}</td></tr></tbody>
+  </table>
+  {% if namunalar %}<p class="help" style="margin-top:12px">{% trans "Namunalar" %}: {% for n in namunalar %}{{ n }} ({{ n.nomi }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  {% if hujjatlar %}<div class="docs" style="margin-top:8px">{% for h in hujjatlar %}<a class="doc" href="{{ h.fayl.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>{% endif %}
+</section>
+
+<section class="card">
+  <h2 class="section-title">{% trans "To'lovlar" %}</h2>
+  <table class="t">
+    <thead><tr><th>N</th><th>{% trans "Sana" %}</th><th>{% trans "Summa" %}</th><th>{% trans "Usul" %}</th><th>{% trans "Izoh" %}</th><th>{% trans "Kiritgan" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for t in tolovlar %}<tr><td>{{ forloop.counter }}</td><td>{{ t.sana|dt }}</td><td class="money">{{ t.summa|money }}</td><td>{{ t.get_usul_display }}</td><td>{{ t.izoh|default:"—" }}</td><td>{{ t.kiritgan|default:"—" }}</td>
+      <td>{% if is_bux %}<form class="inline" method="post" action="{% url 'tolov_ochirish' sh.pk t.pk %}" onsubmit="return confirm('{% trans "To‘lovni o‘chirasizmi?" %}')">{% csrf_token %}<button class="act danger" title="{% trans "O'chirish" %}">{% include "parts/icon.html" with name="delete" %}</button></form>{% endif %}</td></tr>
+    {% empty %}<tr><td class="empty" colspan="7">{% trans "To'lov hali kelib tushmagan" %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% if tolov_form %}
+  <form method="post" action="{% url 'tolov_qoshish' sh.pk %}" class="pay-form">{% csrf_token %}
+    <h3 class="box-title" style="text-align:left">{% trans "To'lov kiritish" %}</h3>
+    <div class="form-grid g4">{% for f in tolov_form %}<div class="fld"><label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}</div>{% endfor %}</div>
+    <button class="btn btn-primary" type="submit" style="margin-top:12px">{% trans "To'lovni saqlash" %}</button>
+  </form>{% endif %}
+</section>
+
+{% if rek_form %}
+<details class="card" {% if not ariza.hisob_raqam %}open{% endif %}>
+  <summary class="section-title" style="cursor:pointer">{% trans "Buyurtmachi rekvizitlari (shartnoma uchun)" %}</summary>
+  <form method="post" action="{% url 'rekvizit_saqlash' sh.pk %}">{% csrf_token %}
+    <div class="form-grid g3">{% for f in rek_form %}<div class="fld"><label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}</div>{% endfor %}</div>
+    <button class="btn btn-primary" type="submit" style="margin-top:12px">{% trans "Rekvizitlarni saqlash" %}</button>
+  </form>
+</details>{% endif %}
+
+{% if is_lab and sh.tahrirlash_mumkin %}
+<form method="post" action="{% url 'shartnoma_ochirish' sh.pk %}" onsubmit="return confirm('{% trans "Shartnomani o‘chirasizmi?" %}')">{% csrf_token %}
+  <button class="btn btn-light" style="color:var(--red)">{% trans "Shartnomani o'chirish" %}</button></form>{% endif %}
+{% endblock %}

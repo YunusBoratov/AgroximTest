@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+from django.utils import timezone
+
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -235,3 +237,110 @@ class NamunaQabulTests(BaseTest):
         a = Ariza.objects.get(fish="Ali Valiyev")
         self.assertRedirects(r, reverse("ariza_qabul", args=[a.pk]))
         self.assertIsNone(a.mijoz)
+
+
+# ---------------------------------------------------------------------------
+# 3-bosqich: shartnoma va to'lovlar
+# ---------------------------------------------------------------------------
+from core.hujjatlar import sonni_sozga  # noqa: E402
+
+
+class ShartnomaTests(BaseTest):
+    def setUp(self):
+        self.ariza = Ariza.objects.create(
+            turi="importyor", inn="123456789", buyurtmachi_nomi="Test MCHJ", fish="Y", telefon="+998",
+            namuna_soni=2, namuna_turi=NamunaTuri.objects.get(nomi="Azotli o'g'itlar"), holat=Ariza.Holat.QABUL)
+        for i in (1, 2):
+            Namuna.objects.create(ariza=self.ariza, tartib=i, namuna_turi=self.ariza.namuna_turi, nomi="N")
+        self.olish = Narxnoma.objects.filter(har_namunaga=False, sinov_obyekti="mineral").first()
+        self.azot = Narxnoma.objects.filter(parametr__startswith="Umumiy azot", sinov_obyekti="mineral").first()
+
+    def _tuz(self):
+        self.login("lab_mineral")
+        r = self.client.post(reverse("shartnoma_yangi", args=[self.ariza.pk]), {
+            f"band_{self.olish.pk}": "1", f"soni_{self.olish.pk}": "2",
+            f"band_{self.azot.pk}": "1", f"soni_{self.azot.pk}": "2",
+        })
+        sh = Shartnoma.objects.get(ariza=self.ariza, is_active=True)
+        self.assertRedirects(r, reverse("shartnoma_detail", args=[sh.pk]))
+        return sh
+
+    def test_shartnoma_tuzish_summa(self):
+        sh = self._tuz()
+        kutilgan = self.olish.narx + self.azot.narx * 2  # namuna olish bir marta
+        self.assertEqual(sh.jami_summa, kutilgan)
+        self.assertEqual(self.ariza.namunalar.filter(shartnoma=sh).count(), 2)
+
+    def test_kimyo_lab_mineral_shartnoma_tuzolmaydi(self):
+        self.login("lab_kimyo")
+        r = self.client.get(reverse("shartnoma_yangi", args=[self.ariza.pk]))
+        self.assertEqual(r.status_code, 403)
+
+    def test_lab_faqat_oz_narxnomasini_koradi(self):
+        self.login("lab_mineral")
+        r = self.client.get(reverse("shartnoma_yangi", args=[self.ariza.pk]))
+        obyektlar = {nx.sinov_obyekti for nx, _c, _s in r.context["rows"]}
+        self.assertNotIn("pestitsid", obyektlar)
+
+    def test_toliq_jarayon(self):
+        sh = self._tuz()
+        # yuborilmagan shartnomani buxgalter ko'rmaydi
+        self.client.logout()
+        self.login("buxgalter")
+        self.assertEqual(self.client.get(reverse("shartnoma_detail", args=[sh.pk])).status_code, 403)
+        # laboratoriya yuboradi
+        self.client.logout()
+        self.login("lab_mineral")
+        self.client.post(reverse("shartnoma_yuborish", args=[sh.pk]))
+        sh.refresh_from_db()
+        self.assertEqual(sh.holat, Shartnoma.Holat.YUBORILGAN)
+        # yuborilgandan keyin tahrirlab bo'lmaydi
+        self.assertRedirects(self.client.get(reverse("shartnoma_edit", args=[sh.pk])),
+                             reverse("shartnoma_detail", args=[sh.pk]))
+        # buxgalter ochadi -> qabul qilgan
+        self.client.logout()
+        self.login("buxgalter")
+        self.client.get(reverse("shartnoma_detail", args=[sh.pk]))
+        sh.refresh_from_db()
+        self.assertEqual(sh.holat, Shartnoma.Holat.QABUL)
+        # 30% to'lov
+        bugun = timezone.localdate().isoformat()
+        uchdan = (sh.jami_summa * Decimal("0.3")).quantize(Decimal("1")) + 1
+        self.client.post(reverse("tolov_qoshish", args=[sh.pk]), {"summa": uchdan, "usul": "bank", "sana": bugun})
+        sh.refresh_from_db()
+        self.assertEqual(sh.tolov_holati, Shartnoma.TolovHolati.QISMAN)
+        self.assertTrue(sh.tahlil_boshlash_mumkin)
+        self.assertFalse(sh.xulosa_yuborish_mumkin)
+        # qoldiqdan ko'p to'lov qabul qilinmaydi
+        self.client.post(reverse("tolov_qoshish", args=[sh.pk]), {"summa": sh.jami_summa, "usul": "bank", "sana": bugun})
+        self.assertEqual(sh.tolovlar.count(), 1)
+        self.client.post(reverse("tolov_qoshish", args=[sh.pk]), {"summa": sh.qoldiq, "usul": "click", "sana": bugun})
+        sh.refresh_from_db()
+        self.assertEqual(sh.tolov_holati, Shartnoma.TolovHolati.TOLANGAN)
+        self.assertTrue(sh.xulosa_yuborish_mumkin)
+
+    def test_hujjat_docx(self):
+        sh = self._tuz()
+        r = self.client.get(reverse("shartnoma_hujjat", args=[sh.pk, "docx"]))
+        self.assertEqual(r.status_code, 200)
+        import io
+
+        import docx
+        d = docx.Document(io.BytesIO(r.content))
+        matn = "\n".join(p.text for p in d.paragraphs)
+        self.assertIn(f"№ {sh.raqam}", matn)
+        self.assertIn("Агрокимё ва тупроқ таҳлили маркази", matn)
+        self.assertNotIn("Республика агрокимёвий таҳлил маркази", matn)
+        jadval = "\n".join(c.text for row in d.tables[0].rows for c in row.cells)
+        self.assertIn(self.azot.tahlil_usuli, jadval)
+
+    def test_namuna_qabul_shartnoma_ochirish(self):
+        sh = self._tuz()
+        self.client.post(reverse("shartnoma_ochirish", args=[sh.pk]))
+        sh.refresh_from_db()
+        self.assertFalse(sh.is_active)
+        self.assertFalse(self.ariza.namunalar.filter(shartnoma__isnull=False).exists())
+
+    def test_sonni_sozga(self):
+        self.assertEqual(sonni_sozga(5374888), "беш миллион уч юз етмиш тўрт минг саккиз юз саксон саккиз")
+        self.assertEqual(sonni_sozga(2256400), "икки миллион икки юз эллик олти минг тўрт юз")

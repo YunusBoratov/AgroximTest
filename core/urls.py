@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_ariza
+from . import views, views_ariza, views_shartnoma as vs
 
 urlpatterns = [
     path("", views_ariza.bosh_sahifa, name="bosh"),
@@ -19,6 +19,16 @@ urlpatterns = [
     path("namuna/<int:pk>/ochirish/", views_ariza.namuna_delete, name="namuna_delete"),
     # shartnoma / laboratoriya
     path("shartnoma/", views.shartnoma_list, name="shartnoma_list"),
+    path("shartnoma/yangi/", vs.shartnoma_tanlash, name="shartnoma_tanlash"),
+    path("shartnoma/yangi/<int:ariza_pk>/", vs.shartnoma_form, name="shartnoma_yangi"),
+    path("shartnoma/<int:pk>/", vs.shartnoma_detail, name="shartnoma_detail"),
+    path("shartnoma/<int:pk>/korsatkichlar/", vs.shartnoma_form, name="shartnoma_edit"),
+    path("shartnoma/<int:pk>/yuborish/", vs.shartnoma_yuborish, name="shartnoma_yuborish"),
+    path("shartnoma/<int:pk>/ochirish/", vs.shartnoma_ochirish, name="shartnoma_ochirish"),
+    path("shartnoma/<int:pk>/rekvizit/", vs.rekvizit_saqlash, name="rekvizit_saqlash"),
+    path("shartnoma/<int:pk>/tolov/", vs.tolov_qoshish, name="tolov_qoshish"),
+    path("shartnoma/<int:pk>/tolov/<int:tolov_pk>/ochirish/", vs.tolov_ochirish, name="tolov_ochirish"),
+    path("shartnoma/<int:pk>/hujjat.<str:fmt>", vs.shartnoma_hujjat, name="shartnoma_hujjat"),
     path("oferta/", views.oferta_list, name="oferta_list"),
     path("tahlil-holati/", views.tahlil_holati, name="tahlil_holati"),
     path("xulosa/", views.xulosa_list, name="xulosa_list"),

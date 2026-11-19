@@ -1,0 +1,71 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<section class="card">
+  <div class="page-head"><h1 class="page-title">{{ title }}</h1>
+    <a class="btn btn-light" href="{% if sh %}{% url 'shartnoma_detail' sh.pk %}{% else %}{% url 'shartnoma_tanlash' %}{% endif %}">← {% trans "Orqaga" %}</a></div>
+  <div class="info-grid">
+    <div><span>{% trans "Ariza" %}</span><b><a class="row-link" href="{% url 'ariza_detail' ariza.pk %}">{{ ariza.raqam }}</a> · {{ ariza.get_turi_display }}</b></div>
+    <div><span>{% trans "Buyurtmachi" %}</span><b>{{ ariza.buyurtmachi }} ({{ ariza.inn }})</b></div>
+    <div><span>{% trans "Namuna turi" %}</span><b>{{ ariza.namuna_turi }}</b></div>
+    <div><span>{% trans "Namunalar soni" %}</span><b>{{ namuna_soni }}</b></div>
+  </div>
+  <div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.fayl.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>
+</section>
+<form method="post" class="card">{% csrf_token %}
+  <div class="page-head">
+    <h2 class="section-title" style="margin:0">{% trans "Tekshiriladigan ko'rsatkichlar (narxnomadan)" %}</h2>
+    <input class="input" id="filter" placeholder="{% trans 'Ko‘rsatkich yoki GOST bo‘yicha qidirish' %}" style="min-width:280px">
+  </div>
+  <div class="table-wrap">
+  <table class="t pick">
+    <thead><tr><th></th><th>{% trans "Aniqlanadigan tavsif (parametr)" %}</th><th>{% trans "Tahlil usuli" %}</th><th>{% trans "Sinov obyekti" %}</th><th>{% trans "Narxi, so'm" %}</th><th>{% trans "Namuna soni" %}</th><th>{% trans "Summa" %}</th></tr></thead>
+    <tbody>
+    {% for nx, checked, soni in rows %}
+      <tr data-narx="{{ nx.narx|stringformat:'s' }}" data-har="{{ nx.har_namunaga|yesno:'1,0' }}" class="{% if checked %}on{% endif %}">
+        <td><input type="checkbox" name="band_{{ nx.pk }}" value="1" {% if checked %}checked{% endif %}></td>
+        <td>{{ nx.parametr }}{% if not nx.har_namunaga %} <small class="help">({% trans "bir marta" %})</small>{% endif %}</td>
+        <td>{{ nx.tahlil_usuli|default:"—" }}</td>
+        <td>{{ nx.obyekt_nomi|default:nx.get_sinov_obyekti_display }}</td>
+        <td class="money">{{ nx.narx|money }}</td>
+        <td><input class="input qty" type="number" min="1" max="100" name="soni_{{ nx.pk }}" value="{{ soni }}" {% if not nx.har_namunaga %}readonly{% endif %}></td>
+        <td class="money sum">—</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="total-bar">
+    <span>{% trans "Tanlangan" %}: <b id="cnt">0</b></span>
+    <span>{% trans "Jami summa" %}: <b id="total">0</b> {% trans "so'm" %}</span>
+    <button class="btn btn-primary" type="submit">{% trans "Shartnomani saqlash" %}</button>
+  </div>
+</form>
+<script>
+(function () {
+  const fmt = n => Math.round(n).toLocaleString("ru-RU").replace(/,/g, " ");
+  const rows = [...document.querySelectorAll("table.pick tbody tr")];
+  function calc() {
+    let total = 0, cnt = 0;
+    rows.forEach(tr => {
+      const on = tr.querySelector("input[type=checkbox]").checked;
+      tr.classList.toggle("on", on);
+      const soni = tr.dataset.har === "1" ? (+tr.querySelector(".qty").value || 1) : 1;
+      const s = parseFloat(tr.dataset.narx) * soni;
+      tr.querySelector(".sum").textContent = on ? fmt(s) : "—";
+      if (on) { total += s; cnt++; }
+    });
+    document.getElementById("total").textContent = fmt(total);
+    document.getElementById("cnt").textContent = cnt;
+  }
+  rows.forEach(tr => tr.addEventListener("input", calc));
+  rows.forEach(tr => tr.addEventListener("click", e => {
+    if (e.target.tagName === "TD" || e.target.tagName === "SMALL") { const c = tr.querySelector("input[type=checkbox]"); c.checked = !c.checked; calc(); }
+  }));
+  document.getElementById("filter").addEventListener("input", e => {
+    const q = e.target.value.toLowerCase();
+    rows.forEach(tr => { tr.hidden = q && !tr.textContent.toLowerCase().includes(q) && !tr.classList.contains("on"); });
+  });
+  calc();
+})();
+</script>
+{% endblock %}

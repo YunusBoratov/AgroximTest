@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -16,7 +17,7 @@ from django.views.decorators.http import require_POST
 from accounts.models import Role
 
 from .forms import ArizaForm, NamunaQabulForm, RadForm
-from .models import ARIZA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna
+from .models import ARIZA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna, Shartnoma
 from .permissions import AD, ADMINS, BX, LAB, NQ, role_required, user_role
 
 
@@ -83,7 +84,7 @@ def ariza_yangi(request):
 @mijoz_required
 def kabinet(request):
     arizalar = (Ariza.objects.filter(mijoz=request.user)
-                .select_related("namuna_turi").prefetch_related("namunalar__xulosa", "shartnomalar"))
+                .select_related("namuna_turi").prefetch_related("namunalar__xulosa", Prefetch("shartnomalar", Shartnoma.objects.filter(is_active=True))))
     return render(request, "public/kabinet.html", {"arizalar": arizalar})
 
 

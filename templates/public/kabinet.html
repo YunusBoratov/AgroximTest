@@ -8,7 +8,7 @@
   </div>
   <div class="table-wrap">
   <table class="t">
-    <thead><tr><th>N</th><th>{% trans "Ariza raqami" %}</th><th>{% trans "Namuna turi" %}</th><th>{% trans "Namuna soni" %}</th><th>{% trans "Yuborilgan vaqt" %}</th><th>{% trans "Holati" %}</th><th>{% trans "Xulosa" %}</th></tr></thead>
+    <thead><tr><th>N</th><th>{% trans "Ariza raqami" %}</th><th>{% trans "Namuna turi" %}</th><th>{% trans "Namuna soni" %}</th><th>{% trans "Yuborilgan vaqt" %}</th><th>{% trans "Shartnoma" %}</th><th>{% trans "Holati" %}</th><th>{% trans "Xulosa" %}</th></tr></thead>
     <tbody>
     {% for a in arizalar %}
       <tr>
@@ -17,10 +17,14 @@
         <td>{{ a.namuna_turi }}</td>
         <td>{{ a.namuna_soni }}</td>
         <td class="dt">{{ a.created_at|dt }}<br>{{ a.created_at|tm }}</td>
+        <td>{% with sh=a.shartnomalar.all|first %}{% if sh and sh.is_active and sh.holat != "yuborilmagan" %}
+          <a class="row-link" href="{% url 'shartnoma_hujjat' sh.pk 'pdf' %}" target="_blank">№ {{ sh.raqam }}</a><br>
+          <small class="help">{{ sh.jami_summa|money }} {% trans "so'm" %} · {% trans "to'langan" %} {{ sh.tolangan_summa|money }}</small>
+        {% else %}—{% endif %}{% endwith %}</td>
         <td>{% include "parts/mijoz_holat.html" %}</td>
         <td>{% for n in a.namunalar.all %}{% if n.xulosa and n.lab_holat == "berildi" %}<a class="act" href="#" title="{{ n.xulosa.raqam }}">{% include "parts/icon.html" with name="file" %}</a>{% endif %}{% empty %}—{% endfor %}</td>
       </tr>
-    {% empty %}<tr><td class="empty" colspan="7">{% trans "Hozircha arizalar yo'q" %}</td></tr>{% endfor %}
+    {% empty %}<tr><td class="empty" colspan="8">{% trans "Hozircha arizalar yo'q" %}</td></tr>{% endfor %}
     </tbody>
   </table>
   </div>

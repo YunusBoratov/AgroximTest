@@ -272,6 +272,19 @@ class Shartnoma(models.Model):
         return (self.tolangan_summa / self.jami_summa * 100).quantize(Decimal("0.01"))
 
     @property
+    def qoldiq(self):
+        return max(self.jami_summa - self.tolangan_summa, Decimal(0))
+
+    @property
+    def tahrirlash_mumkin(self):
+        """Ko'rsatkichlarni faqat buxgalteriyaga yuborilmagan va to'lov bo'lmagan shartnomada o'zgartirish mumkin."""
+        return self.holat == self.Holat.YUBORILMAGAN and not self.tolovlar.exists()
+
+    @property
+    def xulosa_yuborish_mumkin(self):
+        return self.jami_summa > 0 and self.tolangan_foiz >= settings.XULOSA_YUBORISH_MIN_FOIZ
+
+    @property
     def tahlil_boshlash_mumkin(self):
         return self.jami_summa > 0 and self.tolangan_foiz >= settings.TAHLIL_BOSHLASH_MIN_FOIZ
 

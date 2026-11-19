@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<section class="card">
+  <div class="page-head"><h1 class="page-title">{% trans "Shartnoma tuzilishi kutilayotgan arizalar" %} <small>({{ arizalar|length }} {% trans "ta" %})</small></h1></div>
+  <table class="t">
+    <thead><tr><th>N</th><th>{% trans "Ariza raqami" %}</th><th>{% trans "Ariza turi" %}</th><th>{% trans "Buyurtmachi" %}</th><th>{% trans "Namuna turi" %}</th><th>{% trans "Namunalar" %}</th><th>{% trans "Qabul qilingan" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for a in arizalar %}
+      <tr><td>{{ forloop.counter }}</td><td class="bold"><a class="row-link" href="{% url 'ariza_detail' a.pk %}">{{ a.raqam }}</a></td>
+        <td>{{ a.get_turi_display }}</td><td>{{ a.buyurtmachi }}</td><td>{{ a.namuna_turi }}</td><td>{{ a.namunalar.all|length }}</td>
+        <td class="dt">{{ a.qabul_vaqti|dt }}<br>{{ a.qabul_vaqti|tm }}</td>
+        <td><a class="act btn" href="{% url 'shartnoma_yangi' a.pk %}">{% include "parts/icon.html" with name="plus" %}<span>{% trans "Shartnoma tuzish" %}</span></a></td></tr>
+    {% empty %}<tr><td class="empty" colspan="8">{% trans "Shartnoma kutayotgan ariza yo'q" %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

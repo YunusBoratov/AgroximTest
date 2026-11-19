@@ -151,3 +151,32 @@ NamunaFormSet = forms.modelformset_factory(Namuna, form=NamunaQabulForm, extra=0
 class RadForm(forms.Form):
     sabab = forms.CharField(label=_("Rad etish sababi"), max_length=500,
                             widget=forms.Textarea(attrs={"rows": 3, "class": "input"}))
+
+
+class RekvizitForm(StyledMixin, forms.ModelForm):
+    """Buxgalter shartnoma uchun buyurtmachi rekvizitlarini to'g'irlaydi."""
+
+    class Meta:
+        model = Ariza
+        fields = ["buyurtmachi_nomi", "inn", "telefon", "manzil", "rahbar", "hisob_raqam", "bank", "mfo", "oked"]
+
+
+class TolovForm(StyledMixin, forms.Form):
+    summa = forms.DecimalField(label=_("Summa, so'm"), min_value=1, max_digits=16, decimal_places=2)
+    usul = forms.ChoiceField(label=_("To'lov usuli"), choices=[])
+    sana = forms.DateField(label=_("To'lov sanasi"),
+                           widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))
+    izoh = forms.CharField(label=_("Izoh (to'lov topshiriqnomasi №)"), max_length=255, required=False)
+
+    def __init__(self, *args, qoldiq=None, **kwargs):
+        from .models import Tolov
+
+        super().__init__(*args, **kwargs)
+        self.fields["usul"].choices = Tolov.Usul.choices
+        self.qoldiq = qoldiq
+
+    def clean_summa(self):
+        v = self.cleaned_data["summa"]
+        if self.qoldiq is not None and v > self.qoldiq:
+            raise forms.ValidationError(_("Summa qoldiqdan (%(q)s so'm) oshmasligi kerak") % {"q": self.qoldiq})
+        return v

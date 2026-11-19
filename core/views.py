@@ -93,6 +93,10 @@ def dashboard(request):
                        "kategoriya").count(), reverse("shartnoma_list")),
             (_("Tuzilgan shartnomalar"), sh.count(), reverse("shartnoma_list")),
         ]
+        tayyor = namunalar.filter(lab_holat=Namuna.LabHolat.YANGI, shartnoma__isnull=False)
+        tayyor_n = sum(1 for n in tayyor.select_related("shartnoma") if n.shartnoma.tahlil_boshlash_mumkin)
+        ctx["shartnoma_cards"].append(
+            (_("Tahlil boshlash mumkin bo'lgan namunalar (30%+ to'langan)"), tayyor_n, reverse("tahlil_holati") + "?holat=yangi"))
         ctx["lab_cards"] = [
             (lbl, namunalar.filter(lab_holat=val).count(), reverse("tahlil_holati") + f"?holat={val}")
             for val, lbl in Namuna.LabHolat.choices if val in ("yangi", "tahlilda", "xulosa")
@@ -174,7 +178,7 @@ def namuna_list(request):
 
 def _shartnoma_cols():
     return [
-        Column(_("Shartnoma raqami"), "raqam", "bold"),
+        Column(_("Shartnoma raqami"), "raqam", "bold", url=lambda o: reverse("shartnoma_detail", args=[o.pk])),
         Column(_("Ariza turi"), "ariza.get_turi_display"),
         Column(_("Buyurtmachi nomi"), "ariza.buyurtmachi"),
         Column(_("INN"), "ariza.inn"),
@@ -188,13 +192,21 @@ def _shartnoma_cols():
 def shartnoma_list(request):
     qs = lab_scope(request, Shartnoma.objects.filter(is_active=True).select_related("ariza"), "ariza__kategoriya")
     cols = _shartnoma_cols() + [
+        Column(_("Biriktirilgan hujjatlar"), lambda o: o.ariza.hujjatlar.all(), "file"),
         Column(_("Holati"), "get_holat_display", "badge", badge=badge("holat")),
+        Column(_("To'lov"), "get_tolov_holati_display", "badge", badge=badge("tolov_holati")),
+        Column("", lambda o: [
+            (_("Ko'rish"), reverse("shartnoma_detail", args=[o.pk]), "eye", ""),
+            (_("Shartnoma (PDF)"), reverse("shartnoma_hujjat", args=[o.pk, "pdf"]), "file", ""),
+        ] + ([(_("Ko'rsatkichlar"), reverse("shartnoma_edit", args=[o.pk]), "edit", "")]
+             if o.holat == Shartnoma.Holat.YUBORILMAGAN else []), "actions", excel=False),
     ]
     f = Filters(search_fields=["raqam", "ariza__buyurtmachi_nomi", "ariza__fish", "ariza__inn"],
                 date_field="created_at", holat_field="holat", holat_choices=Shartnoma.Holat.choices,
                 summa_field="jami_summa", turi_field="ariza__turi")
+    qs = qs.prefetch_related("ariza__hujjatlar")
     return list_page(request, title=_("Shartnoma tuzilishi va bajarilishi"), qs=qs, columns=cols, filters=f,
-                     turi_tabs=turi_tabs())
+                     turi_tabs=turi_tabs(), add_url=reverse("shartnoma_tanlash"), add_label=_("Shartnoma tuzish"))
 
 
 @role_required(AD, BX)
@@ -206,7 +218,14 @@ def oferta_list(request):
     if kat in Kategoriya.values:
         qs = qs.filter(ariza__kategoriya=kat)
     cols = _shartnoma_cols() + [
+        Column(_("Qoldiq"), "qoldiq", "money"),
         Column(_("Holati"), "get_tolov_holati_display", "badge", badge=badge("tolov_holati")),
+        Column(_("Ko'rildi"), lambda o: _("Yangi") if o.holat == Shartnoma.Holat.YUBORILGAN else _("Ko'rilgan"),
+               "badge", badge=lambda o: "yellow" if o.holat == Shartnoma.Holat.YUBORILGAN else "green"),
+        Column("", lambda o: [
+            (_("Ochish / to'lov"), reverse("shartnoma_detail", args=[o.pk]), "eye", ""),
+            (_("Shartnoma (PDF)"), reverse("shartnoma_hujjat", args=[o.pk, "pdf"]), "file", ""),
+        ], "actions", excel=False),
     ]
     f = Filters(search_fields=["raqam", "ariza__buyurtmachi_nomi", "ariza__fish", "ariza__inn"],
                 date_field="created_at", holat_field="tolov_holati",
