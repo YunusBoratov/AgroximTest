@@ -206,3 +206,136 @@ def docx_to_pdf(data: bytes) -> bytes:
             check=True, capture_output=True, timeout=120,
         )
         return (Path(tmp) / "hujjat.pdf").read_bytes()
+
+
+# ---------------------------------------------------------------------------
+# Sinov bayonnomasi (xulosa) — docs/shablonlar/xulosa_shakli.docx
+# ---------------------------------------------------------------------------
+def qr_png(url, box=6):
+    import qrcode
+
+    img = qrcode.make(url, box_size=box, border=1)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+def _sana(dt):
+    if not dt:
+        return "____.____.____"
+    if hasattr(dt, "tzinfo") and getattr(dt, "hour", None) is not None:
+        dt = timezone.localtime(dt)
+    return dt.strftime("%d.%m.%Y")
+
+
+def _uniq_cells(row):
+    cells = []
+    for c in row.cells:
+        if not cells or c._tc is not cells[-1]._tc:
+            cells.append(c)
+    return cells
+
+
+def xulosa_docx(x, verify_url=""):
+    """Sinov bayonnomasi DOCX (bytes)."""
+    import docx
+    from docx.shared import Cm
+
+    n = x.namuna
+    a = n.ariza
+    doc = docx.Document(SHABLON_DIR / "xulosa_shakli.docx")
+    t_head, t_info, t_res, t_sign = doc.tables[1], doc.tables[2], doc.tables[3], doc.tables[4]
+
+    # Sarlavha: raqam, sana, QR
+    c = _uniq_cells(t_head.rows[0])
+    _set_runs(c[0].paragraphs[0], f"SINOV BAYONNOMASI № {x.raqam}")
+    _set_runs(c[1].paragraphs[0], f"Sana: {_sana(x.tayyor_at or x.created_at)} y.")
+    if verify_url and len(c) > 2:
+        p = c[2].paragraphs[0]
+        p.alignment = 2  # o'ngga
+        p.add_run().add_picture(qr_png(verify_url), width=Cm(2.1))
+
+    # Ma'lumotlar jadvali
+    rows = [_uniq_cells(r) for r in t_info.rows]
+    nomi = n.nomi or a.namuna_nomi
+    tavsif = ", ".join(v for v in [nomi, n.tavsifi, n.tasir_etuvchi_modda] if v)
+    vals = [
+        a.buyurtmachi_nomi or a.fish,
+        f"{tavsif} ({n.namuna_turi.nomi})",
+        f"LOT (partiya raqami): {a.partiya_raqami or '—'}   |   INVOICE: {a.invoys_raqami or '—'}",
+        f"{_sana(n.qabul_vaqti)} y.   |   Og‘irligi/hajmi: {n.ogirligi or '—'}",
+        f"{_sana(x.sinov_sanasi)} y.   |   Dalolatnoma №: {x.dalolatnoma or '—'}",
+        f"{x.sinov_joyi}   |   {x.harorat}, {x.namlik}",
+    ]
+    for r, v in zip(rows, vals):
+        _cell(r[1], v, size=11)
+
+    # Natijalar jadvali
+    natijalar = list(x.natijalar.all())
+    tmpl = copy.deepcopy(t_res.rows[2]._tr)
+    for r in list(t_res.rows)[1:]:
+        t_res._tbl.remove(r._tr)
+    for _ in natijalar:
+        t_res._tbl.append(copy.deepcopy(tmpl))
+    for i, (row, nt) in enumerate(zip(list(t_res.rows)[1:], natijalar), 1):
+        cells = _uniq_cells(row)
+        for cell, v in zip(cells, [i, nt.korsatkich, nt.meyor, nt.natija, nt.sinov_usuli, nt.muvofiqlik]):
+            _cell(cell, v or "", size=10)
+
+    # Shablonda imzo va "Rasmiy eslatma" orasida bo'sh qatorlar bor (eslatma sahifa pastida turishi uchun).
+    # Natijalar ko'p bo'lsa, bayonnoma bitta sahifaga sig'ishi uchun shu bo'sh qatorlardan olib tashlaymiz.
+    import math
+
+    satrlar = sum(max(1, math.ceil(len(nt.korsatkich) / 30), math.ceil(len(nt.sinov_usuli or "") / 16),
+                      math.ceil(len(nt.natija or "") / 16), math.ceil(len(nt.meyor or "") / 10))
+                  for nt in natijalar)
+    ortiqcha = max(0, satrlar - 6) * 3
+    bosh = []
+    el = t_sign._tbl.getnext()
+    while el is not None and el.tag.endswith("}p") and not "".join(el.itertext()).strip():
+        bosh.append(el)
+        el = el.getnext()
+    for el in bosh[:min(ortiqcha, max(0, len(bosh) - 1))]:
+        el.getparent().remove(el)
+
+    # Hujjat oxiridagi majburiy bo'sh paragraf ortiqcha sahifa ochmasin
+    from docx.shared import Pt
+
+    oxirgi = doc.paragraphs[-1]
+    if not oxirgi.text.strip():
+        pf = oxirgi.paragraph_format
+        pf.space_before = pf.space_after = Pt(0)
+        pf.line_spacing = Pt(1)
+        for r in oxirgi.runs:
+            r.font.size = Pt(1)
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+
+        rpr = oxirgi._p.get_or_add_pPr()
+        mark = OxmlElement("w:rPr")
+        sz = OxmlElement("w:sz")
+        sz.set(qn("w:val"), "2")
+        mark.append(sz)
+        rpr.append(mark)
+
+    # Imzolar
+    sc = _uniq_cells(t_sign.rows[0])
+    for r in sc[0].paragraphs[0].runs:
+        if r.text.strip().startswith("____"):
+            r.text = r.text + " " + (x.tasdiqlagan or "")
+            break
+    runs = sc[1].paragraphs[0].runs
+    for i, r in enumerate(runs):
+        if r.text.startswith(":") and "___" in r.text and "Bosh" in "".join(z.text for z in runs[max(0, i - 3):i]):
+            r.text = f":   ________________  {x.bosh_agrokimyogar}"
+            j = i + 1
+            while j < len(runs) and set(runs[j].text) <= {"_"} and runs[j].text:
+                runs[j].text = ""
+                j += 1
+        elif r.text.startswith(": ___") and "Yetakchi" in "".join(z.text for z in runs[max(0, i - 3):i]):
+            r.text = f":   ________________  {x.yetakchi_agrokimyogar}"
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()

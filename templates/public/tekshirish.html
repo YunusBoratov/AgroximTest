@@ -1,0 +1,19 @@
+{% extends "public_base.html" %}{% load i18n ui %}
+{% block title %}{% trans "Bayonnomani tekshirish" %}{% endblock %}
+{% block content %}
+<section class="box">
+  <div class="verify-ok">✓ {% trans "Ushbu sinov bayonnomasi haqiqiy va markaz tomonidan berilgan" %}</div>
+  <div class="info-grid">
+    <div><span>{% trans "Bayonnoma raqami" %}</span><b>{{ x.raqam }}</b></div>
+    <div><span>{% trans "Sana" %}</span><b>{{ x.tayyor_at|dt }}</b></div>
+    <div><span>{% trans "Buyurtmachi" %}</span><b>{{ nam.ariza.buyurtmachi }}</b></div>
+    <div><span>{% trans "Namuna" %}</span><b>{{ nam.nomi }} ({{ nam.namuna_turi }})</b></div>
+    <div><span>{% trans "Tasdiqlangan" %}</span><b>{{ x.tasdiqlangan_at|dt }}</b></div>
+  </div>
+  <table class="t">
+    <thead><tr><th>№</th><th>{% trans "Ko'rsatkich" %}</th><th>{% trans "Me'yor" %}</th><th>{% trans "Natija" %}</th><th>{% trans "Muvofiqlik" %}</th></tr></thead>
+    <tbody>{% for n in natijalar %}<tr><td>{{ forloop.counter }}</td><td>{{ n.korsatkich }}</td><td>{{ n.meyor|default:"—" }}</td><td>{{ n.natija }}</td><td>{{ n.muvofiqlik|default:"—" }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <div class="center" style="margin-top:16px"><a class="btn btn-primary" href="?pdf=1" target="_blank">{% trans "Bayonnomani ko'rish (PDF)" %}</a></div>
+</section>
+{% endblock %}

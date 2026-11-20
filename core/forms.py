@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from .models import (ARIZA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaHujjat, ArizaTuri,
@@ -180,3 +181,62 @@ class TolovForm(StyledMixin, forms.Form):
         if self.qoldiq is not None and v > self.qoldiq:
             raise forms.ValidationError(_("Summa qoldiqdan (%(q)s so'm) oshmasligi kerak") % {"q": self.qoldiq})
         return v
+
+
+# ---------------------------------------------------------------------------
+# 4-bosqich: xulosa (sinov bayonnomasi)
+# ---------------------------------------------------------------------------
+from .models import Xulosa, XulosaNatija  # noqa: E402
+
+
+class XulosaForm(StyledMixin, forms.ModelForm):
+    ogirligi = forms.CharField(label=_("Og'irligi / hajmi"), max_length=50, required=False)
+    tavsifi = forms.CharField(label=_("Namuna tavsifi"), max_length=500, required=False)
+
+    class Meta:
+        model = Xulosa
+        fields = ["sinov_sanasi", "dalolatnoma", "sinov_joyi", "harorat", "namlik", "tasdiqlagan",
+                  "bosh_agrokimyogar", "yetakchi_agrokimyogar"]
+        widgets = {"sinov_sanasi": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["sinov_sanasi"] = forms.DateField(
+            label=_("Sinov o'tkazilgan sana"),
+            widget=forms.DateInput(attrs={"type": "date", "class": "input"}, format="%Y-%m-%d"))
+        if self.instance.pk and self.instance.sinov_sanasi:
+            self.initial["sinov_sanasi"] = timezone.localtime(self.instance.sinov_sanasi).date()
+        nam = self.instance.namuna
+        self.initial.setdefault("ogirligi", nam.ogirligi)
+        self.initial.setdefault("tavsifi", nam.tavsifi)
+        for name in ("tasdiqlagan", "bosh_agrokimyogar"):
+            self.fields[name].required = True
+
+    def save(self, commit=True):
+        from datetime import datetime, time
+
+        x = super().save(commit=False)
+        x.sinov_sanasi = timezone.make_aware(datetime.combine(self.cleaned_data["sinov_sanasi"], time(12, 0)))
+        nam = x.namuna
+        nam.ogirligi = self.cleaned_data.get("ogirligi", "")
+        nam.tavsifi = self.cleaned_data.get("tavsifi", "")
+        if commit:
+            x.save()
+            nam.save(update_fields=["ogirligi", "tavsifi"])
+        return x
+
+
+class NatijaForm(forms.ModelForm):
+    class Meta:
+        model = XulosaNatija
+        fields = ["korsatkich", "meyor", "natija", "sinov_usuli", "muvofiqlik"]
+        widgets = {
+            "korsatkich": forms.Textarea(attrs={"rows": 2, "class": "input"}),
+            "meyor": forms.TextInput(attrs={"class": "input"}),
+            "natija": forms.TextInput(attrs={"class": "input"}),
+            "sinov_usuli": forms.TextInput(attrs={"class": "input"}),
+            "muvofiqlik": forms.TextInput(attrs={"class": "input", "list": "muvofiqlik-list"}),
+        }
+
+
+NatijaFormSet = forms.inlineformset_factory(Xulosa, XulosaNatija, form=NatijaForm, extra=0, can_delete=True)

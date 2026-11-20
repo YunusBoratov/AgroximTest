@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_ariza, views_shartnoma as vs
+from . import views, views_ariza, views_lab as vl, views_shartnoma as vs
 
 urlpatterns = [
     path("", views_ariza.bosh_sahifa, name="bosh"),
@@ -32,6 +32,14 @@ urlpatterns = [
     path("oferta/", views.oferta_list, name="oferta_list"),
     path("tahlil-holati/", views.tahlil_holati, name="tahlil_holati"),
     path("xulosa/", views.xulosa_list, name="xulosa_list"),
+    path("namuna/<int:pk>/tahlilga/", vl.tahlilga_olish, name="tahlilga_olish"),
+    path("namuna/<int:pk>/natija-tayyor/", vl.natija_tayyor, name="natija_tayyor"),
+    path("namuna/<int:pk>/natija/", vl.xulosa_kiritish, name="xulosa_kiritish"),
+    path("xulosa/<int:pk>/", vl.xulosa_korish, name="xulosa_korish"),
+    path("xulosa/<int:pk>/tasdiqlash/", vl.xulosa_tasdiqlash, name="xulosa_tasdiqlash"),
+    path("xulosa/<int:pk>/berish/", vl.xulosa_berish, name="xulosa_berish"),
+    path("xulosa/<int:pk>/hujjat.<str:fmt>", vl.xulosa_hujjat, name="xulosa_hujjat"),
+    path("tekshirish/<uuid:token>/", vl.xulosa_tekshirish, name="xulosa_tekshirish"),
     path("narxnoma/", views.narxnoma_list, name="narxnoma_list"),
     path("narxnoma/qoshish/", views.narxnoma_form, name="narxnoma_add"),
     path("narxnoma/<int:pk>/", views.narxnoma_form, name="narxnoma_edit"),

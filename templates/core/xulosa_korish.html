@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<section class="card">
+  <div class="page-head">
+    <h1 class="page-title">{{ title }}
+      <span class="badge {% if x.tasdiqlangan %}green{% else %}yellow{% endif %}">{% if x.tasdiqlangan %}{% trans "Tasdiqlangan" %}{% else %}{% trans "Tasdiqlanmagan" %}{% endif %}</span>
+      <span class="badge {% if nam.lab_holat == 'berildi' %}green{% else %}blue{% endif %}">{{ nam.get_lab_holat_display }}</span></h1>
+    <div class="btn-row">
+      <a class="btn btn-grey" href="{% url 'xulosa_hujjat' x.pk 'pdf' %}" target="_blank">PDF</a>
+      <a class="btn btn-grey" href="{% url 'xulosa_hujjat' x.pk 'docx' %}">Word</a>
+      {% if not x.tasdiqlangan %}
+        <a class="btn btn-light" href="{% url 'xulosa_kiritish' nam.pk %}">{% trans "Tahrirlash" %}</a>
+        <form method="post" action="{% url 'xulosa_tasdiqlash' x.pk %}" onsubmit="return confirm('{% trans "Tasdiqlangan xulosani o‘zgartirib bo‘lmaydi. Tasdiqlaysizmi?" %}')">{% csrf_token %}<button class="btn btn-green">{% trans "Tasdiqlash" %}</button></form>
+      {% elif berish_mumkin %}
+        <form method="post" action="{% url 'xulosa_berish' x.pk %}">{% csrf_token %}<button class="btn btn-green">{% trans "Buyurtmachiga yuborish" %}</button></form>
+      {% endif %}
+    </div>
+  </div>
+  {% if x.tasdiqlangan and nam.lab_holat != 'berildi' and not berish_mumkin %}
+    <div class="notice">{% trans "Xulosa tayyor, lekin buyurtmachiga faqat 100% to'lovdan keyin yuboriladi." %}
+      {% if sh %}{% trans "To'langan" %}: <b>{{ sh.tolangan_foiz }}%</b> (<a href="{% url 'shartnoma_detail' sh.pk %}">№ {{ sh.raqam }}</a>){% endif %}</div>
+  {% endif %}
+  <div class="info-grid">
+    <div><span>{% trans "Buyurtmachi" %}</span><b>{{ nam.ariza.buyurtmachi }}</b></div>
+    <div><span>{% trans "Namuna" %}</span><b>{{ nam }} · {{ nam.nomi }}</b></div>
+    <div><span>{% trans "Sinov sanasi" %}</span><b>{{ x.sinov_sanasi|dt }}</b></div>
+    <div><span>{% trans "Tayyor qilingan" %}</span><b>{{ x.tayyor_at|dt }} {{ x.tayyor_at|tm }}</b></div>
+    {% if x.tasdiqlangan %}<div><span>{% trans "Tasdiqlagan" %}</span><b>{{ x.tasdiqlagan_user }} · {{ x.tasdiqlangan_at|dt }}</b></div>{% endif %}
+    {% if nam.berilgan_vaqti %}<div><span>{% trans "Buyurtmachiga berilgan" %}</span><b>{{ nam.berilgan_vaqti|dt }} {{ nam.berilgan_vaqti|tm }}</b></div>{% endif %}
+  </div>
+  <iframe class="doc-preview" src="{% url 'xulosa_hujjat' x.pk 'pdf' %}#toolbar=0&view=FitH" title="PDF"></iframe>
+</section>
+{% endblock %}

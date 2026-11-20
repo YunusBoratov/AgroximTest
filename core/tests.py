@@ -344,3 +344,114 @@ class ShartnomaTests(BaseTest):
     def test_sonni_sozga(self):
         self.assertEqual(sonni_sozga(5374888), "беш миллион уч юз етмиш тўрт минг саккиз юз саксон саккиз")
         self.assertEqual(sonni_sozga(2256400), "икки миллион икки юз эллик олти минг тўрт юз")
+
+
+# ---------------------------------------------------------------------------
+# 4-bosqich: laboratoriya jarayoni va xulosa
+# ---------------------------------------------------------------------------
+from core.models import Xulosa, XulosaNatija  # noqa: E402
+
+
+class LabJarayonTests(ShartnomaTests):
+    def _yuborilgan_shartnoma(self, foiz):
+        sh = self._tuz()
+        self.client.post(reverse("shartnoma_yuborish", args=[sh.pk]))
+        if foiz:
+            Tolov.objects.create(shartnoma=sh, summa=(sh.jami_summa * Decimal(foiz) / 100).quantize(Decimal("0.01")))
+            sh.qayta_hisobla()
+        return sh
+
+    def _natija_post(self, x, natija="12.4"):
+        data = {"sinov_sanasi": timezone.localdate().isoformat(), "dalolatnoma": "5", "sinov_joyi": "Laboratoriya",
+                "harorat": "T=(23±1)°C", "namlik": "W=(45±1)%", "tasdiqlagan": "N. Baysunova",
+                "bosh_agrokimyogar": "X. Sottiyev", "yetakchi_agrokimyogar": "F. Egamova",
+                "ogirligi": "0.5 kg", "tavsifi": "oq donador"}
+        rows = list(x.natijalar.all())
+        data.update({"nt-TOTAL_FORMS": len(rows) + 1, "nt-INITIAL_FORMS": len(rows),
+                     "nt-MIN_NUM_FORMS": 0, "nt-MAX_NUM_FORMS": 1000})
+        for i, r in enumerate(rows):
+            data.update({f"nt-{i}-id": r.pk, f"nt-{i}-xulosa": x.pk, f"nt-{i}-korsatkich": r.korsatkich,
+                         f"nt-{i}-meyor": "12±1", f"nt-{i}-natija": natija, f"nt-{i}-sinov_usuli": r.sinov_usuli,
+                         f"nt-{i}-muvofiqlik": "Muvofiq"})
+        i = len(rows)  # narxnomada yo'q qo'shimcha ko'rsatkich
+        data.update({f"nt-{i}-xulosa": x.pk, f"nt-{i}-korsatkich": "Zichlik, g/sm3", f"nt-{i}-natija": "1.1"})
+        return data
+
+    def test_30_foizsiz_tahlil_boshlanmaydi(self):
+        sh = self._yuborilgan_shartnoma(10)
+        nam = sh.namunalar.first()
+        self.client.post(reverse("tahlilga_olish", args=[nam.pk]))
+        nam.refresh_from_db()
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.YANGI)
+
+    def test_toliq_lab_jarayoni(self):
+        sh = self._yuborilgan_shartnoma(40)
+        nam = sh.namunalar.order_by("tartib").first()
+        self.client.post(reverse("tahlilga_olish", args=[nam.pk]))
+        nam.refresh_from_db()
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.TAHLILDA)
+        r = self.client.post(reverse("natija_tayyor", args=[nam.pk]))
+        self.assertRedirects(r, reverse("xulosa_kiritish", args=[nam.pk]))
+        # natija sahifasi xulosani shartnoma ko'rsatkichlari bilan yaratadi (namuna olish kirmaydi)
+        self.client.get(reverse("xulosa_kiritish", args=[nam.pk]))
+        x = Xulosa.objects.get(namuna=nam)
+        korsatkichlar = list(x.natijalar.values_list("korsatkich", flat=True))
+        self.assertEqual(korsatkichlar[0], "Tashqi ko‘rinishi, rangi")
+        self.assertIn(self.azot.parametr, korsatkichlar)
+        self.assertFalse(any(k.startswith("Namuna olish") for k in korsatkichlar))
+        r = self.client.post(reverse("xulosa_kiritish", args=[nam.pk]), self._natija_post(x))
+        self.assertRedirects(r, reverse("xulosa_korish", args=[x.pk]))
+        nam.refresh_from_db()
+        x.refresh_from_db()
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.XULOSA)
+        self.assertEqual(x.natijalar.count(), len(korsatkichlar) + 1)
+        self.assertEqual(x.natijalar.order_by("tartib").last().korsatkich, "Zichlik, g/sm3")
+        self.assertEqual(nam.ogirligi, "0.5 kg")
+        # hujjat
+        r = self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"]))
+        import io
+
+        import docx
+        d = docx.Document(io.BytesIO(r.content))
+        jadval = "\n".join(c.text for row in d.tables[3].rows for c in row.cells)
+        self.assertIn("Zichlik, g/sm3", jadval)
+        self.assertIn(x.raqam, d.tables[1].rows[0].cells[0].text)
+        # tasdiqlanmagan xulosa QR orqali ochilmaydi
+        self.assertEqual(self.client.get(reverse("xulosa_tekshirish", args=[x.verify_token])).status_code, 404)
+        self.client.post(reverse("xulosa_tasdiqlash", args=[x.pk]))
+        x.refresh_from_db()
+        self.assertTrue(x.tasdiqlangan)
+        # tasdiqlangandan keyin tahrirlab bo'lmaydi
+        self.assertRedirects(self.client.get(reverse("xulosa_kiritish", args=[nam.pk])),
+                             reverse("xulosa_korish", args=[x.pk]))
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("xulosa_tekshirish", args=[x.verify_token])).status_code, 200)
+        # 40% to'lovda mijozga berilmaydi
+        self.login("lab_mineral")
+        self.client.post(reverse("xulosa_berish", args=[x.pk]))
+        nam.refresh_from_db()
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.XULOSA)
+        Tolov.objects.create(shartnoma=sh, summa=sh.qoldiq)
+        sh.qayta_hisobla()
+        self.client.post(reverse("xulosa_berish", args=[x.pk]))
+        nam.refresh_from_db()
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.BERILDI)
+
+    def test_mijoz_faqat_berilgan_xulosani_yuklaydi(self):
+        mijoz = User.objects.create_user("+998900000001", password="parol123", role=Role.MIJOZ)
+        self.ariza.mijoz = mijoz
+        self.ariza.save()
+        nam = self.ariza.namunalar.first()
+        x = Xulosa.objects.create(namuna=nam, tasdiqlangan_at=timezone.now())
+        XulosaNatija.objects.create(xulosa=x, korsatkich="pH", natija="7")
+        self.client.login(username="+998900000001", password="parol123")
+        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 403)
+        nam.lab_holat = Namuna.LabHolat.BERILDI
+        nam.save()
+        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 200)
+
+    def test_buxgalter_xulosa_yuklay_olmaydi(self):
+        nam = self.ariza.namunalar.first()
+        x = Xulosa.objects.create(namuna=nam)
+        self.login("buxgalter")
+        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 403)

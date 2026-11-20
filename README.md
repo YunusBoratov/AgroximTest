@@ -29,6 +29,8 @@ python manage.py runserver
 
 Testlar: `python manage.py test`
 
+`PUBLIC_BASE_URL` (masalan `https://agroximtest.uz`) — bayonnomadagi QR kod shu manzilga olib boradi.
+
 Shartnoma PDF uchun serverda LibreOffice (`soffice`) o'rnatilgan bo'lishi kerak; bo'lmasa Word fayl beriladi.
 
 Mijozlar `/royxatdan-otish/` sahifasida telefon raqami va parol bilan ro'yxatdan o'tadi (OneID kalitlari olingach qo'shiladi).
@@ -52,7 +54,7 @@ Mijozlar `/royxatdan-otish/` sahifasida telefon raqami va parol bilan ro'yxatdan
 - [x] **1-bosqich:** modellar, rollar, login, dizayn (sidebar, jadvallar, filtrlar, Excel), monitoring panellari, xodimlar, narxnoma
 - [x] **2-bosqich:** mijoz sayti (3 xil ariza + hujjat yuklash), ro'yxatdan o'tish (telefon + parol), kabinet, namuna qabul qiluvchi ishi (qabul / rad / namuna yaratish / tahrirlash)
 - [x] **3-bosqich:** shartnoma tuzish (narxnomadan ko'rsatkich tanlash), shartnoma Word/PDF (rasmiy shablon asosida), buxgalteriyaga yuborish, rekvizitlar, to'lovlar (30% / 100% qoidalari)
-- [ ] **4-bosqich:** laboratoriya jarayoni, natija kiritish, xulosa DOCX/PDF + QR, mijoz kabineti
+- [x] **4-bosqich:** laboratoriya jarayoni (tahlilga olish 30%+, natijalar tayyor, natija kiritish), sinov bayonnomasi Word/PDF (yangi shakl, QR kod), tasdiqlash, 100% to'lovdan keyin mijozga berish, QR orqali ochiq tekshirish sahifasi
 - [ ] **5-bosqich:** Click integratsiyasi, OneID, SMS va Telegram bildirishnomalari, rus tili tarjimasi, serverga joylash
 
 `docs/shablonlar/` — buyurtmachi bergan rasmiy shakllar (shartnoma, xulosa, narxnoma, namuna qabul qilish).

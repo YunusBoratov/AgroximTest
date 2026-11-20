@@ -1,0 +1,66 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<form method="post">{% csrf_token %}
+<section class="card">
+  <div class="page-head"><h1 class="page-title">{{ title }}</h1>
+    <a class="btn btn-light" href="{% url 'tahlil_holati' %}">← {% trans "Tahlil holati" %}</a></div>
+  <div class="info-grid">
+    <div><span>{% trans "Buyurtmachi" %}</span><b>{{ nam.ariza.buyurtmachi }}</b></div>
+    <div><span>{% trans "Namuna" %}</span><b>{{ nam.nomi }} ({{ nam.namuna_turi }})</b></div>
+    <div><span>LOT / INVOICE</span><b>{{ nam.ariza.partiya_raqami|default:"—" }} / {{ nam.ariza.invoys_raqami|default:"—" }}</b></div>
+    <div><span>{% trans "Qabul qilingan" %}</span><b>{{ nam.qabul_vaqti|dt }}</b></div>
+    <div><span>{% trans "Xulosa raqami" %}</span><b>{{ x.raqam }}</b></div>
+  </div>
+  {% if form.errors %}<ul class="messages"><li class="error">{% trans "Formada xatolar bor, tekshiring" %}</li></ul>{% endif %}
+  <div class="form-grid g4">
+    {% for f in form %}<div class="fld"><label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} *{% endif %}</label>{{ f }}{{ f.errors }}</div>{% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <div class="page-head"><h2 class="section-title" style="margin:0">{% trans "Sinov natijalari jadvali" %}</h2>
+    <button type="button" class="btn btn-light" id="add-row">+ {% trans "Qator qo'shish" %}</button></div>
+  <p class="help">{% trans "Shartnomadagi ko'rsatkichlar avtomatik qo'shildi. Me'yoriy qiymat shu namuna turi bo'yicha oxirgi xulosadan olinadi." %}</p>
+  {{ fs.management_form }}
+  {% if fs.non_form_errors %}<ul class="messages"><li class="error">{{ fs.non_form_errors|join:" " }}</li></ul>{% endif %}
+  <div class="table-wrap">
+  <table class="t res">
+    <thead><tr><th>№</th><th style="width:30%">{% trans "Ko'rsatkich nomi, o'lchov birligi" %}</th><th>{% trans "Me'yoriy qiymat" %}</th><th>{% trans "Sinov natijasi (Xcp ± Upac)" %}</th><th>{% trans "Sinov usuli (ND hujjati)" %}</th><th>{% trans "Muvofiqlik haqida qaror" %}</th><th></th></tr></thead>
+    <tbody id="rows">
+    {% for f in fs %}
+      <tr class="frm">{% for h in f.hidden_fields %}{{ h }}{% endfor %}
+        <td class="n">{{ forloop.counter }}</td>
+        <td>{{ f.korsatkich }}{{ f.korsatkich.errors }}</td><td>{{ f.meyor }}</td><td>{{ f.natija }}</td>
+        <td>{{ f.sinov_usuli }}</td><td>{{ f.muvofiqlik }}</td>
+        <td><label class="del" title="{% trans "O'chirish" %}">{{ f.DELETE }}{% include "parts/icon.html" with name="delete" %}</label></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <datalist id="muvofiqlik-list"><option value="Muvofiq"><option value="Muvofiq emas"><option value="—"></datalist>
+  <template id="empty-row">
+    <tr class="frm">{% for h in fs.empty_form.hidden_fields %}{{ h }}{% endfor %}
+      <td class="n"></td><td>{{ fs.empty_form.korsatkich }}</td><td>{{ fs.empty_form.meyor }}</td><td>{{ fs.empty_form.natija }}</td>
+      <td>{{ fs.empty_form.sinov_usuli }}</td><td>{{ fs.empty_form.muvofiqlik }}</td>
+      <td><label class="del">{{ fs.empty_form.DELETE }}{% include "parts/icon.html" with name="delete" %}</label></td></tr>
+  </template>
+  <div class="btn-row" style="margin-top:16px"><button class="btn btn-primary" type="submit">{% trans "Saqlash va xulosani ko'rish" %}</button></div>
+</section>
+</form>
+<script>
+(function () {
+  const tbody = document.getElementById("rows"), total = document.getElementById("id_nt-TOTAL_FORMS");
+  function renum() { let i = 1; tbody.querySelectorAll("tr.frm").forEach(tr => {
+    const del = tr.querySelector("input[type=checkbox]"); tr.classList.toggle("deleted", del && del.checked);
+    tr.querySelector(".n").textContent = (del && del.checked) ? "—" : i++; }); }
+  document.getElementById("add-row").addEventListener("click", () => {
+    const idx = +total.value;
+    const html = document.getElementById("empty-row").innerHTML.replace(/__prefix__/g, idx);
+    tbody.insertAdjacentHTML("beforeend", html); total.value = idx + 1; renum();
+    tbody.lastElementChild.querySelector("textarea").focus();
+  });
+  tbody.addEventListener("change", renum); renum();
+})();
+</script>
+{% endblock %}

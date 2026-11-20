@@ -2,6 +2,7 @@
 {% if a.holat == "rad" %}<span class="badge grey">{% trans "Rad etilgan" %}</span>
 {% elif a.holat == "yangi" %}<span class="badge yellow">{% trans "Ko'rib chiqilmoqda" %}</span>
 {% elif not sh or sh.holat == "yuborilmagan" %}<span class="badge yellow">{% trans "Namuna qabul qilindi, shartnoma tayyorlanmoqda" %}</span>
-{% elif sh.tolov_holati != "tolangan" %}<span class="badge red">{{ sh.get_tolov_holati_display }}</span>
-{% else %}<span class="badge green">{% trans "Tahlil jarayonida" %}</span>{% endif %}
+{% elif sh.tolov_holati == "kutilmoqda" %}<span class="badge red">{{ sh.get_tolov_holati_display }}</span>
+{% elif a.berilgan_soni == a.namunalar.all|length and a.namunalar.all|length %}<span class="badge green">{% trans "Xulosa tayyor" %}</span>
+{% else %}<span class="badge blue">{% trans "Tahlil jarayonida" %}</span>{% endif %}
 {% endwith %}

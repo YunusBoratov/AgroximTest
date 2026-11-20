@@ -131,5 +131,7 @@ MARKAZ = {
 # raqamni admin panelda (Hisoblagich) yoki shu sozlama bilan belgilash mumkin.
 SHARTNOMA_RAQAM_BOSHLANISH = int(env("SHARTNOMA_RAQAM_BOSHLANISH", "0"))
 TUPROQ_TAHLILI_URL = env("TUPROQ_TAHLILI_URL", "#")
+# Xulosadagi QR kod shu manzilga olib boradi (masalan https://agroximtest.uz)
+PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", "")
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 80 * 1024 * 1024

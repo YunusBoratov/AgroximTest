@@ -176,6 +176,11 @@ class Ariza(models.Model):
     def buyurtmachi(self):
         return self.buyurtmachi_nomi or self.fish
 
+    @property
+    def berilgan_soni(self):
+        """Buyurtmachiga xulosasi berilgan namunalar soni (prefetch bilan ishlaydi)."""
+        return sum(1 for n in self.namunalar.all() if n.lab_holat == "berildi")
+
 
 class ArizaHujjat(models.Model):
     class Turi(models.TextChoices):
@@ -420,6 +425,15 @@ class Xulosa(models.Model):
     )
     created_at = models.DateTimeField(_("Yaratilgan vaqt"), default=timezone.now)
     tayyor_at = models.DateTimeField(_("Xulosa tayyor qilingan vaqt"), null=True, blank=True)
+    tasdiqlangan_at = models.DateTimeField(_("Tasdiqlangan vaqt"), null=True, blank=True)
+    tasdiqlagan_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name=_("Tasdiqlagan xodim"), on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )
+
+    @property
+    def tasdiqlangan(self):
+        return self.tasdiqlangan_at is not None
 
     class Meta:
         ordering = ["-created_at"]

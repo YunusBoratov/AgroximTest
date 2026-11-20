@@ -33,7 +33,7 @@ class Column:
         val = obj
         for part in self.value.split("."):
             val = getattr(val, part, None) if val is not None else None
-            if callable(val) and part.startswith("get_"):
+            if callable(val) and (part.startswith("get_") or part.startswith("__")):
                 val = val()
         return val
 

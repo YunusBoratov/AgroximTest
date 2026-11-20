@@ -234,17 +234,55 @@ def oferta_list(request):
                      extra={"kategoriya_tabs": [("", _("Barchasi"))] + list(Kategoriya.choices)})
 
 
+def _lab_amallar(o):
+    """Tahlil holati jadvalidagi har bir namuna uchun navbatdagi amal (dizayndagi izohlar bo'yicha)."""
+    H = Namuna.LabHolat
+    sh = o.shartnoma if o.shartnoma_id and o.shartnoma.is_active else None
+    if o.lab_holat == H.YANGI:
+        if sh and sh.tahlil_boshlash_mumkin:
+            return [(_("Tahlilga olish"), reverse("tahlilga_olish", args=[o.pk]), "send", "btn post")]
+        return []
+    if o.lab_holat == H.TAHLILDA:
+        return [(_("Natijalar tayyor"), reverse("natija_tayyor", args=[o.pk]), "check", "btn post")]
+    if o.lab_holat == H.NATIJA:
+        return [(_("Natija kiritish"), reverse("xulosa_kiritish", args=[o.pk]), "edit", "btn")]
+    x = getattr(o, "xulosa", None)
+    if x:
+        return [(_("Xulosa"), reverse("xulosa_korish", args=[x.pk]), "eye", ""),
+                (_("PDF"), reverse("xulosa_hujjat", args=[x.pk, "pdf"]), "file", "")]
+    return []
+
+
+def _lab_izoh(o):
+    H = Namuna.LabHolat
+    if o.lab_holat != H.YANGI:
+        return ""
+    sh = o.shartnoma if o.shartnoma_id and o.shartnoma.is_active else None
+    if not sh:
+        return _("Shartnoma tuzilmagan")
+    if sh.holat == Shartnoma.Holat.YUBORILMAGAN:
+        return _("Shartnoma buxgalteriyaga yuborilmagan")
+    if not sh.tahlil_boshlash_mumkin:
+        return _("To'lov kutilmoqda (%(f)s%%)") % {"f": sh.tolangan_foiz}
+    return _("To'lov qilingan (%(f)s%%)") % {"f": sh.tolangan_foiz}
+
+
 @role_required(AD, *LAB)
 def tahlil_holati(request):
-    qs = lab_scope(request, Namuna.objects.select_related("ariza", "namuna_turi", "shartnoma"))
+    qs = lab_scope(request, Namuna.objects.select_related("ariza", "namuna_turi", "shartnoma", "xulosa"))
     cols = [
-        Column(_("Ariza raqami"), "ariza.raqam", "bold"),
+        Column(_("Namuna"), "__str__", "bold", url=lambda o: reverse("ariza_detail", args=[o.ariza_id])),
         Column(_("Buyurtmachi nomi"), "ariza.buyurtmachi"),
         Column(_("Namuna turi"), "namuna_turi.nomi"),
         Column(_("Namuna nomi"), "nomi"),
+        Column(_("Shartnoma"), lambda o: o.shartnoma.raqam if o.shartnoma_id and o.shartnoma.is_active else "—",
+               url=lambda o: reverse("shartnoma_detail", args=[o.shartnoma_id])
+               if o.shartnoma_id and o.shartnoma.is_active else ""),
         Column(_("Kelib tushgan vaqti"), "qabul_vaqti", "datetime"),
         Column(_("Tahlil yakunlangan vaqt"), "tahlil_tugagan_vaqti", "datetime"),
         Column(_("Holati"), "get_lab_holat_display", "badge", badge=badge("lab_holat")),
+        Column(_("Izoh"), _lab_izoh),
+        Column("", _lab_amallar, "actions", excel=False),
     ]
     f = Filters(search_fields=["ariza__raqam", "ariza__buyurtmachi_nomi", "ariza__fish", "nomi"],
                 date_field="qabul_vaqti", holat_field="lab_holat", holat_choices=Namuna.LabHolat.choices,
@@ -258,13 +296,19 @@ def xulosa_list(request):
     qs = lab_scope(request, Xulosa.objects.select_related("namuna__ariza", "namuna__namuna_turi"),
                    "namuna__namuna_turi__kategoriya")
     cols = [
-        Column(_("Xulosa raqami"), "raqam", "bold"),
+        Column(_("Xulosa raqami"), "raqam", "bold", url=lambda o: reverse("xulosa_korish", args=[o.pk])),
+        Column(_("Namuna"), "namuna.__str__"),
         Column(_("Buyurtmachi nomi"), "namuna.ariza.buyurtmachi"),
         Column(_("Namuna turi"), "namuna.namuna_turi.nomi"),
         Column(_("Kelib tushgan vaqti"), "namuna.qabul_vaqti", "datetime"),
         Column(_("Xulosa tayyor qilingan vaqt"), "tayyor_at", "datetime"),
         Column(_("Holati"), "namuna.get_lab_holat_display", "badge",
                badge=lambda o: BADGE.get(o.namuna.lab_holat, "grey")),
+        Column(_("Tasdiqlangan"), lambda o: _("Ha") if o.tasdiqlangan else _("Yo'q"), "badge",
+               badge=lambda o: "green" if o.tasdiqlangan else "yellow"),
+        Column("", lambda o: [(_("Ko'rish"), reverse("xulosa_korish", args=[o.pk]), "eye", ""),
+                              (_("PDF"), reverse("xulosa_hujjat", args=[o.pk, "pdf"]), "file", "")],
+               "actions", excel=False),
     ]
     f = Filters(search_fields=["raqam", "namuna__ariza__buyurtmachi_nomi", "namuna__ariza__fish"],
                 date_field="created_at", turi_field="namuna__ariza__turi")
