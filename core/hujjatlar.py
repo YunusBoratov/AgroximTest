@@ -195,13 +195,29 @@ def shartnoma_docx(sh):
     return buf.getvalue()
 
 
+def _soffice():
+    """LibreOffice dasturini topadi (Linux: PATH; Windows/macOS: odatiy o'rnatish joyi)."""
+    import shutil
+
+    for nom in ("soffice", "libreoffice"):
+        if shutil.which(nom):
+            return shutil.which(nom)
+    for yol in (r"C:\Program Files\LibreOffice\program\soffice.exe",
+                r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+                "/Applications/LibreOffice.app/Contents/MacOS/soffice"):
+        if Path(yol).exists():
+            return yol
+    raise FileNotFoundError("LibreOffice topilmadi")
+
+
 def docx_to_pdf(data: bytes) -> bytes:
     """LibreOffice orqali DOCX -> PDF."""
     with tempfile.TemporaryDirectory() as tmp:
         src = Path(tmp) / "hujjat.docx"
         src.write_bytes(data)
+        profil = Path(tmp, "lo").as_uri()
         subprocess.run(
-            ["soffice", "--headless", f"-env:UserInstallation=file://{tmp}/lo", "--convert-to", "pdf",
+            [_soffice(), "--headless", f"-env:UserInstallation={profil}", "--convert-to", "pdf",
              "--outdir", tmp, str(src)],
             check=True, capture_output=True, timeout=120,
         )
