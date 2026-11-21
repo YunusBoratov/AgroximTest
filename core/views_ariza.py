@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import Role
 
+from . import xabarnoma
 from .forms import ArizaForm, NamunaQabulForm, RadForm
 from .models import ARIZA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna, Shartnoma
 from .permissions import AD, ADMINS, BX, LAB, NQ, role_required, user_role
@@ -85,7 +86,12 @@ def ariza_yangi(request):
 def kabinet(request):
     arizalar = (Ariza.objects.filter(mijoz=request.user)
                 .select_related("namuna_turi").prefetch_related("namunalar__xulosa", Prefetch("shartnomalar", Shartnoma.objects.filter(is_active=True))))
-    return render(request, "public/kabinet.html", {"arizalar": arizalar})
+    from .views_tolov import click_sozlangan
+
+    return render(request, "public/kabinet.html", {
+        "arizalar": arizalar, "click": click_sozlangan(),
+        "tg_havola": xabarnoma.telegram_ulash_havolasi(request.user) if not request.user.telegram_chat_id else "",
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -140,6 +146,7 @@ def ariza_qabul(request, pk):
             ariza.qabul_qilgan = request.user
             ariza.qabul_vaqti = timezone.now()
             ariza.save(update_fields=["holat", "qabul_qilgan", "qabul_vaqti"])
+            xabarnoma.ariza_qabul(ariza)
         messages.success(request, _("Namunalar qabul qilindi va laboratoriyaga yuborildi"))
         return redirect("namuna_list")
     return render(request, "core/ariza_qabul.html", {
@@ -159,6 +166,7 @@ def ariza_rad(request, pk):
         ariza.qabul_qilgan = request.user
         ariza.qabul_vaqti = timezone.now()
         ariza.save(update_fields=["holat", "rad_sababi", "qabul_qilgan", "qabul_vaqti"])
+        xabarnoma.ariza_rad(ariza)
         messages.success(request, _("Ariza rad etildi"))
     return redirect("ariza_list")
 
@@ -203,3 +211,20 @@ def namuna_delete(request, pk):
             ariza.save(update_fields=["holat"])
         messages.success(request, _("Namuna o'chirildi"))
     return redirect("namuna_list")
+
+
+@login_required
+def ariza_hujjat(request, pk):
+    """Ariza hujjatini faqat ruxsati bor foydalanuvchiga beradi (media papka ochiq emas)."""
+    from django.http import FileResponse
+
+    from .models import ArizaHujjat
+
+    h = get_object_or_404(ArizaHujjat.objects.select_related("ariza"), pk=pk)
+    role = user_role(request.user)
+    if role == Role.BUXGALTERIYA and not h.ariza.shartnomalar.exclude(holat=Shartnoma.Holat.YUBORILMAGAN).exists():
+        raise PermissionDenied
+    _ariza_access(request, h.ariza)
+    ext = h.fayl.name.rsplit(".", 1)[-1]
+    return FileResponse(h.fayl.open("rb"), filename=f"{h.ariza.raqam}_{h.turi}.{ext}",
+                        as_attachment=ext not in ("pdf", "jpg", "jpeg", "png"))

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_ariza, views_lab as vl, views_shartnoma as vs
+from . import views, views_ariza, views_lab as vl, views_shartnoma as vs, views_tolov as vt
 
 urlpatterns = [
     path("", views_ariza.bosh_sahifa, name="bosh"),
@@ -13,6 +13,7 @@ urlpatterns = [
     path("ariza/<int:pk>/", views_ariza.ariza_detail, name="ariza_detail"),
     path("ariza/<int:pk>/qabul/", views_ariza.ariza_qabul, name="ariza_qabul"),
     path("ariza/<int:pk>/rad/", views_ariza.ariza_rad, name="ariza_rad"),
+    path("hujjat/<int:pk>/", views_ariza.ariza_hujjat, name="ariza_hujjat"),
     path("namuna/", views.namuna_list, name="namuna_list"),
     path("namuna/yaratish/", views_ariza.namuna_yaratish, name="namuna_yaratish"),
     path("namuna/<int:pk>/", views_ariza.namuna_edit, name="namuna_edit"),
@@ -40,6 +41,12 @@ urlpatterns = [
     path("xulosa/<int:pk>/berish/", vl.xulosa_berish, name="xulosa_berish"),
     path("xulosa/<int:pk>/hujjat.<str:fmt>", vl.xulosa_hujjat, name="xulosa_hujjat"),
     path("tekshirish/<uuid:token>/", vl.xulosa_tekshirish, name="xulosa_tekshirish"),
+    # Click SHOP API va Telegram bot
+    path("click/prepare/", vt.click_prepare, name="click_prepare"),
+    path("click/complete/", vt.click_complete, name="click_complete"),
+    path("kabinet/tolov/<int:pk>/", vt.click_tolash, name="click_tolash"),
+    path("telegram/webhook/<str:secret>/", vt.telegram_webhook, name="telegram_webhook"),
+    path("kabinet/telegram/uzish/", vt.telegram_uzish, name="telegram_uzish"),
     path("narxnoma/", views.narxnoma_list, name="narxnoma_list"),
     path("narxnoma/qoshish/", views.narxnoma_form, name="narxnoma_add"),
     path("narxnoma/<int:pk>/", views.narxnoma_form, name="narxnoma_edit"),

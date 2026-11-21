@@ -26,4 +26,4 @@
 </div>
 {% endif %}
 <h3 class="box-title">{% trans "Hujjatlar" %}</h3>
-<div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.fayl.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% empty %}<span class="help">{% trans "Hujjat yuklanmagan" %}</span>{% endfor %}</div>
+<div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% empty %}<span class="help">{% trans "Hujjat yuklanmagan" %}</span>{% endfor %}</div>

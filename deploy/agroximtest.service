@@ -1,0 +1,14 @@
+[Unit]
+Description=AgroximTest (gunicorn)
+After=network.target postgresql.service
+
+[Service]
+User=agroximtest
+Group=www-data
+WorkingDirectory=/srv/agroximtest
+ExecStart=/srv/agroximtest/venv/bin/gunicorn config.wsgi:application --workers 3 --timeout 120 --bind unix:/run/agroximtest/gunicorn.sock
+RuntimeDirectory=agroximtest
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

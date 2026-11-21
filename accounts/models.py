@@ -26,6 +26,8 @@ class User(AbstractUser):
     pinfl = models.CharField(_("JSHSHIR"), max_length=14, blank=True)
     inn = models.CharField(_("INN"), max_length=20, blank=True)
     tashkilot_nomi = models.CharField(_("Tashkilot nomi"), max_length=255, blank=True)
+    telegram_chat_id = models.CharField(_("Telegram chat ID"), max_length=30, blank=True)
+    sms_xabar = models.BooleanField(_("SMS xabarnomalar"), default=True)
 
     class Meta:
         verbose_name = _("Foydalanuvchi")

@@ -21,6 +21,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import Role
 
+from . import xabarnoma
 from .forms import NatijaFormSet, XulosaForm
 from .hujjatlar import docx_to_pdf, xulosa_docx
 from .models import Namuna, Xulosa, XulosaNatija
@@ -176,6 +177,8 @@ def xulosa_berish(request, pk):
         nam.lab_holat = H.BERILDI
         nam.berilgan_vaqti = timezone.now()
         nam.save(update_fields=["lab_holat", "berilgan_vaqti"])
+        url = _verify_url(request, x)
+        xabarnoma.xulosa_berildi(x, pdf_fn=lambda: docx_to_pdf(xulosa_docx(x, url)))
         messages.success(request, _("Xulosa buyurtmachi kabinetiga yuborildi"))
     return redirect("xulosa_korish", pk=pk)
 

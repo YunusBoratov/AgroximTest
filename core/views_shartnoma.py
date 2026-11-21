@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import Role
 
+from . import xabarnoma
 from .forms import RekvizitForm, TolovForm
 from .hujjatlar import docx_to_pdf, shartnoma_docx
 from .models import Ariza, Narxnoma, Shartnoma, ShartnomaBand, Tolov
@@ -149,6 +150,7 @@ def shartnoma_yuborish(request, pk):
         sh.holat = Shartnoma.Holat.YUBORILGAN
         sh.yuborilgan_at = timezone.now()
         sh.save(update_fields=["holat", "yuborilgan_at"])
+        xabarnoma.shartnoma_tayyor(sh)
         messages.success(request, _("Shartnoma buxgalteriyaga yuborildi"))
     return redirect("shartnoma_detail", pk=pk)
 
@@ -200,6 +202,7 @@ def tolov_qoshish(request, pk):
                                  kiritgan=request.user)
             oldin_mumkin = sh.tahlil_boshlash_mumkin
             sh.qayta_hisobla()
+            xabarnoma.tolov_qabul(sh, d["summa"])
         msg = _("To'lov kiritildi. To'langan: %(f)s%%") % {"f": sh.tolangan_foiz}
         if sh.tahlil_boshlash_mumkin and not oldin_mumkin:
             msg += " " + _("Laboratoriyada tahlil boshlash mumkin.")

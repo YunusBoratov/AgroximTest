@@ -182,6 +182,12 @@ class Ariza(models.Model):
         return sum(1 for n in self.namunalar.all() if n.lab_holat == "berildi")
 
 
+def _hujjat_yoli(instance, filename):
+    """Fayl nomi taxmin qilib bo'lmaydigan bo'lsin (asl kengaytma saqlanadi)."""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
+    return f"ariza/{timezone.now():%Y/%m}/{uuid.uuid4().hex}.{ext}"
+
+
 class ArizaHujjat(models.Model):
     class Turi(models.TextChoices):
         INVOYS = "invoys", _("Invoys")
@@ -191,8 +197,14 @@ class ArizaHujjat(models.Model):
 
     ariza = models.ForeignKey(Ariza, on_delete=models.CASCADE, related_name="hujjatlar")
     turi = models.CharField(_("Hujjat turi"), max_length=20, choices=Turi.choices)
-    fayl = models.FileField(_("Fayl"), upload_to="ariza/%Y/%m/")
+    fayl = models.FileField(_("Fayl"), upload_to=_hujjat_yoli)
     yuklangan = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def url(self):
+        from django.urls import reverse
+
+        return reverse("ariza_hujjat", args=[self.pk])
 
     class Meta:
         verbose_name = _("Ariza hujjati")
@@ -461,3 +473,56 @@ class XulosaNatija(models.Model):
 
     class Meta:
         ordering = ["tartib", "id"]
+
+
+# ---------------------------------------------------------------------------
+# 5-bosqich: xabarnomalar va Click
+# ---------------------------------------------------------------------------
+class Xabar(models.Model):
+    """Yuborilgan SMS / Telegram xabarlari jurnali."""
+
+    class Kanal(models.TextChoices):
+        SMS = "sms", "SMS"
+        TELEGRAM = "telegram", "Telegram"
+
+    class Holat(models.TextChoices):
+        YUBORILDI = "yuborildi", _("Yuborildi")
+        XATO = "xato", _("Xato")
+        OCHIQ = "ochiq", _("Sozlanmagan (yuborilmadi)")
+
+    kanal = models.CharField(max_length=10, choices=Kanal.choices)
+    kimga = models.CharField(_("Kimga"), max_length=100)
+    matn = models.TextField(_("Matn"))
+    holat = models.CharField(max_length=10, choices=Holat.choices)
+    xato = models.CharField(max_length=500, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name="+")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Xabar")
+        verbose_name_plural = _("Xabarlar jurnali")
+
+
+class ClickTranzaksiya(models.Model):
+    """Click SHOP API tranzaksiyalari (prepare -> complete)."""
+
+    class Holat(models.TextChoices):
+        PREPARED = "prepared", _("Tayyorlandi")
+        COMPLETED = "completed", _("To'landi")
+        CANCELLED = "cancelled", _("Bekor qilindi")
+
+    click_trans_id = models.CharField(max_length=40, unique=True)
+    click_paydoc_id = models.CharField(max_length=40, blank=True)
+    shartnoma = models.ForeignKey(Shartnoma, on_delete=models.PROTECT, related_name="click_tranzaksiyalar")
+    summa = models.DecimalField(max_digits=16, decimal_places=2)
+    holat = models.CharField(max_length=10, choices=Holat.choices, default=Holat.PREPARED)
+    tolov = models.OneToOneField(Tolov, on_delete=models.SET_NULL, null=True, blank=True, related_name="click")
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Click tranzaksiya")
+        verbose_name_plural = _("Click tranzaksiyalar")

@@ -9,7 +9,7 @@
     <div><span>{% trans "Namuna turi" %}</span><b>{{ ariza.namuna_turi }}</b></div>
     <div><span>{% trans "Namunalar soni" %}</span><b>{{ namuna_soni }}</b></div>
   </div>
-  <div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.fayl.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>
+  <div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>
 </section>
 <form method="post" class="card">{% csrf_token %}
   <div class="page-head">

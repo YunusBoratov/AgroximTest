@@ -4,7 +4,11 @@
 <section class="box">
   <div class="page-head">
     <h1 class="page-title">{% trans "Arizalar" %}</h1>
-    <a class="btn btn-primary" href="{% url 'ariza_yangi' %}">+ {% trans "Yangi ariza" %}</a>
+    <div class="btn-row">
+      {% if tg_havola %}<a class="btn btn-tg" href="{{ tg_havola }}" target="_blank">Telegram'ni ulash</a>
+      {% elif request.user.telegram_chat_id %}<form method="post" action="{% url 'telegram_uzish' %}">{% csrf_token %}<button class="btn btn-light" title="{% trans 'Telegram uzish' %}">✓ Telegram {% trans "ulangan" %}</button></form>{% endif %}
+      <a class="btn btn-primary" href="{% url 'ariza_yangi' %}">+ {% trans "Yangi ariza" %}</a>
+    </div>
   </div>
   <div class="table-wrap">
   <table class="t">
@@ -20,6 +24,11 @@
         <td>{% with sh=a.shartnomalar.all|first %}{% if sh and sh.is_active and sh.holat != "yuborilmagan" %}
           <a class="row-link" href="{% url 'shartnoma_hujjat' sh.pk 'pdf' %}" target="_blank">№ {{ sh.raqam }}</a><br>
           <small class="help">{{ sh.jami_summa|money }} {% trans "so'm" %} · {% trans "to'langan" %} {{ sh.tolangan_summa|money }}</small>
+          {% if click and sh.qoldiq > 0 %}
+          <form class="click-pay" method="post" action="{% url 'click_tolash' sh.pk %}">{% csrf_token %}
+            <input class="input" name="summa" value="{{ sh.qoldiq|floatformat:0 }}" title="{% trans 'To‘lov summasi' %}">
+            <button class="btn btn-click" type="submit">Click {% trans "orqali to'lash" %}</button>
+          </form>{% endif %}
         {% else %}—{% endif %}{% endwith %}</td>
         <td>{% include "parts/mijoz_holat.html" %}</td>
         <td>{% for n in a.namunalar.all %}{% if n.lab_holat == "berildi" %}<a class="doc" href="{% url 'xulosa_hujjat' n.xulosa.pk 'pdf' %}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ n.xulosa.raqam }}</a> {% endif %}{% empty %}—{% endfor %}</td>

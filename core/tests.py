@@ -455,3 +455,167 @@ class LabJarayonTests(ShartnomaTests):
         x = Xulosa.objects.create(namuna=nam)
         self.login("buxgalter")
         self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 403)
+
+
+# ---------------------------------------------------------------------------
+# 5-bosqich: Click, Telegram, SMS
+# ---------------------------------------------------------------------------
+import hashlib  # noqa: E402
+import json  # noqa: E402
+from unittest import mock  # noqa: E402
+
+from core import xabarnoma  # noqa: E402
+from core.models import ClickTranzaksiya, Xabar  # noqa: E402
+
+CLICK = dict(CLICK_SERVICE_ID="111", CLICK_MERCHANT_ID="222", CLICK_SECRET_KEY="maxfiy")
+
+
+@override_settings(**CLICK)
+class ClickTests(BaseTest):
+    def setUp(self):
+        self.ariza = Ariza.objects.create(turi="importyor", inn="123456789", buyurtmachi_nomi="T", fish="Y",
+                                          telefon="+998901234567", namuna_turi=NamunaTuri.objects.first(),
+                                          holat=Ariza.Holat.QABUL)
+        self.sh = Shartnoma.objects.create(ariza=self.ariza, holat=Shartnoma.Holat.QABUL)
+        nx = Narxnoma.objects.filter(har_namunaga=True).first()
+        ShartnomaBand.objects.create(shartnoma=self.sh, narxnoma=nx, narx=Decimal("100000"), namuna_soni=1)
+        self.sh.qayta_hisobla()
+        self.n = 0
+
+    def _p(self, action, amount, prepare_id="", error="0", trans="9001", sign=None):
+        p = {"click_trans_id": trans, "service_id": "111", "click_paydoc_id": "555",
+             "merchant_trans_id": str(self.sh.pk), "amount": amount, "action": str(action), "error": error,
+             "error_note": "", "sign_time": "2026-11-21 10:00:00"}
+        if prepare_id != "":
+            p["merchant_prepare_id"] = str(prepare_id)
+        raw = f"{p['click_trans_id']}111maxfiy{p['merchant_trans_id']}{prepare_id}{amount}{action}{p['sign_time']}"
+        p["sign_string"] = sign or hashlib.md5(raw.encode()).hexdigest()
+        return p
+
+    def _post(self, name, p):
+        with self.captureOnCommitCallbacks(execute=True):
+            return json.loads(self.client.post(reverse(name), p).content)
+
+    def test_toliq_tolov(self):
+        r = self._post("click_prepare", self._p(0, "40000.00"))
+        self.assertEqual(r["error"], 0)
+        pid = r["merchant_prepare_id"]
+        r = self._post("click_complete", self._p(1, "40000.00", pid))
+        self.assertEqual(r["error"], 0)
+        self.sh.refresh_from_db()
+        self.assertEqual(self.sh.tolangan_summa, Decimal("40000"))
+        self.assertEqual(self.sh.tolovlar.get().usul, Tolov.Usul.CLICK)
+        self.assertTrue(self.sh.tahlil_boshlash_mumkin)
+        # takroriy complete — ikkinchi marta yozilmaydi
+        r = self._post("click_complete", self._p(1, "40000.00", pid))
+        self.assertEqual(r["error"], -4)
+        self.assertEqual(self.sh.tolovlar.count(), 1)
+        # mijozga xabar jurnalga yozildi (kalit sozlanmagan -> "ochiq")
+        self.assertTrue(Xabar.objects.filter(kanal="sms", holat="ochiq").exists())
+
+    def test_notogri_imzo(self):
+        r = self._post("click_prepare", self._p(0, "1000.00", sign="00"))
+        self.assertEqual(r["error"], -1)
+
+    def test_qoldiqdan_kop_summa(self):
+        r = self._post("click_prepare", self._p(0, "150000.00"))
+        self.assertEqual(r["error"], -2)
+
+    def test_topilmagan_shartnoma(self):
+        self.sh.holat = Shartnoma.Holat.YUBORILMAGAN
+        self.sh.save()
+        self.assertEqual(self._post("click_prepare", self._p(0, "1000.00"))["error"], -5)
+
+    def test_bekor_qilingan(self):
+        pid = self._post("click_prepare", self._p(0, "1000.00"))["merchant_prepare_id"]
+        r = self._post("click_complete", self._p(1, "1000.00", pid, error="-5017"))
+        self.assertEqual(r["error"], -9)
+        self.assertEqual(ClickTranzaksiya.objects.get().holat, "cancelled")
+        self.assertFalse(self.sh.tolovlar.exists())
+
+    def test_complete_summasi_boshqa(self):
+        pid = self._post("click_prepare", self._p(0, "1000.00"))["merchant_prepare_id"]
+        self.assertEqual(self._post("click_complete", self._p(1, "2000.00", pid))["error"], -2)
+
+    def test_mijoz_click_havolasi(self):
+        mijoz = User.objects.create_user("+998901234567", password="parol123", role=Role.MIJOZ)
+        self.ariza.mijoz = mijoz
+        self.ariza.save()
+        self.client.login(username="+998901234567", password="parol123")
+        r = self.client.post(reverse("click_tolash", args=[self.sh.pk]), {"summa": "30000"})
+        self.assertTrue(r["Location"].startswith("https://my.click.uz/services/pay?"))
+        self.assertIn("transaction_param=%d" % self.sh.pk, r["Location"])
+        self.assertIn("amount=30000.00", r["Location"])
+
+
+@override_settings(TELEGRAM_BOT_TOKEN="123:abc", TELEGRAM_BOT_USERNAME="TestBot", TELEGRAM_WEBHOOK_SECRET="s3cret")
+class TelegramTests(BaseTest):
+    def test_ulash(self):
+        mijoz = User.objects.create_user("+998901112299", password="parol123", role=Role.MIJOZ)
+        havola = xabarnoma.telegram_ulash_havolasi(mijoz)
+        self.assertTrue(havola.startswith("https://t.me/TestBot?start="))
+        kod = havola.split("start=")[1]
+        with mock.patch("core.xabarnoma._http", return_value={"ok": True}) as http:
+            r = self.client.post(reverse("telegram_webhook", args=["s3cret"]),
+                                 data=json.dumps({"message": {"chat": {"id": 777}, "text": f"/start {kod}"}}),
+                                 content_type="application/json")
+        self.assertEqual(r.status_code, 200)
+        mijoz.refresh_from_db()
+        self.assertEqual(mijoz.telegram_chat_id, "777")
+        self.assertTrue(http.called)
+
+    def test_notogri_secret(self):
+        r = self.client.post(reverse("telegram_webhook", args=["xato"]), data="{}", content_type="application/json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_soxta_kod(self):
+        with mock.patch("core.xabarnoma._http", return_value={"ok": True}):
+            self.client.post(reverse("telegram_webhook", args=["s3cret"]),
+                             data=json.dumps({"message": {"chat": {"id": 5}, "text": "/start 123"}}),
+                             content_type="application/json")
+        self.assertFalse(User.objects.filter(telegram_chat_id="5").exists())
+
+
+@override_settings(ESKIZ_EMAIL="a@b.uz", ESKIZ_PASSWORD="p")
+class SmsTests(BaseTest):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+
+    def test_sms_eskiz(self):
+        javoblar = [{"data": {"token": "T"}}, {"status": "waiting"}]
+        with mock.patch("core.xabarnoma._http", side_effect=javoblar) as http:
+            self.assertTrue(xabarnoma.sms_yubor("+998 90 123 45 67", "Salom"))
+        url = http.call_args_list[1].args[1]
+        self.assertTrue(url.endswith("/message/sms/send"))
+        self.assertEqual(http.call_args_list[1].kwargs["data"]["mobile_phone"], "998901234567")
+        self.assertEqual(Xabar.objects.get().holat, "yuborildi")
+
+    def test_sms_xato_jarayonni_toxtatmaydi(self):
+        with mock.patch("core.xabarnoma._http", side_effect=OSError("tarmoq yo'q")):
+            self.assertFalse(xabarnoma.sms_yubor("+998901234567", "Salom"))
+        self.assertEqual(Xabar.objects.get().holat, "xato")
+
+
+class HujjatHimoyaTests(BaseTest):
+    def test_hujjat_faqat_ruxsat_bilan(self):
+        egasi = User.objects.create_user("+998901000001", password="parol123", role=Role.MIJOZ)
+        begona = User.objects.create_user("+998901000002", password="parol123", role=Role.MIJOZ)
+        a = Ariza.objects.create(turi="ixtiyoriy", inn="12345678901234", fish="A", telefon="+998",
+                                 namuna_turi=NamunaTuri.objects.get(nomi="Fungitsidlar"), mijoz=egasi)
+        h = ArizaHujjat.objects.create(ariza=a, turi="guvohnoma", fayl=pdf("asl nomi.pdf"))
+        self.assertNotIn("asl", h.fayl.name)  # fayl nomi taxmin qilinmaydigan
+        url = reverse("ariza_hujjat", args=[h.pk])
+        self.assertEqual(self.client.get(url).status_code, 302)  # kirmagan
+        self.client.login(username="+998901000002", password="parol123")
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.logout()
+        self.client.login(username="+998901000001", password="parol123")
+        self.assertEqual(self.client.get(url).status_code, 200)
+        self.client.logout()
+        self.login("lab_mineral")  # boshqa soha laboratoriyasi
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.logout()
+        self.login("namuna")
+        self.assertEqual(self.client.get(url).status_code, 200)

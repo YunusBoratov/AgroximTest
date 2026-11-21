@@ -13,6 +13,20 @@ from django.utils.translation import gettext_lazy as _
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _load_dotenv(path):
+    """Loyiha ildizidagi .env faylini o'qiydi (agar mavjud bo'lsa). Tizim o'zgaruvchilari ustun turadi."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
+
+
+_load_dotenv(BASE_DIR / ".env")
+
+
 def env(name, default=None):
     return os.environ.get(name, default)
 
@@ -135,3 +149,36 @@ TUPROQ_TAHLILI_URL = env("TUPROQ_TAHLILI_URL", "#")
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", "")
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 80 * 1024 * 1024
+
+
+# ---------------------------------------------------------------------------
+# Tashqi xizmatlar (kalitlar faqat serverdagi .env faylida saqlanadi, kodga yozilmaydi)
+# ---------------------------------------------------------------------------
+# Telegram bot (@BotFather beradi)
+TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_USERNAME = env("TELEGRAM_BOT_USERNAME", "")  # @ belgisisiz, masalan AgroximTestBot
+TELEGRAM_WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET", "")
+
+# SMS — Eskiz.uz (notify.eskiz.uz)
+ESKIZ_EMAIL = env("ESKIZ_EMAIL", "")
+ESKIZ_PASSWORD = env("ESKIZ_PASSWORD", "")
+ESKIZ_FROM = env("ESKIZ_FROM", "4546")  # tasdiqlangan jo'natuvchi nomi
+
+# Click SHOP API (merchant.click.uz kabinetidan)
+CLICK_SERVICE_ID = env("CLICK_SERVICE_ID", "")
+CLICK_MERCHANT_ID = env("CLICK_MERCHANT_ID", "")
+CLICK_SECRET_KEY = env("CLICK_SECRET_KEY", "")
+CLICK_MERCHANT_USER_ID = env("CLICK_MERCHANT_USER_ID", "")
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = env("DJANGO_SSL_REDIRECT", "1") == "1"
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"core": {"handlers": ["console"], "level": "INFO"}},
+}

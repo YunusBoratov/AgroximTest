@@ -41,7 +41,7 @@
     <tr><td></td><td colspan="4" class="bold">{% trans "Jami" %}</td><td class="money">{{ sh.jami_summa|money }}</td></tr></tbody>
   </table>
   {% if namunalar %}<p class="help" style="margin-top:12px">{% trans "Namunalar" %}: {% for n in namunalar %}{{ n }} ({{ n.nomi }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
-  {% if hujjatlar %}<div class="docs" style="margin-top:8px">{% for h in hujjatlar %}<a class="doc" href="{{ h.fayl.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>{% endif %}
+  {% if hujjatlar %}<div class="docs" style="margin-top:8px">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>{% endif %}
 </section>
 
 <section class="card">

@@ -35,6 +35,10 @@ Shartnoma PDF uchun serverda LibreOffice (`soffice`) o'rnatilgan bo'lishi kerak;
 
 Mijozlar `/royxatdan-otish/` sahifasida telefon raqami va parol bilan ro'yxatdan o'tadi (OneID kalitlari olingach qo'shiladi).
 
+## Serverga o'rnatish
+
+To'liq qo'llanma: [docs/SERVERGA_ORNATISH.md](docs/SERVERGA_ORNATISH.md). Barcha maxfiy kalitlar `.env` faylida (namuna: `.env.example`).
+
 ## Ishlab chiqarish sozlamalari (environment)
 
 `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=0`, `DJANGO_ALLOWED_HOSTS=agroximtest.uz`, `DJANGO_CSRF_ORIGINS=https://agroximtest.uz`,
@@ -55,6 +59,7 @@ Mijozlar `/royxatdan-otish/` sahifasida telefon raqami va parol bilan ro'yxatdan
 - [x] **2-bosqich:** mijoz sayti (3 xil ariza + hujjat yuklash), ro'yxatdan o'tish (telefon + parol), kabinet, namuna qabul qiluvchi ishi (qabul / rad / namuna yaratish / tahrirlash)
 - [x] **3-bosqich:** shartnoma tuzish (narxnomadan ko'rsatkich tanlash), shartnoma Word/PDF (rasmiy shablon asosida), buxgalteriyaga yuborish, rekvizitlar, to'lovlar (30% / 100% qoidalari)
 - [x] **4-bosqich:** laboratoriya jarayoni (tahlilga olish 30%+, natijalar tayyor, natija kiritish), sinov bayonnomasi Word/PDF (yangi shakl, QR kod), tasdiqlash, 100% to'lovdan keyin mijozga berish, QR orqali ochiq tekshirish sahifasi
-- [ ] **5-bosqich:** Click integratsiyasi, OneID, SMS va Telegram bildirishnomalari, rus tili tarjimasi, serverga joylash
+- [x] **5-bosqich (qisman):** Click SHOP API (onlayn to'lov avtomatik shartnomaga yoziladi), SMS (Eskiz.uz) va Telegram bot xabarnomalari, xabarlar jurnali, hujjatlarni ruxsat bilan berish, serverga o'rnatish qo'llanmasi
+- [ ] Rus tili tarjimasi, OneID (kalitlar olingach)
 
 `docs/shablonlar/` — buyurtmachi bergan rasmiy shakllar (shartnoma, xulosa, narxnoma, namuna qabul qilish).

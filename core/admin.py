@@ -65,3 +65,16 @@ class NatijaInline(admin.TabularInline):
 class XulosaAdmin(admin.ModelAdmin):
     list_display = ("raqam", "namuna", "tayyor_at")
     inlines = [NatijaInline]
+
+
+@admin.register(models.Xabar)
+class XabarAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "kanal", "kimga", "holat", "matn")
+    list_filter = ("kanal", "holat")
+    search_fields = ("kimga", "matn")
+
+
+@admin.register(models.ClickTranzaksiya)
+class ClickTranzaksiyaAdmin(admin.ModelAdmin):
+    list_display = ("click_trans_id", "shartnoma", "summa", "holat", "created_at")
+    list_filter = ("holat",)
