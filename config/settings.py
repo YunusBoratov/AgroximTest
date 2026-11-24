@@ -134,6 +134,8 @@ XULOSA_YUBORISH_MIN_FOIZ = 100  # xulosa buyurtmachiga faqat to'liq to'lovdan ke
 MARKAZ = {
     "nomi": "Agrokimyo va tuproq tahlili markazi",
     "nomi_ru": "Центр агрохимического и почвенного анализа",
+    "shior_ru": "Почва — наше единственное богатство",
+    "manzil_ru": "111215, Ташкентская область, Кибрайский район, ул. Бобура, 8",
     "shior": "Tuproq yagona boylik",
     "telefonlar": ["+998 71 203 14 14 (1015)", "+998 71 260 42 20"],
     "manzil": "111215, Toshkent viloyati, Qibray tumani, Bobur ko'chasi, 8-uy",
@@ -144,7 +146,6 @@ MARKAZ = {
 # Shartnoma raqami: oddiy tartib raqami (har yili 1 dan). Joriy yil uchun boshlang'ich
 # raqamni admin panelda (Hisoblagich) yoki shu sozlama bilan belgilash mumkin.
 SHARTNOMA_RAQAM_BOSHLANISH = int(env("SHARTNOMA_RAQAM_BOSHLANISH", "0"))
-TUPROQ_TAHLILI_URL = env("TUPROQ_TAHLILI_URL", "#")
 # Xulosadagi QR kod shu manzilga olib boradi (masalan https://agroximtest.uz)
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", "")
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024

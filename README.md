@@ -29,6 +29,8 @@ python manage.py runserver
 
 Testlar: `python manage.py test`
 
+Tarjima: `locale/ru/LC_MESSAGES/django.po`. Yangi matn qo'shilganda: `python manage.py makemessages -l ru`, tarjima qilib, `python manage.py compilemessages`.
+
 `PUBLIC_BASE_URL` (masalan `https://agroximtest.uz`) — bayonnomadagi QR kod shu manzilga olib boradi.
 
 Shartnoma PDF uchun serverda LibreOffice (`soffice`) o'rnatilgan bo'lishi kerak; bo'lmasa Word fayl beriladi.
@@ -60,6 +62,7 @@ To'liq qo'llanma: [docs/SERVERGA_ORNATISH.md](docs/SERVERGA_ORNATISH.md). Barcha
 - [x] **3-bosqich:** shartnoma tuzish (narxnomadan ko'rsatkich tanlash), shartnoma Word/PDF (rasmiy shablon asosida), buxgalteriyaga yuborish, rekvizitlar, to'lovlar (30% / 100% qoidalari)
 - [x] **4-bosqich:** laboratoriya jarayoni (tahlilga olish 30%+, natijalar tayyor, natija kiritish), sinov bayonnomasi Word/PDF (yangi shakl, QR kod), tasdiqlash, 100% to'lovdan keyin mijozga berish, QR orqali ochiq tekshirish sahifasi
 - [x] **5-bosqich (qisman):** Click SHOP API (onlayn to'lov avtomatik shartnomaga yoziladi), SMS (Eskiz.uz) va Telegram bot xabarnomalari, xabarlar jurnali, hujjatlarni ruxsat bilan berish, serverga o'rnatish qo'llanmasi
-- [ ] Rus tili tarjimasi, OneID (kalitlar olingach)
+- [x] Rus tili (barcha sahifalar; narxnomadagi ko'rsatkich nomlari va rasmiy hujjat shablonlari asl tilida)
+- [ ] OneID (kalitlar olingach)
 
 `docs/shablonlar/` — buyurtmachi bergan rasmiy shakllar (shartnoma, xulosa, narxnoma, namuna qabul qilish).

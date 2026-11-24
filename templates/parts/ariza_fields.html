@@ -14,7 +14,7 @@
     {% for name in "inn buyurtmachi_nomi fish telefon namuna_soni chegara_maskani namuna_turi partiya_raqami namuna_nomi invoys_raqami"|make_list_words %}
       {% with field=form|field:name %}
       <div class="fld" data-field="{{ name }}">
-        <label for="{{ field.id_for_label }}" data-label-ixtiyoriy="{% trans 'JSHSHIR / ID' %}">{% if name == "inn" %}{% trans "INN" %}{% else %}{{ field.label }}{% endif %}<i class="req">*</i></label>
+        <label for="{{ field.id_for_label }}" data-label-ixtiyoriy="{% trans 'JSHSHIR / ID' %}" data-label-inn="{% trans 'INN' %}">{% if name == "inn" %}{% trans "INN" %}{% else %}{{ field.label }}{% endif %}<i class="req">*</i></label>
         {{ field }}{{ field.errors }}
       </div>
       {% endwith %}
@@ -62,7 +62,7 @@
       el.hidden = !(req || c.ixtiyoriy.includes(n));
       el.querySelector(".req").hidden = !req;
       const lbl = el.querySelector("label");
-      if (n === "inn") lbl.firstChild.textContent = sel.value === "ixtiyoriy" ? lbl.dataset.labelIxtiyoriy : "INN";
+      if (n === "inn") lbl.firstChild.textContent = sel.value === "ixtiyoriy" ? lbl.dataset.labelIxtiyoriy : lbl.dataset.labelInn;
     });
     document.querySelectorAll("[data-hujjat]").forEach(el => {
       const n = el.dataset.hujjat;

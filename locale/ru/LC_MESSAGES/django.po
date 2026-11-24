@@ -1,0 +1,1702 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-24 19:28+0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
+"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: accounts/forms.py:19 accounts/forms.py:32 accounts/views.py:46
+msgid "Login"
+msgstr "Логин"
+
+#: accounts/forms.py:20 accounts/forms.py:26 accounts/forms.py:67
+msgid "Parol"
+msgstr "Пароль"
+
+#: accounts/forms.py:22
+msgid "Kiriting"
+msgstr "Введите"
+
+#: accounts/forms.py:27
+msgid "Tahrirlashda bo'sh qoldirilsa, parol o'zgarmaydi."
+msgstr "Если оставить пустым при редактировании, пароль не изменится."
+
+#: accounts/forms.py:32 accounts/views.py:50 core/models.py:73
+#: core/views.py:337
+msgid "Faol"
+msgstr "Активен"
+
+#: accounts/forms.py:33
+msgid "Lotin harflari, raqamlar va @ . + - _ belgilari"
+msgstr "Латинские буквы, цифры и символы @ . + - _"
+
+#: accounts/forms.py:59
+msgid "Yuridik shaxs (tashkilot)"
+msgstr "Юридическое лицо (организация)"
+
+#: accounts/forms.py:59
+msgid "Jismoniy shaxs"
+msgstr "Физическое лицо"
+
+#: accounts/forms.py:61
+msgid "Buyurtmachi turi"
+msgstr "Тип заказчика"
+
+#: accounts/forms.py:62
+msgid "Telefon raqami (login)"
+msgstr "Номер телефона (логин)"
+
+#: accounts/forms.py:64 accounts/models.py:21 accounts/views.py:45
+#: core/models.py:140 core/views.py:137 templates/parts/ariza_info.html:6
+msgid "F.I.SH."
+msgstr "Ф.И.О."
+
+#: accounts/forms.py:65
+msgid "INN (tashkilot) yoki JSHSHIR"
+msgstr "ИНН (организации) или ПИНФЛ"
+
+#: accounts/forms.py:66 accounts/models.py:28
+msgid "Tashkilot nomi"
+msgstr "Название организации"
+
+#: accounts/forms.py:68
+msgid "Parolni takrorlang"
+msgstr "Повторите пароль"
+
+#: accounts/forms.py:73
+msgid "Telefon raqami noto'g'ri. Masalan: +998 90 123 45 67"
+msgstr "Неверный номер телефона. Например: +998 90 123 45 67"
+
+#: accounts/forms.py:75
+msgid "Bu telefon raqami bilan allaqachon ro'yxatdan o'tilgan"
+msgstr "С этим номером телефона уже зарегистрированы"
+
+#: accounts/forms.py:82
+msgid "INN 9 ta, JSHSHIR 14 ta raqamdan iborat bo'ladi"
+msgstr "ИНН состоит из 9 цифр, ПИНФЛ — из 14 цифр"
+
+#: accounts/forms.py:84
+msgid "Tashkilot nomini kiriting"
+msgstr "Введите название организации"
+
+#: accounts/forms.py:86
+msgid "Parollar mos kelmadi"
+msgstr "Пароли не совпадают"
+
+#: accounts/models.py:7
+msgid "Super admin"
+msgstr "Суперадмин"
+
+#: accounts/models.py:8
+msgid "Admin"
+msgstr "Админ"
+
+#: accounts/models.py:9
+msgid "Buxgalteriya"
+msgstr "Бухгалтерия"
+
+#: accounts/models.py:10
+msgid "Mineral o'g'it tahlil laboratoriyasi"
+msgstr "Лаборатория анализа минеральных удобрений"
+
+#: accounts/models.py:11
+msgid "Kimyoviy vositalar tahlil laboratoriyasi"
+msgstr "Лаборатория анализа химических средств"
+
+#: accounts/models.py:12
+msgid "Namuna qabul qilib oluvchi"
+msgstr "Приёмщик образцов"
+
+#: accounts/models.py:13
+msgid "Buyurtmachi (mijoz)"
+msgstr "Заказчик (клиент)"
+
+#: accounts/models.py:20 accounts/views.py:44
+msgid "Rol"
+msgstr "Роль"
+
+#: accounts/models.py:22 accounts/views.py:47 core/models.py:141
+#: templates/core/shartnoma_detail.html:22 templates/parts/ariza_info.html:7
+msgid "Telefon"
+msgstr "Телефон"
+
+#: accounts/models.py:23
+msgid "Lavozimi"
+msgstr "Должность"
+
+#: accounts/models.py:26 templates/parts/ariza_info.html:4
+msgid "JSHSHIR"
+msgstr "ПИНФЛ"
+
+#: accounts/models.py:27 core/views.py:138 core/views.py:167 core/views.py:190
+#: templates/parts/ariza_fields.html:17 templates/parts/ariza_info.html:4
+msgid "INN"
+msgstr "ИНН"
+
+#: accounts/models.py:29
+msgid "Telegram chat ID"
+msgstr "Telegram chat ID"
+
+#: accounts/models.py:30
+msgid "SMS xabarnomalar"
+msgstr "SMS-уведомления"
+
+#: accounts/models.py:33
+msgid "Foydalanuvchi"
+msgstr "Пользователь"
+
+#: accounts/models.py:34
+msgid "Foydalanuvchilar"
+msgstr "Пользователи"
+
+#: accounts/views.py:29
+msgid "Ro'yxatdan o'tdingiz. Endi ariza yuborishingiz mumkin."
+msgstr "Вы зарегистрировались. Теперь вы можете подать заявку."
+
+#: accounts/views.py:36
+msgid "OneID orqali kirish tez orada ishga tushadi."
+msgstr "Вход через OneID скоро будет доступен."
+
+#: accounts/views.py:48
+msgid "Xodim lavozimi"
+msgstr "Должность сотрудника"
+
+#: accounts/views.py:49 core/models.py:166 core/models.py:447
+msgid "Yaratilgan vaqt"
+msgstr "Дата создания"
+
+#: accounts/views.py:50 core/views.py:337
+msgid "Nofaol"
+msgstr "Неактивен"
+
+#: accounts/views.py:52 accounts/views.py:68 core/views.py:176
+#: core/views.py:356 templates/core/xulosa_korish.html:12
+#: templates/parts/cell.html:5
+msgid "Tahrirlash"
+msgstr "Редактировать"
+
+#: accounts/views.py:56 core/permissions.py:27
+msgid "Xodimlar"
+msgstr "Сотрудники"
+
+#: accounts/views.py:65 core/views.py:353 core/views_ariza.py:194
+msgid "Saqlandi"
+msgstr "Сохранено"
+
+#: accounts/views.py:68
+msgid "Xodim"
+msgstr "Сотрудник"
+
+#: accounts/views.py:68 core/listing.py:143 core/views.py:356
+msgid "Qo'shish"
+msgstr "Добавить"
+
+#: config/settings.py:113
+msgid "O'zbekcha"
+msgstr "O'zbekcha"
+
+#: config/settings.py:114
+msgid "Русский"
+msgstr "Русский"
+
+#: core/forms.py:26
+msgid "yozing"
+msgstr "введите"
+
+#: core/forms.py:42
+msgid "Tanlang"
+msgstr "Выберите"
+
+#: core/forms.py:47
+#, python-format
+msgid "Fayl hajmi %(mb)s MB dan oshmasligi kerak"
+msgstr "Размер файла не должен превышать %(mb)s МБ"
+
+#: core/forms.py:49
+msgid "Ruxsat etilgan formatlar: PDF, JPG, PNG, Word, Excel"
+msgstr "Допустимые форматы: PDF, JPG, PNG, Word, Excel"
+
+#: core/forms.py:56 core/models.py:202
+msgid "Invoys"
+msgstr "Инвойс"
+
+#: core/forms.py:57 core/models.py:203
+msgid "Analiz sertifikati"
+msgstr "Сертификат анализа"
+
+#: core/forms.py:58 core/models.py:204
+msgid "Guvohnoma"
+msgstr "Свидетельство"
+
+#: core/forms.py:59
+msgid "Qo'shimcha hujjatlar"
+msgstr "Дополнительные документы"
+
+#: core/forms.py:67 core/models.py:138 templates/core/shartnoma_detail.html:21
+msgid "INN / JSHSHIR"
+msgstr "ИНН / ПИНФЛ"
+
+#: core/forms.py:93
+msgid "Bu maydon to'ldirilishi shart"
+msgstr "Это поле обязательно для заполнения"
+
+#: core/forms.py:95
+msgid "Namuna soni 1 dan 50 gacha bo'lishi kerak"
+msgstr "Количество образцов должно быть от 1 до 50"
+
+#: core/forms.py:99
+msgid "Faqat raqamlar kiritilishi kerak"
+msgstr "Допускаются только цифры"
+
+#: core/forms.py:101
+msgid "JSHSHIR 14 ta raqamdan iborat bo'lishi kerak"
+msgstr "ПИНФЛ должен состоять из 14 цифр"
+
+#: core/forms.py:103
+msgid "INN 9 ta raqamdan iborat bo'lishi kerak"
+msgstr "ИНН должен состоять из 9 цифр"
+
+#: core/forms.py:120
+msgid "Hujjatni yuklang"
+msgstr "Загрузите документ"
+
+#: core/forms.py:153 core/models.py:165 templates/parts/ariza_info.html:15
+msgid "Rad etish sababi"
+msgstr "Причина отказа"
+
+#: core/forms.py:166
+msgid "Summa, so'm"
+msgstr "Сумма, сум"
+
+#: core/forms.py:167 core/models.py:362
+msgid "To'lov usuli"
+msgstr "Способ оплаты"
+
+#: core/forms.py:168 core/models.py:363
+msgid "To'lov sanasi"
+msgstr "Дата оплаты"
+
+#: core/forms.py:170
+msgid "Izoh (to'lov topshiriqnomasi №)"
+msgstr "Комментарий (№ платёжного поручения)"
+
+#: core/forms.py:182
+#, python-format
+msgid "Summa qoldiqdan (%(q)s so'm) oshmasligi kerak"
+msgstr "Сумма не должна превышать остаток (%(q)s сум)"
+
+#: core/forms.py:193 core/models.py:398 templates/core/ariza_detail.html:18
+msgid "Og'irligi / hajmi"
+msgstr "Вес / объём"
+
+#: core/forms.py:194 core/models.py:395
+msgid "Namuna tavsifi"
+msgstr "Описание образца"
+
+#: core/forms.py:205 core/models.py:434
+msgid "Sinov o'tkazilgan sana"
+msgstr "Дата проведения испытания"
+
+#: core/models.py:14
+msgid "Mineral o'g'it"
+msgstr "Минеральное удобрение"
+
+#: core/models.py:15
+msgid "Kimyoviy vosita"
+msgstr "Химическое средство"
+
+#: core/models.py:21 core/models.py:131
+msgid "Kategoriya"
+msgstr "Категория"
+
+#: core/models.py:22 templates/core/ariza_detail.html:18
+msgid "Nomi"
+msgstr "Название"
+
+#: core/models.py:23
+msgid "Nomi (rus)"
+msgstr "Название (рус)"
+
+#: core/models.py:29 core/models.py:153 core/models.py:393 core/views.py:141
+#: core/views.py:169 core/views.py:282 core/views.py:309
+#: templates/core/kabinet.html:6 templates/core/shartnoma_form.html:9
+#: templates/core/shartnoma_tanlash.html:6 templates/parts/ariza_info.html:8
+#: templates/public/kabinet.html:15
+msgid "Namuna turi"
+msgstr "Тип образца"
+
+#: core/models.py:30
+msgid "Namuna turlari"
+msgstr "Типы образцов"
+
+#: core/models.py:49
+msgid "Mineral o'g'itlar"
+msgstr "Минеральные удобрения"
+
+#: core/models.py:50
+msgid "Organik o'g'itlar"
+msgstr "Органические удобрения"
+
+#: core/models.py:51
+msgid "Pestitsidlar"
+msgstr "Пестициды"
+
+#: core/models.py:52
+msgid "Tuproqlar"
+msgstr "Почвы"
+
+#: core/models.py:53
+msgid "Qishloq xo'jalik va oziq-ovqat mahsulotlari"
+msgstr "Сельскохозяйственная и пищевая продукция"
+
+#: core/models.py:54
+msgid "Mineral o'g'itlar, tuproq, qishloq xo'jalik mahsulotlari"
+msgstr "Минеральные удобрения, почва, сельскохозяйственная продукция"
+
+#: core/models.py:55
+msgid "Boshqa"
+msgstr "Другое"
+
+#: core/models.py:63
+msgid "Tartib raqami"
+msgstr "Порядковый номер"
+
+#: core/models.py:64
+msgid "Aniqlanadigan tavsif (parametr) nomi"
+msgstr "Наименование определяемой характеристики (параметра)"
+
+#: core/models.py:65 core/views.py:334 templates/core/shartnoma_detail.html:39
+#: templates/core/shartnoma_form.html:21
+msgid "Tahlil usuli"
+msgstr "Метод анализа"
+
+#: core/models.py:66
+msgid "Sinov obyekti turi"
+msgstr "Тип объекта испытаний"
+
+#: core/models.py:67 core/views.py:335
+msgid "Sinovlar obyektining nomi"
+msgstr "Наименование объекта испытаний"
+
+#: core/models.py:68 core/views.py:336 templates/core/shartnoma_detail.html:39
+#: templates/core/shartnoma_form.html:21
+msgid "Narxi, so'm"
+msgstr "Цена, сум"
+
+#: core/models.py:70
+msgid "Har bir namunaga hisoblanadi"
+msgstr "Считается за каждый образец"
+
+#: core/models.py:71
+msgid ""
+"O'chirilsa, namunalar sonidan qat'i nazar bir marta hisoblanadi (masalan, "
+"namuna olish)."
+msgstr ""
+"Если отключено, считается один раз независимо от количества образцов "
+"(например, отбор проб)."
+
+#: core/models.py:77 core/models.py:78 core/permissions.py:26 core/views.py:343
+#: core/views.py:356
+msgid "Narxnoma"
+msgstr "Прейскурант"
+
+#: core/models.py:92
+msgid "Oxirgi berilgan raqam"
+msgstr "Последний выданный номер"
+
+#: core/models.py:96
+msgid "Hisoblagich (raqamlash)"
+msgstr "Счётчик (нумерация)"
+
+#: core/models.py:97
+msgid "Hisoblagichlar (raqamlash)"
+msgstr "Счётчики (нумерация)"
+
+#: core/models.py:118
+msgid "Importyor"
+msgstr "Импортёр"
+
+#: core/models.py:119
+msgid "Davlat ro'yxatidan o'tkazuvchi"
+msgstr "Проходящий государственную регистрацию"
+
+#: core/models.py:120
+msgid "Ixtiyoriy"
+msgstr "Добровольный"
+
+#: core/models.py:125
+msgid "Yangi"
+msgstr "Новая"
+
+#: core/models.py:126 templates/core/ariza_detail.html:18
+#: templates/core/shartnoma_tanlash.html:6 templates/core/xulosa_form.html:11
+msgid "Qabul qilingan"
+msgstr "Принята"
+
+#: core/models.py:127 templates/parts/mijoz_holat.html:2
+msgid "Rad etilgan"
+msgstr "Отклонена"
+
+#: core/models.py:129 core/views.py:134 core/views.py:162
+#: templates/core/kabinet.html:6 templates/core/shartnoma_tanlash.html:6
+#: templates/public/kabinet.html:15
+msgid "Ariza raqami"
+msgstr "Номер заявки"
+
+#: core/models.py:130 core/views.py:135 core/views.py:163 core/views.py:188
+#: templates/core/shartnoma_tanlash.html:6 templates/parts/ariza_info.html:3
+msgid "Ariza turi"
+msgstr "Тип заявки"
+
+#: core/models.py:133
+msgid "Mijoz"
+msgstr "Клиент"
+
+#: core/models.py:139 core/views.py:136 core/views.py:166 core/views.py:189
+#: core/views.py:281 core/views.py:308 templates/parts/ariza_info.html:5
+msgid "Buyurtmachi nomi"
+msgstr "Наименование заказчика"
+
+#: core/models.py:142 templates/parts/ariza_info.html:20
+msgid "Manzil"
+msgstr "Адрес"
+
+#: core/models.py:145
+msgid "Rahbar F.I.SH."
+msgstr "Ф.И.О. руководителя"
+
+#: core/models.py:146
+msgid "Hisob raqami (X/R)"
+msgstr "Расчётный счёт (Р/С)"
+
+#: core/models.py:147 templates/parts/ariza_info.html:23
+msgid "Bank"
+msgstr "Банк"
+
+#: core/models.py:148
+msgid "MFO"
+msgstr "МФО"
+
+#: core/models.py:149
+msgid "OKED"
+msgstr "ОКЭД"
+
+#: core/models.py:152 core/views.py:140 templates/core/shartnoma_detail.html:39
+#: templates/core/shartnoma_form.html:21 templates/parts/ariza_info.html:9
+#: templates/public/kabinet.html:15
+msgid "Namuna soni"
+msgstr "Количество образцов"
+
+#: core/models.py:154 core/models.py:394 core/views.py:142 core/views.py:168
+#: core/views.py:283 templates/parts/ariza_info.html:10
+msgid "Namuna nomi"
+msgstr "Наименование образца"
+
+#: core/models.py:155 templates/parts/ariza_info.html:11
+msgid "Partiya raqami (LOT)"
+msgstr "Номер партии (LOT)"
+
+#: core/models.py:156 templates/parts/ariza_info.html:12
+msgid "Invoys raqami"
+msgstr "Номер инвойса"
+
+#: core/models.py:157
+msgid "Chegara maskani / ombor"
+msgstr "Таможенный пост / склад"
+
+#: core/models.py:159 core/models.py:265 core/views.py:147 core/views.py:172
+#: core/views.py:202 core/views.py:228 core/views.py:289 core/views.py:312
+#: core/views.py:337 templates/core/ariza_detail.html:18
+#: templates/core/kabinet.html:6 templates/parts/filters.html:22
+#: templates/public/kabinet.html:15
+msgid "Holati"
+msgstr "Статус"
+
+#: core/models.py:161
+msgid "Qabul qilgan xodim"
+msgstr "Принявший сотрудник"
+
+#: core/models.py:164
+msgid "Qabul qilingan vaqt"
+msgstr "Время приёма"
+
+#: core/models.py:170 core/models.py:264 core/models.py:387
+#: core/permissions.py:18 core/views.py:155 core/views_ariza.py:116
+#: templates/core/ariza_qabul.html:4 templates/core/shartnoma_detail.html:19
+#: templates/core/shartnoma_form.html:7
+msgid "Ariza"
+msgstr "Заявка"
+
+#: core/models.py:171 templates/core/dash_namuna.html:3
+#: templates/core/kabinet.html:4 templates/public/kabinet.html:6
+msgid "Arizalar"
+msgstr "Заявки"
+
+#: core/models.py:205
+msgid "Qo'shimcha hujjat"
+msgstr "Дополнительный документ"
+
+#: core/models.py:208
+msgid "Hujjat turi"
+msgstr "Тип документа"
+
+#: core/models.py:209
+msgid "Fayl"
+msgstr "Файл"
+
+#: core/models.py:219
+msgid "Ariza hujjati"
+msgstr "Документ заявки"
+
+#: core/models.py:220
+msgid "Ariza hujjatlari"
+msgstr "Документы заявки"
+
+#: core/models.py:254
+msgid "Buxgalteriyaga yuborilmagan"
+msgstr "Не отправлен в бухгалтерию"
+
+#: core/models.py:255 templates/core/shartnoma_detail.html:24
+msgid "Buxgalteriyaga yuborilgan"
+msgstr "Отправлен в бухгалтерию"
+
+#: core/models.py:256
+msgid "Buxgalter qabul qilgan"
+msgstr "Принят бухгалтером"
+
+#: core/models.py:259
+msgid "To'lov kutilmoqda"
+msgstr "Ожидается оплата"
+
+#: core/models.py:260
+msgid "Qisman to'langan"
+msgstr "Частично оплачен"
+
+#: core/models.py:261 core/models.py:270
+#: templates/core/shartnoma_detail.html:29 templates/core/xulosa_korish.html:21
+msgid "To'langan"
+msgstr "Оплачен"
+
+#: core/models.py:263 core/views.py:187
+msgid "Shartnoma raqami"
+msgstr "Номер договора"
+
+#: core/models.py:267
+msgid "To'lov holati"
+msgstr "Статус оплаты"
+
+#: core/models.py:269 core/views.py:192 templates/parts/filters.html:28
+msgid "Summasi"
+msgstr "Сумма"
+
+#: core/models.py:275
+msgid "Shakllantirilgan vaqt"
+msgstr "Время формирования"
+
+#: core/models.py:276
+msgid "Buxgalteriyaga yuborilgan vaqt"
+msgstr "Время отправки в бухгалтерию"
+
+#: core/models.py:277
+msgid "Buxgalter qabul qilgan vaqt"
+msgstr "Время принятия бухгалтером"
+
+#: core/models.py:282 core/models.py:389 core/views.py:284
+#: templates/public/kabinet.html:15
+msgid "Shartnoma"
+msgstr "Договор"
+
+#: core/models.py:283
+msgid "Shartnomalar"
+msgstr "Договоры"
+
+#: core/models.py:356
+msgid "Bank o'tkazmasi"
+msgstr "Банковский перевод"
+
+#: core/models.py:357
+msgid "Click"
+msgstr "Click"
+
+#: core/models.py:358
+msgid "Naqd"
+msgstr "Наличные"
+
+#: core/models.py:361 templates/core/shartnoma_detail.html:39
+#: templates/core/shartnoma_detail.html:50
+#: templates/core/shartnoma_form.html:21
+msgid "Summa"
+msgstr "Сумма"
+
+#: core/models.py:364 core/views.py:290 templates/core/shartnoma_detail.html:50
+msgid "Izoh"
+msgstr "Комментарий"
+
+#: core/models.py:365
+msgid "Tranzaksiya ID"
+msgstr "ID транзакции"
+
+#: core/models.py:372 core/views.py:203
+msgid "To'lov"
+msgstr "Платёж"
+
+#: core/models.py:373 templates/core/shartnoma_detail.html:48
+msgid "To'lovlar"
+msgstr "Платежи"
+
+#: core/models.py:381
+msgid "Yangi namuna"
+msgstr "Новый образец"
+
+#: core/models.py:382
+msgid "Tahlil uchun yuborilgan"
+msgstr "Отправлен на анализ"
+
+#: core/models.py:383
+msgid "Tahlil natijalari tayyor"
+msgstr "Результаты анализа готовы"
+
+#: core/models.py:384
+msgid "Xulosa kiritilgan"
+msgstr "Заключение внесено"
+
+#: core/models.py:385 templates/core/xulosa_korish.html:29
+msgid "Buyurtmachiga berilgan"
+msgstr "Выдано заказчику"
+
+#: core/models.py:392
+msgid "Namuna tartib raqami"
+msgstr "Порядковый номер образца"
+
+#: core/models.py:396
+msgid "Ta'sir etuvchi modda"
+msgstr "Действующее вещество"
+
+#: core/models.py:397 core/views.py:164
+msgid "Namuna olgan mas'ul xodim"
+msgstr "Ответственный за отбор образца"
+
+#: core/models.py:401
+msgid "Qabul qilgan"
+msgstr "Принял"
+
+#: core/models.py:404 core/views.py:170
+msgid "Namuna qabul qilingan vaqt"
+msgstr "Время приёма образца"
+
+#: core/models.py:406
+msgid "Laboratoriya holati"
+msgstr "Статус в лаборатории"
+
+#: core/models.py:408
+msgid "Tahlilga topshirilgan vaqt"
+msgstr "Время передачи на анализ"
+
+#: core/models.py:410
+msgid "Tahlilga qabul qilgan"
+msgstr "Принял на анализ"
+
+#: core/models.py:413 core/views.py:288
+msgid "Tahlil yakunlangan vaqt"
+msgstr "Время завершения анализа"
+
+#: core/models.py:414
+msgid "Buyurtmachiga berilgan vaqt"
+msgstr "Время выдачи заказчику"
+
+#: core/models.py:418 core/permissions.py:20 core/views.py:182
+#: core/views.py:280 core/views.py:307 core/views_ariza.py:196
+#: templates/core/xulosa_form.html:9 templates/core/xulosa_korish.html:25
+#: templates/public/tekshirish.html:10
+msgid "Namuna"
+msgstr "Образец"
+
+#: core/models.py:419 core/permissions.py:21
+#: templates/core/ariza_detail.html:17 templates/core/shartnoma_detail.html:43
+#: templates/core/shartnoma_tanlash.html:6
+msgid "Namunalar"
+msgstr "Образцы"
+
+#: core/models.py:433 core/views.py:306 templates/core/xulosa_form.html:12
+msgid "Xulosa raqami"
+msgstr "Номер заключения"
+
+#: core/models.py:435
+msgid "Sinov joyi"
+msgstr "Место испытания"
+
+#: core/models.py:436
+msgid "Dalolatnoma №"
+msgstr "Акт №"
+
+#: core/models.py:437
+msgid "Harorat"
+msgstr "Температура"
+
+#: core/models.py:438
+msgid "Havoning nisbiy namligi"
+msgstr "Относительная влажность воздуха"
+
+#: core/models.py:439
+msgid "Laboratoriya mudiri"
+msgstr "Заведующий лабораторией"
+
+#: core/models.py:440
+msgid "Bosh agrokimyogar"
+msgstr "Главный агрохимик"
+
+#: core/models.py:441
+msgid "Yetakchi agrokimyogar"
+msgstr "Ведущий агрохимик"
+
+#: core/models.py:448 core/views.py:311
+msgid "Xulosa tayyor qilingan vaqt"
+msgstr "Время готовности заключения"
+
+#: core/models.py:449
+msgid "Tasdiqlangan vaqt"
+msgstr "Время утверждения"
+
+#: core/models.py:451
+msgid "Tasdiqlagan xodim"
+msgstr "Утвердивший сотрудник"
+
+#: core/models.py:461 core/permissions.py:25 core/views.py:257
+#: core/views.py:322 templates/core/dash_lab.html:15
+#: templates/public/kabinet.html:15
+msgid "Xulosa"
+msgstr "Заключение"
+
+#: core/models.py:462
+msgid "Xulosalar"
+msgstr "Заключения"
+
+#: core/models.py:477 templates/core/xulosa_form.html:28
+msgid "Ko'rsatkich nomi, o'lchov birligi"
+msgstr "Наименование показателя, единица измерения"
+
+#: core/models.py:478 templates/core/xulosa_form.html:28
+msgid "Me'yoriy qiymat"
+msgstr "Нормативное значение"
+
+#: core/models.py:479 templates/core/xulosa_form.html:28
+msgid "Sinov natijasi (Xcp ± Upac)"
+msgstr "Результат испытания (Xcp ± Upac)"
+
+#: core/models.py:480 templates/core/xulosa_form.html:28
+msgid "Sinov usuli (ND hujjati)"
+msgstr "Метод испытания (НД)"
+
+#: core/models.py:481 templates/core/xulosa_form.html:28
+msgid "Muvofiqlik haqida qaror"
+msgstr "Решение о соответствии"
+
+#: core/models.py:498
+msgid "Yuborildi"
+msgstr "Отправлено"
+
+#: core/models.py:499
+msgid "Xato"
+msgstr "Ошибка"
+
+#: core/models.py:500
+msgid "Sozlanmagan (yuborilmadi)"
+msgstr "Не настроено (не отправлено)"
+
+#: core/models.py:503
+msgid "Kimga"
+msgstr "Кому"
+
+#: core/models.py:504
+msgid "Matn"
+msgstr "Текст"
+
+#: core/models.py:513
+msgid "Xabar"
+msgstr "Сообщение"
+
+#: core/models.py:514
+msgid "Xabarlar jurnali"
+msgstr "Журнал сообщений"
+
+#: core/models.py:521
+msgid "Tayyorlandi"
+msgstr "Подготовлена"
+
+#: core/models.py:522 core/views.py:193
+msgid "To'landi"
+msgstr "Оплачена"
+
+#: core/models.py:523
+msgid "Bekor qilindi"
+msgstr "Отменена"
+
+#: core/models.py:536
+msgid "Click tranzaksiya"
+msgstr "Транзакция Click"
+
+#: core/models.py:537
+msgid "Click tranzaksiyalar"
+msgstr "Транзакции Click"
+
+#: core/permissions.py:16 core/views.py:68
+msgid "Monitoring"
+msgstr "Мониторинг"
+
+#: core/permissions.py:17 core/views.py:79 core/views.py:94
+msgid "Asosiy panel"
+msgstr "Главная панель"
+
+#: core/permissions.py:19 core/views_ariza.py:182
+msgid "Namuna yaratish"
+msgstr "Создание образца"
+
+#: core/permissions.py:22 core/views.py:214 templates/core/dash_lab.html:3
+msgid "Shartnoma tuzilishi va bajarilishi"
+msgstr "Заключение и исполнение договоров"
+
+#: core/permissions.py:23 core/views.py:239
+msgid "Oferta"
+msgstr "Оферта"
+
+#: core/permissions.py:24 core/views.py:296 templates/core/dash_lab.html:9
+msgid "Laboratoriya tahlil holati"
+msgstr "Статус лабораторного анализа"
+
+#: core/views.py:29 core/views.py:240 templates/parts/filters.html:23
+msgid "Barchasi"
+msgstr "Все"
+
+#: core/views.py:71
+msgid "Yangi arizalar"
+msgstr "Новые заявки"
+
+#: core/views.py:73
+msgid "Qabul qilingan arizalar"
+msgstr "Принятые заявки"
+
+#: core/views.py:97
+msgid "Ariza shakllantirilgan, shartnoma tuzilishi kutilmoqda"
+msgstr "Заявка сформирована, ожидается заключение договора"
+
+#: core/views.py:100
+msgid "Tuzilgan shartnomalar"
+msgstr "Заключённые договоры"
+
+#: core/views.py:105
+msgid "Tahlil boshlash mumkin bo'lgan namunalar (30%+ to'langan)"
+msgstr "Образцы, по которым можно начать анализ (оплачено 30%+)"
+
+#: core/views.py:139
+msgid "Telefon nomeri"
+msgstr "Номер телефона"
+
+#: core/views.py:143
+msgid "Partiya raqami"
+msgstr "Номер партии"
+
+#: core/views.py:144 templates/parts/ariza_info.html:13
+msgid "Chegara maskani"
+msgstr "Таможенный пост"
+
+#: core/views.py:145 core/views.py:191
+msgid "Sana va vaqti"
+msgstr "Дата и время"
+
+#: core/views.py:146 templates/parts/ariza_fields.html:26
+msgid "Zarur hujjatlar"
+msgstr "Необходимые документы"
+
+#: core/views.py:150
+msgid "Qabul qilish"
+msgstr "Принять"
+
+#: core/views.py:165
+msgid "Chegara maskani yoki ombor nomi"
+msgstr "Таможенный пост или название склада"
+
+#: core/views.py:171
+msgid "Mavjud hujjatlar"
+msgstr "Имеющиеся документы"
+
+#: core/views.py:177 templates/core/shartnoma_detail.html:53
+#: templates/core/xulosa_form.html:35
+msgid "O'chirish"
+msgstr "Удалить"
+
+#: core/views.py:201
+msgid "Biriktirilgan hujjatlar"
+msgstr "Прикреплённые документы"
+
+#: core/views.py:205 core/views.py:316
+msgid "Ko'rish"
+msgstr "Просмотр"
+
+#: core/views.py:206 core/views.py:233
+msgid "Shartnoma (PDF)"
+msgstr "Договор (PDF)"
+
+#: core/views.py:207
+msgid "Ko'rsatkichlar"
+msgstr "Показатели"
+
+#: core/views.py:215 templates/core/shartnoma_tanlash.html:12
+msgid "Shartnoma tuzish"
+msgstr "Заключить договор"
+
+#: core/views.py:227 templates/core/shartnoma_detail.html:30
+msgid "Qoldiq"
+msgstr "Остаток"
+
+#: core/views.py:229
+msgid "Ko'rildi"
+msgstr "Просмотр"
+
+#: core/views.py:229
+msgid "Ko'rilmagan"
+msgstr "Не просмотрен"
+
+#: core/views.py:229
+msgid "Ko'rilgan"
+msgstr "Просмотрен"
+
+#: core/views.py:232
+msgid "Ochish / to'lov"
+msgstr "Открыть / оплата"
+
+#: core/views.py:249
+msgid "Tahlilga olish"
+msgstr "Взять на анализ"
+
+#: core/views.py:252
+msgid "Natijalar tayyor"
+msgstr "Результаты готовы"
+
+#: core/views.py:254
+msgid "Natija kiritish"
+msgstr "Ввести результаты"
+
+#: core/views.py:258 core/views.py:317
+msgid "PDF"
+msgstr "PDF"
+
+#: core/views.py:268
+msgid "Shartnoma tuzilmagan"
+msgstr "Договор не заключён"
+
+#: core/views.py:270
+msgid "Shartnoma buxgalteriyaga yuborilmagan"
+msgstr "Договор не отправлен в бухгалтерию"
+
+#: core/views.py:272
+#, python-format
+msgid "To'lov kutilmoqda (%(f)s%%)"
+msgstr "Ожидается оплата (%(f)s%%)"
+
+#: core/views.py:273
+#, python-format
+msgid "To'lov qilingan (%(f)s%%)"
+msgstr "Оплачено (%(f)s%%)"
+
+#: core/views.py:287 core/views.py:310
+msgid "Kelib tushgan vaqti"
+msgstr "Время поступления"
+
+#: core/views.py:314 templates/core/xulosa_korish.html:6
+#: templates/public/tekshirish.html:11
+msgid "Tasdiqlangan"
+msgstr "Утверждено"
+
+#: core/views.py:314
+msgid "Ha"
+msgstr "Да"
+
+#: core/views.py:314
+msgid "Yo'q"
+msgstr "Нет"
+
+#: core/views.py:332
+msgid "№"
+msgstr "№"
+
+#: core/views.py:333
+msgid "Aniqlanadigan tavsiflar (parametrlar) nomi / olib boriladigan ishlar"
+msgstr ""
+"Наименование определяемых характеристик (параметров) / выполняемых работ"
+
+#: core/views_ariza.py:80
+#, python-format
+msgid "Arizangiz qabul qilindi. Ariza raqami: %(r)s"
+msgstr "Ваша заявка принята. Номер заявки: %(r)s"
+
+#: core/views_ariza.py:131
+msgid "Bu ariza allaqachon ko'rib chiqilgan"
+msgstr "Эта заявка уже рассмотрена"
+
+#: core/views_ariza.py:150
+msgid "Namunalar qabul qilindi va laboratoriyaga yuborildi"
+msgstr "Образцы приняты и переданы в лабораторию"
+
+#: core/views_ariza.py:153 templates/core/ariza_detail.html:6
+msgid "Namunani qabul qilish"
+msgstr "Приём образца"
+
+#: core/views_ariza.py:170
+msgid "Ariza rad etildi"
+msgstr "Заявка отклонена"
+
+#: core/views_ariza.py:180
+msgid "Ariza yaratildi. Endi namuna ma'lumotlarini kiriting."
+msgstr "Заявка создана. Теперь введите данные образцов."
+
+#: core/views_ariza.py:189
+msgid "Tahlil boshlangan namunani o'zgartirib bo'lmaydi"
+msgstr "Нельзя изменить образец, анализ которого уже начат"
+
+#: core/views_ariza.py:205
+msgid "Shartnoma tuzilgan yoki tahlil boshlangan namunani o'chirib bo'lmaydi"
+msgstr "Нельзя удалить образец, по которому заключён договор или начат анализ"
+
+#: core/views_ariza.py:212
+msgid "Namuna o'chirildi"
+msgstr "Образец удалён"
+
+#: core/views_lab.py:54
+msgid "Bu namuna uchun shartnoma tuzilmagan"
+msgstr "По этому образцу договор не заключён"
+
+#: core/views_lab.py:56
+#, python-format
+msgid ""
+"Tahlil kamida %(f)s%% to'lovdan keyin boshlanadi. Hozir to'langan: %(t)s%%"
+msgstr ""
+"Анализ начинается после оплаты не менее %(f)s%%. Сейчас оплачено: %(t)s%%"
+
+#: core/views_lab.py:63
+#, python-format
+msgid "Namuna %(n)s tahlilga olindi"
+msgstr "Образец %(n)s взят на анализ"
+
+#: core/views_lab.py:75
+msgid "Tahlil natijalari tayyor. Endi natijalarni kiriting."
+msgstr "Результаты анализа готовы. Теперь введите результаты."
+
+#: core/views_lab.py:108
+msgid "Avval tahlilni yakunlang (\"Tahlil natijalari tayyor\")"
+msgstr "Сначала завершите анализ («Результаты анализа готовы»)"
+
+#: core/views_lab.py:112
+msgid "Xulosa tasdiqlangan, uni o'zgartirib bo'lmaydi"
+msgstr "Заключение утверждено, его нельзя изменить"
+
+#: core/views_lab.py:133
+msgid "Natijalar saqlandi. Xulosani ko'rib chiqib tasdiqlang."
+msgstr "Результаты сохранены. Проверьте и утвердите заключение."
+
+#: core/views_lab.py:136
+#, python-format
+msgid "Natijalarni kiritish — %(n)s"
+msgstr "Ввод результатов — %(n)s"
+
+#: core/views_lab.py:146
+#, python-format
+msgid "Sinov bayonnomasi %(r)s"
+msgstr "Протокол испытаний %(r)s"
+
+#: core/views_lab.py:161
+msgid "Xulosa tasdiqlandi"
+msgstr "Заключение утверждено"
+
+#: core/views_lab.py:172
+msgid "Avval xulosani tasdiqlang"
+msgstr "Сначала утвердите заключение"
+
+#: core/views_lab.py:174
+#, python-format
+msgid "Xulosa faqat 100%% to'lovdan keyin beriladi. Hozir to'langan: %(t)s%%"
+msgstr ""
+"Заключение выдаётся только после 100%% оплаты. Сейчас оплачено: %(t)s%%"
+
+#: core/views_lab.py:182
+msgid "Xulosa buyurtmachi kabinetiga yuborildi"
+msgstr "Заключение отправлено в кабинет заказчика"
+
+#: core/views_shartnoma.py:50 core/views_shartnoma.py:106
+msgid "Yangi shartnoma"
+msgstr "Новый договор"
+
+#: core/views_shartnoma.py:72
+msgid ""
+"Buxgalteriyaga yuborilgan yoki to'lov qilingan shartnomani o'zgartirib "
+"bo'lmaydi"
+msgstr "Нельзя изменить договор, отправленный в бухгалтерию или оплаченный"
+
+#: core/views_shartnoma.py:78
+msgid "Bu ariza uchun shartnoma allaqachon tuzilgan"
+msgstr "По этой заявке договор уже заключён"
+
+#: core/views_shartnoma.py:89
+msgid "Kamida bitta ko'rsatkich tanlang"
+msgstr "Выберите хотя бы один показатель"
+
+#: core/views_shartnoma.py:100
+#, python-format
+msgid "Shartnoma №%(r)s saqlandi"
+msgstr "Договор №%(r)s сохранён"
+
+#: core/views_shartnoma.py:106
+#, python-format
+msgid "Shartnoma №%(r)s — ko'rsatkichlar"
+msgstr "Договор №%(r)s — показатели"
+
+#: core/views_shartnoma.py:135
+#, python-format
+msgid "Shartnoma №%(r)s"
+msgstr "Договор №%(r)s"
+
+#: core/views_shartnoma.py:154
+msgid "Shartnoma buxgalteriyaga yuborildi"
+msgstr "Договор отправлен в бухгалтерию"
+
+#: core/views_shartnoma.py:164
+msgid "Buxgalteriyaga yuborilgan shartnomani o'chirib bo'lmaydi"
+msgstr "Нельзя удалить договор, отправленный в бухгалтерию"
+
+#: core/views_shartnoma.py:170
+msgid "Shartnoma o'chirildi"
+msgstr "Договор удалён"
+
+#: core/views_shartnoma.py:184
+msgid "Rekvizitlar saqlandi"
+msgstr "Реквизиты сохранены"
+
+#: core/views_shartnoma.py:186
+#, python-format
+msgid "Rekvizitlarda xato bor: %(e)s"
+msgstr "Ошибка в реквизитах: %(e)s"
+
+#: core/views_shartnoma.py:206
+#, python-format
+msgid "To'lov kiritildi. To'langan: %(f)s%%"
+msgstr "Платёж внесён. Оплачено: %(f)s%%"
+
+#: core/views_shartnoma.py:208
+msgid "Laboratoriyada tahlil boshlash mumkin."
+msgstr "В лаборатории можно начать анализ."
+
+#: core/views_shartnoma.py:222
+msgid "To'lov o'chirildi"
+msgstr "Платёж удалён"
+
+#: core/views_shartnoma.py:246
+msgid "PDF yaratib bo'lmadi, Word fayl yuklab olinadi"
+msgstr "Не удалось создать PDF, будет загружен файл Word"
+
+#: core/views_tolov.py:159
+msgid "Onlayn to'lov hozircha mavjud emas"
+msgstr "Онлайн-оплата пока недоступна"
+
+#: core/views_tolov.py:207
+msgid "Telegram uzildi"
+msgstr "Telegram отключён"
+
+#: templates/auth/login.html:2 templates/auth/login.html:15
+#: templates/public/ariza_form.html:6 templates/public_base.html:38
+msgid "Kirish"
+msgstr "Вход"
+
+#: templates/auth/login.html:8 templates/base.html:18
+#: templates/public_base.html:7 templates/public_base.html:45
+msgid "Mineral o'g'it va kimyoviy vositalar tahlili"
+msgstr "Анализ минеральных удобрений и химических средств"
+
+#: templates/auth/login.html:9
+msgid "Login va parolni kiriting"
+msgstr "Введите логин и пароль"
+
+#: templates/auth/login.html:11
+msgid "Login yoki parol noto'g'ri"
+msgstr "Неверный логин или пароль"
+
+#: templates/auth/login.html:17
+msgid "Buyurtmachimisiz?"
+msgstr "Вы заказчик?"
+
+#: templates/auth/login.html:17
+msgid "Ro'yxatdan o'ting"
+msgstr "Зарегистрируйтесь"
+
+#: templates/auth/royxat.html:2 templates/auth/royxat.html:5
+#: templates/auth/royxat.html:10 templates/public/ariza_form.html:6
+#: templates/public_base.html:39
+msgid "Ro'yxatdan o'tish"
+msgstr "Регистрация"
+
+#: templates/auth/royxat.html:6
+msgid "Telefon raqamingiz tizimga kirish uchun login bo'ladi."
+msgstr "Ваш номер телефона будет логином для входа в систему."
+
+#: templates/auth/royxat.html:11
+msgid "Menda hisob bor"
+msgstr "У меня есть аккаунт"
+
+#: templates/base.html:32 templates/public_base.html:36
+msgid "Chiqish"
+msgstr "Выход"
+
+#: templates/core/ariza_detail.html:10
+msgid "Arizani rad etish"
+msgstr "Отклонить заявку"
+
+#: templates/core/ariza_detail.html:12
+msgid "Rad etish"
+msgstr "Отклонить"
+
+#: templates/core/ariza_detail.html:18
+msgid "Namuna olgan"
+msgstr "Отобравший образец"
+
+#: templates/core/ariza_form.html:3
+msgid "Arizani shakllantirish"
+msgstr "Формирование заявки"
+
+#: templates/core/ariza_form.html:6
+msgid "Saqlash va davom etish"
+msgstr "Сохранить и продолжить"
+
+#: templates/core/ariza_qabul.html:8
+msgid "Namuna ma'lumotlari"
+msgstr "Данные образцов"
+
+#: templates/core/ariza_qabul.html:8 templates/core/list.html:5
+#: templates/core/shartnoma_tanlash.html:4
+msgid "ta"
+msgstr "шт."
+
+#: templates/core/ariza_qabul.html:15
+msgid "Saqlash va laboratoriyaga yuborish"
+msgstr "Сохранить и передать в лабораторию"
+
+#: templates/core/dash_admin.html:7
+msgid "Mineral o'g'it tahlili"
+msgstr "Анализ минеральных удобрений"
+
+#: templates/core/dash_admin.html:7
+msgid "Kimyoviy vositalar"
+msgstr "Химические средства"
+
+#: templates/core/dash_bux.html:3
+msgid "Shartnomalar jami"
+msgstr "Всего договоров"
+
+#: templates/core/form.html:21
+msgid "Saqlash"
+msgstr "Сохранить"
+
+#: templates/core/form.html:22
+msgid "Bekor qilish"
+msgstr "Отмена"
+
+#: templates/core/kabinet.html:6 templates/core/shartnoma_detail.html:50
+#: templates/public/tekshirish.html:8
+msgid "Sana"
+msgstr "Дата"
+
+#: templates/core/kabinet.html:10 templates/public/kabinet.html:36
+msgid "Hozircha arizalar yo'q"
+msgstr "Заявок пока нет"
+
+#: templates/core/list.html:28
+msgid "Ma'lumot topilmadi"
+msgstr "Данные не найдены"
+
+#: templates/core/shartnoma_detail.html:13
+msgid "Ko'rsatkichlarni o'zgartirish"
+msgstr "Изменить показатели"
+
+#: templates/core/shartnoma_detail.html:14
+msgid "Buxgalteriyaga yuborish"
+msgstr "Отправить в бухгалтерию"
+
+#: templates/core/shartnoma_detail.html:20 templates/core/shartnoma_form.html:8
+#: templates/core/shartnoma_tanlash.html:6 templates/core/xulosa_form.html:8
+#: templates/core/xulosa_korish.html:24 templates/parts/ariza_fields.html:5
+#: templates/public/tekshirish.html:9
+msgid "Buyurtmachi"
+msgstr "Заказчик"
+
+#: templates/core/shartnoma_detail.html:23
+msgid "Shakllantirilgan"
+msgstr "Сформирован"
+
+#: templates/core/shartnoma_detail.html:25
+msgid "Buxgalter ko'rgan"
+msgstr "Просмотрен бухгалтером"
+
+#: templates/core/shartnoma_detail.html:28
+#: templates/core/shartnoma_form.html:39
+msgid "Jami summa"
+msgstr "Общая сумма"
+
+#: templates/core/shartnoma_detail.html:32
+#, python-format
+msgid "Tahlil boshlash mumkin (30%%+)"
+msgstr "Можно начать анализ (30%%+)"
+
+#: templates/core/shartnoma_detail.html:32
+#, python-format
+msgid "Tahlil kamida 30%% to'lovdan keyin boshlanadi"
+msgstr "Анализ начинается после оплаты не менее 30%%"
+
+#: templates/core/shartnoma_detail.html:32
+#, python-format
+msgid "Xulosani berish mumkin (100%%)"
+msgstr "Можно выдать заключение (100%%)"
+
+#: templates/core/shartnoma_detail.html:37
+msgid "Tekshiriladigan ko'rsatkichlar"
+msgstr "Проверяемые показатели"
+
+#: templates/core/shartnoma_detail.html:39
+#: templates/core/shartnoma_form.html:21
+msgid "Aniqlanadigan tavsif (parametr)"
+msgstr "Определяемая характеристика (параметр)"
+
+#: templates/core/shartnoma_detail.html:41
+msgid "Jami"
+msgstr "Итого"
+
+#: templates/core/shartnoma_detail.html:50
+msgid "Usul"
+msgstr "Способ"
+
+#: templates/core/shartnoma_detail.html:50
+msgid "Kiritgan"
+msgstr "Внёс"
+
+#: templates/core/shartnoma_detail.html:53
+msgid "To‘lovni o‘chirasizmi?"
+msgstr "Удалить платёж?"
+
+#: templates/core/shartnoma_detail.html:54
+msgid "To'lov hali kelib tushmagan"
+msgstr "Оплата ещё не поступила"
+
+#: templates/core/shartnoma_detail.html:59
+msgid "To'lov kiritish"
+msgstr "Внести платёж"
+
+#: templates/core/shartnoma_detail.html:61
+msgid "To'lovni saqlash"
+msgstr "Сохранить платёж"
+
+#: templates/core/shartnoma_detail.html:67
+msgid "Buyurtmachi rekvizitlari (shartnoma uchun)"
+msgstr "Реквизиты заказчика (для договора)"
+
+#: templates/core/shartnoma_detail.html:70
+msgid "Rekvizitlarni saqlash"
+msgstr "Сохранить реквизиты"
+
+#: templates/core/shartnoma_detail.html:75
+msgid "Shartnomani o‘chirasizmi?"
+msgstr "Удалить договор?"
+
+#: templates/core/shartnoma_detail.html:76
+msgid "Shartnomani o'chirish"
+msgstr "Удалить договор"
+
+#: templates/core/shartnoma_form.html:5
+msgid "Orqaga"
+msgstr "Назад"
+
+#: templates/core/shartnoma_form.html:10
+msgid "Namunalar soni"
+msgstr "Количество образцов"
+
+#: templates/core/shartnoma_form.html:16
+msgid "Tekshiriladigan ko'rsatkichlar (narxnomadan)"
+msgstr "Проверяемые показатели (из прейскуранта)"
+
+#: templates/core/shartnoma_form.html:17
+msgid "Ko‘rsatkich yoki GOST bo‘yicha qidirish"
+msgstr "Поиск по показателю или ГОСТ"
+
+#: templates/core/shartnoma_form.html:21
+msgid "Sinov obyekti"
+msgstr "Объект испытаний"
+
+#: templates/core/shartnoma_form.html:26
+msgid "bir marta"
+msgstr "один раз"
+
+#: templates/core/shartnoma_form.html:38
+msgid "Tanlangan"
+msgstr "Выбрано"
+
+#: templates/core/shartnoma_form.html:39 templates/public/kabinet.html:26
+msgid "so'm"
+msgstr "сум"
+
+#: templates/core/shartnoma_form.html:40
+msgid "Shartnomani saqlash"
+msgstr "Сохранить договор"
+
+#: templates/core/shartnoma_tanlash.html:4
+msgid "Shartnoma tuzilishi kutilayotgan arizalar"
+msgstr "Заявки, ожидающие заключения договора"
+
+#: templates/core/shartnoma_tanlash.html:13
+msgid "Shartnoma kutayotgan ariza yo'q"
+msgstr "Нет заявок, ожидающих договора"
+
+#: templates/core/xulosa_form.html:6
+msgid "Tahlil holati"
+msgstr "Статус анализа"
+
+#: templates/core/xulosa_form.html:14
+msgid "Formada xatolar bor, tekshiring"
+msgstr "В форме есть ошибки, проверьте"
+
+#: templates/core/xulosa_form.html:21
+msgid "Sinov natijalari jadvali"
+msgstr "Таблица результатов испытаний"
+
+#: templates/core/xulosa_form.html:22
+msgid "Qator qo'shish"
+msgstr "Добавить строку"
+
+#: templates/core/xulosa_form.html:23
+msgid ""
+"Shartnomadagi ko'rsatkichlar avtomatik qo'shildi. Me'yoriy qiymat shu namuna "
+"turi bo'yicha oxirgi xulosadan olinadi."
+msgstr ""
+"Показатели из договора добавлены автоматически. Нормативное значение берётся "
+"из последнего заключения по этому типу образца."
+
+#: templates/core/xulosa_form.html:48
+msgid "Saqlash va xulosani ko'rish"
+msgstr "Сохранить и посмотреть заключение"
+
+#: templates/core/xulosa_korish.html:6
+msgid "Tasdiqlanmagan"
+msgstr "Не утверждено"
+
+#: templates/core/xulosa_korish.html:13
+msgid "Tasdiqlangan xulosani o‘zgartirib bo‘lmaydi. Tasdiqlaysizmi?"
+msgstr "Утверждённое заключение нельзя изменить. Утвердить?"
+
+#: templates/core/xulosa_korish.html:13
+msgid "Tasdiqlash"
+msgstr "Утвердить"
+
+#: templates/core/xulosa_korish.html:15
+msgid "Buyurtmachiga yuborish"
+msgstr "Отправить заказчику"
+
+#: templates/core/xulosa_korish.html:20
+#, python-format
+msgid ""
+"Xulosa tayyor, lekin buyurtmachiga faqat 100%% to'lovdan keyin yuboriladi."
+msgstr ""
+"Заключение готово, но отправляется заказчику только после 100%% оплаты."
+
+#: templates/core/xulosa_korish.html:26
+msgid "Sinov sanasi"
+msgstr "Дата испытания"
+
+#: templates/core/xulosa_korish.html:27
+msgid "Tayyor qilingan"
+msgstr "Подготовлено"
+
+#: templates/core/xulosa_korish.html:28
+msgid "Tasdiqlagan"
+msgstr "Утвердил"
+
+#: templates/parts/ariza_fields.html:10 templates/public/ariza_detail.html:4
+#: templates/public/kabinet.html:2 templates/public_base.html:35
+msgid "Kabinet"
+msgstr "Кабинет"
+
+#: templates/parts/ariza_fields.html:17
+msgid "JSHSHIR / ID"
+msgstr "ПИНФЛ / ID"
+
+#: templates/parts/ariza_fields.html:32
+msgid "Qo‘shing"
+msgstr "Добавить"
+
+#: templates/parts/ariza_fields.html:32
+msgid "Qo'shing"
+msgstr "Добавить"
+
+#: templates/parts/ariza_fields.html:40
+msgid "PDF, JPG, PNG, Word yoki Excel, har biri 15 MB gacha."
+msgstr "PDF, JPG, PNG, Word или Excel, каждый до 15 МБ."
+
+#: templates/parts/ariza_fields.html:44
+msgid "Shartnoma uchun rekvizitlar"
+msgstr "Реквизиты для договора"
+
+#: templates/parts/ariza_fields.html:44
+msgid "ixtiyoriy, keyin buxgalteriya to'ldirishi mumkin"
+msgstr "необязательно, бухгалтерия может заполнить позже"
+
+#: templates/parts/ariza_info.html:14 templates/public/kabinet.html:15
+msgid "Yuborilgan vaqt"
+msgstr "Время отправки"
+
+#: templates/parts/ariza_info.html:18
+msgid "Rekvizitlar"
+msgstr "Реквизиты"
+
+#: templates/parts/ariza_info.html:21
+msgid "Rahbar"
+msgstr "Руководитель"
+
+#: templates/parts/ariza_info.html:22
+msgid "Hisob raqami"
+msgstr "Расчётный счёт"
+
+#: templates/parts/ariza_info.html:28
+msgid "Hujjatlar"
+msgstr "Документы"
+
+#: templates/parts/ariza_info.html:29
+msgid "Hujjat yuklanmagan"
+msgstr "Документ не загружен"
+
+#: templates/parts/filters.html:14
+msgid "Kalit so'zi bo'yicha qidiruv"
+msgstr "Поиск по ключевому слову"
+
+#: templates/parts/filters.html:15
+msgid "Kalit so‘zini kiriting"
+msgstr "Введите ключевое слово"
+
+#: templates/parts/filters.html:18
+msgid "Tuzilgan sanasi"
+msgstr "Дата составления"
+
+#: templates/parts/filters.html:19
+msgid "Yakuniy muddat"
+msgstr "Конечный срок"
+
+#: templates/parts/filters.html:28
+msgid "Summasini"
+msgstr "Сумма"
+
+#: templates/parts/filters.html:32
+msgid "Qidirish"
+msgstr "Искать"
+
+#: templates/parts/mijoz_holat.html:3
+msgid "Ko'rib chiqilmoqda"
+msgstr "На рассмотрении"
+
+#: templates/parts/mijoz_holat.html:4
+msgid "Namuna qabul qilindi, shartnoma tayyorlanmoqda"
+msgstr "Образец принят, договор готовится"
+
+#: templates/parts/mijoz_holat.html:6
+msgid "Xulosa tayyor"
+msgstr "Заключение готово"
+
+#: templates/parts/mijoz_holat.html:7
+msgid "Tahlil jarayonida"
+msgstr "В процессе анализа"
+
+#: templates/public/ariza_form.html:5
+msgid "Ariza yuborish uchun avval ro'yxatdan o'ting yoki tizimga kiring."
+msgstr "Чтобы подать заявку, сначала зарегистрируйтесь или войдите в систему."
+
+#: templates/public/ariza_form.html:10 templates/public/ariza_form.html:11
+msgid "Arizani yuborish"
+msgstr "Отправить заявку"
+
+#: templates/public/kabinet.html:8
+msgid "Telegram'ni ulash"
+msgstr "Подключить Telegram"
+
+#: templates/public/kabinet.html:9
+msgid "Telegram uzish"
+msgstr "Отключить Telegram"
+
+#: templates/public/kabinet.html:9
+msgid "ulangan"
+msgstr "подключён"
+
+#: templates/public/kabinet.html:10
+msgid "Yangi ariza"
+msgstr "Новая заявка"
+
+#: templates/public/kabinet.html:26
+msgid "to'langan"
+msgstr "оплачено"
+
+#: templates/public/kabinet.html:29
+msgid "To‘lov summasi"
+msgstr "Сумма оплаты"
+
+#: templates/public/kabinet.html:30
+msgid "orqali to'lash"
+msgstr "Оплатить через"
+
+#: templates/public/tekshirish.html:2
+msgid "Bayonnomani tekshirish"
+msgstr "Проверка протокола"
+
+#: templates/public/tekshirish.html:5
+msgid "Ushbu sinov bayonnomasi haqiqiy va markaz tomonidan berilgan"
+msgstr "Этот протокол испытаний подлинный и выдан центром"
+
+#: templates/public/tekshirish.html:7
+msgid "Bayonnoma raqami"
+msgstr "Номер протокола"
+
+#: templates/public/tekshirish.html:14
+msgid "Ko'rsatkich"
+msgstr "Показатель"
+
+#: templates/public/tekshirish.html:14
+msgid "Me'yor"
+msgstr "Норма"
+
+#: templates/public/tekshirish.html:14
+msgid "Natija"
+msgstr "Результат"
+
+#: templates/public/tekshirish.html:14
+msgid "Muvofiqlik"
+msgstr "Соответствие"
+
+#: templates/public/tekshirish.html:17
+msgid "Bayonnomani ko'rish (PDF)"
+msgstr "Посмотреть протокол (PDF)"
+
+#: templates/public_base.html:17
+msgid "Agrokimyoviy laboratoriya tahlillari"
+msgstr "Агрохимические лабораторные анализы"
+
+#: templates/public_base.html:21
+msgid "Qo'ng'iroq qiling:"
+msgstr "Звоните:"
+
+#: templates/public_base.html:25
+msgid "Manzil:"
+msgstr "Адрес:"

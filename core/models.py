@@ -29,8 +29,17 @@ class NamunaTuri(models.Model):
         verbose_name = _("Namuna turi")
         verbose_name_plural = _("Namuna turlari")
 
-    def __str__(self):
+    @property
+    def nom(self):
+        """Tanlangan tildagi nomi."""
+        from django.utils.translation import get_language
+
+        if (get_language() or "").startswith("ru") and self.nomi_ru:
+            return self.nomi_ru
         return self.nomi
+
+    def __str__(self):
+        return self.nom
 
 
 class Narxnoma(models.Model):

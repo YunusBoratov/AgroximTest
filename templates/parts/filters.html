@@ -8,6 +8,7 @@
 {% endif %}
 <form class="filters" method="get">
   {% if state.turi %}<input type="hidden" name="turi" value="{{ state.turi }}">{% endif %}
+  {% if request.GET.tur %}<input type="hidden" name="tur" value="{{ request.GET.tur }}">{% endif %}
   {% if request.GET.kategoriya %}<input type="hidden" name="kategoriya" value="{{ request.GET.kategoriya }}">{% endif %}
   {% if f.search_fields %}
   <div class="fld"><label>{% trans "Kalit so'zi bo'yicha qidiruv" %}</label>

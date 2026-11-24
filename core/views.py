@@ -29,6 +29,12 @@ def turi_tabs():
     return [("", _("Barchasi"))] + list(ArizaTuri.choices)
 
 
+def tur_filtr(request, qs, path="namuna_turi"):
+    """Monitoring kartasidan kelganda: ?tur=<namuna turi id>."""
+    tur = request.GET.get("tur", "")
+    return qs.filter(**{path: tur}) if tur.isdigit() else qs
+
+
 def lab_scope(request, qs, path="namuna_turi__kategoriya"):
     """Laboratoriya xodimi faqat o'z kategoriyasini ko'radi."""
     kat = request.user.lab_kategoriya if user_role(request.user) in LAB else None
@@ -132,7 +138,7 @@ def ariza_list(request):
         Column(_("INN"), "inn"),
         Column(_("Telefon nomeri"), "telefon"),
         Column(_("Namuna soni"), "namuna_soni"),
-        Column(_("Namuna turi"), "namuna_turi.nomi"),
+        Column(_("Namuna turi"), lambda o: str(o.namuna_turi)),
         Column(_("Namuna nomi"), "namuna_nomi"),
         Column(_("Partiya raqami"), "partiya_raqami"),
         Column(_("Chegara maskani"), "chegara_maskani"),
@@ -151,7 +157,7 @@ def ariza_list(request):
 
 @role_required(AD, NQ)
 def namuna_list(request):
-    qs = Namuna.objects.select_related("ariza", "namuna_turi").prefetch_related("ariza__hujjatlar")
+    qs = tur_filtr(request, Namuna.objects.select_related("ariza", "namuna_turi").prefetch_related("ariza__hujjatlar"))
     cols = [
         Column(_("Ariza raqami"), "__str__", "bold", url=lambda o: reverse("ariza_detail", args=[o.ariza_id])),
         Column(_("Ariza turi"), "ariza.get_turi_display"),
@@ -160,7 +166,7 @@ def namuna_list(request):
         Column(_("Buyurtmachi nomi"), "ariza.buyurtmachi"),
         Column(_("INN"), "ariza.inn"),
         Column(_("Namuna nomi"), "nomi"),
-        Column(_("Namuna turi"), "namuna_turi.nomi"),
+        Column(_("Namuna turi"), lambda o: str(o.namuna_turi)),
         Column(_("Namuna qabul qilingan vaqt"), "qabul_vaqti", "datetime"),
         Column(_("Mavjud hujjatlar"), lambda o: o.ariza.hujjatlar.all(), "file"),
         Column(_("Holati"), "get_lab_holat_display", "badge", badge=badge("lab_holat")),
@@ -220,7 +226,7 @@ def oferta_list(request):
     cols = _shartnoma_cols() + [
         Column(_("Qoldiq"), "qoldiq", "money"),
         Column(_("Holati"), "get_tolov_holati_display", "badge", badge=badge("tolov_holati")),
-        Column(_("Ko'rildi"), lambda o: _("Yangi") if o.holat == Shartnoma.Holat.YUBORILGAN else _("Ko'rilgan"),
+        Column(_("Ko'rildi"), lambda o: _("Ko'rilmagan") if o.holat == Shartnoma.Holat.YUBORILGAN else _("Ko'rilgan"),
                "badge", badge=lambda o: "yellow" if o.holat == Shartnoma.Holat.YUBORILGAN else "green"),
         Column("", lambda o: [
             (_("Ochish / to'lov"), reverse("shartnoma_detail", args=[o.pk]), "eye", ""),
@@ -273,7 +279,7 @@ def tahlil_holati(request):
     cols = [
         Column(_("Namuna"), "__str__", "bold", url=lambda o: reverse("ariza_detail", args=[o.ariza_id])),
         Column(_("Buyurtmachi nomi"), "ariza.buyurtmachi"),
-        Column(_("Namuna turi"), "namuna_turi.nomi"),
+        Column(_("Namuna turi"), lambda o: str(o.namuna_turi)),
         Column(_("Namuna nomi"), "nomi"),
         Column(_("Shartnoma"), lambda o: o.shartnoma.raqam if o.shartnoma_id and o.shartnoma.is_active else "—",
                url=lambda o: reverse("shartnoma_detail", args=[o.shartnoma_id])
@@ -295,11 +301,12 @@ def tahlil_holati(request):
 def xulosa_list(request):
     qs = lab_scope(request, Xulosa.objects.select_related("namuna__ariza", "namuna__namuna_turi"),
                    "namuna__namuna_turi__kategoriya")
+    qs = tur_filtr(request, qs, "namuna__namuna_turi")
     cols = [
         Column(_("Xulosa raqami"), "raqam", "bold", url=lambda o: reverse("xulosa_korish", args=[o.pk])),
         Column(_("Namuna"), "namuna.__str__"),
         Column(_("Buyurtmachi nomi"), "namuna.ariza.buyurtmachi"),
-        Column(_("Namuna turi"), "namuna.namuna_turi.nomi"),
+        Column(_("Namuna turi"), lambda o: str(o.namuna.namuna_turi)),
         Column(_("Kelib tushgan vaqti"), "namuna.qabul_vaqti", "datetime"),
         Column(_("Xulosa tayyor qilingan vaqt"), "tayyor_at", "datetime"),
         Column(_("Holati"), "namuna.get_lab_holat_display", "badge",
@@ -346,6 +353,6 @@ def narxnoma_form(request, pk=None):
         messages.success(request, _("Saqlandi"))
         return redirect("narxnoma_list")
     return render(request, "core/form.html", {
-        "title": _("Narxnoma") + (f" — {_('Tahrirlash')}" if obj else f" — {_('Qo‘shish')}"),
+        "title": _("Narxnoma") + " — " + (_("Tahrirlash") if obj else _("Qo'shish")),
         "form": form, "back": reverse("narxnoma_list"),
     })

@@ -619,3 +619,19 @@ class HujjatHimoyaTests(BaseTest):
         self.client.logout()
         self.login("namuna")
         self.assertEqual(self.client.get(url).status_code, 200)
+
+
+class TilTests(BaseTest):
+    def test_rus_tili(self):
+        self.client.cookies["django_language"] = "ru"
+        r = self.client.get(reverse("login"))
+        self.assertContains(r, "Введите логин и пароль")
+        self.assertContains(r, "Центр агрохимического и почвенного анализа")
+        self.login("superadmin")
+        r = self.client.get(reverse("dashboard"))
+        self.assertContains(r, "Азотные удобрения")  # namuna turi ruscha nomi
+        self.assertNotContains(r, "Tuproq tahlili")
+
+    def test_ozbek_tili_standart(self):
+        r = self.client.get(reverse("login"))
+        self.assertContains(r, "Login va parolni kiriting")

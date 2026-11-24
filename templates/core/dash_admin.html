@@ -7,7 +7,7 @@
   <h2 class="section-title">{% if kat == "mineral" %}{% trans "Mineral o'g'it tahlili" %}{% else %}{% trans "Kimyoviy vositalar" %}{% endif %} ({% for k, v in kat_totals.items %}{% if k == kat %}{{ v }}{% endif %}{% endfor %})</h2>
   <div class="grid">
     {% for t, n in items %}
-    <a class="stat" href="{% url 'namuna_list' %}?turi={{ state.turi }}&q={{ t.nomi|urlencode }}"><div class="n">{{ n }}</div><div class="l">{{ t.nomi }}</div></a>
+    <a class="stat" href="{% url 'namuna_list' %}?turi={{ state.turi }}&tur={{ t.pk }}"><div class="n">{{ n }}</div><div class="l">{{ t.nom }}</div></a>
     {% endfor %}
   </div>
 {% endfor %}

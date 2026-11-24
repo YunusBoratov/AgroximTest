@@ -42,10 +42,7 @@
   </div>
 </header>
 <main class="site-main">
-  <div class="site-tabs">
-    <a href="{{ TUPROQ_URL }}">{% trans "Tuproq tahlili" %}</a>
-    <a class="active" href="{% url 'bosh' %}">{% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}</a>
-  </div>
+  <h1 class="site-title">{% trans "Mineral o'g'it va kimyoviy vositalar tahlili" %}</h1>
   {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
   {% block content %}{% endblock %}
 </main>

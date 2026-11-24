@@ -65,6 +65,6 @@ def xodim_form(request, pk=None):
         messages.success(request, _("Saqlandi"))
         return redirect("xodim_list")
     return render(request, "core/form.html", {
-        "title": _("Xodim") + (f" — {_('Tahrirlash')}" if obj else f" — {_('Qo‘shish')}"),
+        "title": _("Xodim") + " — " + (_("Tahrirlash") if obj else _("Qo'shish")),
         "form": form, "back": reverse("xodim_list"),
     })

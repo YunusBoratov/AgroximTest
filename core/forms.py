@@ -38,7 +38,7 @@ def namuna_turi_choices():
     """<optgroup> ko'rinishida: Mineral o'g'it / Kimyoviy vosita."""
     groups = []
     for kat, label in Kategoriya.choices:
-        groups.append((label, [(t.pk, t.nomi) for t in NamunaTuri.objects.filter(kategoriya=kat, aktiv=True)]))
+        groups.append((label, [(t.pk, t.nom) for t in NamunaTuri.objects.filter(kategoriya=kat, aktiv=True)]))
     return [("", _("Tanlang"))] + groups
 
 
