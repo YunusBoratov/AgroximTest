@@ -1,7 +1,9 @@
 {% extends "public_base.html" %}{% load i18n %}
 {% block content %}
 <section class="box">
-  <div class="page-head"><h1 class="page-title">{{ title }}</h1><a class="btn btn-light" href="{% url 'kabinet' %}">← {% trans "Kabinet" %}</a></div>
+  <div class="page-head"><h1 class="page-title">{{ title }}</h1><div class="btn-row">
+    {% if can_edit %}<a class="btn btn-primary" href="{% url 'ariza_tahrirlash' ariza.pk %}">{% if ariza.holat == "rad" %}{% trans "Tahrirlab qayta yuborish" %}{% else %}{% trans "Tahrirlash" %}{% endif %}</a>{% endif %}
+    <a class="btn btn-light" href="{% url 'kabinet' %}">← {% trans "Kabinet" %}</a></div></div>
   {% with a=ariza %}<p>{% include "parts/mijoz_holat.html" %}</p>{% endwith %}
   {% include "parts/ariza_info.html" %}
 </section>

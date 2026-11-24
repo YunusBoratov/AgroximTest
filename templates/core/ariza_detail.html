@@ -3,7 +3,11 @@
 <section class="card">
   <div class="page-head">
     <h1 class="page-title">{{ title }} <span class="badge {% if ariza.holat == 'yangi' %}red{% elif ariza.holat == 'qabul' %}green{% else %}grey{% endif %}">{{ ariza.get_holat_display }}</span></h1>
-    {% if can_accept %}<div class="btn-row"><a class="btn btn-green" href="{% url 'ariza_qabul' ariza.pk %}">{% trans "Namunani qabul qilish" %}</a></div>{% endif %}
+    <div class="btn-row">
+      {% if can_edit %}<a class="btn btn-light" href="{% url 'ariza_tahrirlash' ariza.pk %}">{% trans "Tahrirlash" %}</a>{% endif %}
+      {% if can_accept %}<a class="btn btn-green" href="{% url 'ariza_qabul' ariza.pk %}">{% trans "Arizani qabul qilish" %}</a>{% endif %}
+      {% if can_contract %}<a class="btn btn-green" href="{% url 'shartnoma_yangi' ariza.pk %}">{% trans "Narx belgilash (shartnoma tuzish)" %}</a>{% endif %}
+    </div>
   </div>
   {% include "parts/ariza_info.html" %}
   {% if can_accept %}

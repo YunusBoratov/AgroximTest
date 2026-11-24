@@ -29,9 +29,12 @@
       {% with field=form|field:name %}
       <div class="fld" data-hujjat="{{ name }}">
         <label>{{ field.label }}<i class="req">*</i></label>
-        <label class="upload"><span class="upload-name" data-empty="{% trans 'Qo‘shing' %}">{% trans "Qo'shing" %}</span>
+        {% with saq=form.saqlangan|get:name eski=mavjud|get:name %}
+        <label class="upload{% if saq or eski %} has{% endif %}"><span class="upload-name" data-empty="{% if saq %}✓ {{ saq.nom }}{% elif eski %}✓ {% trans 'Yuklangan' %}{% else %}{% trans 'Qo‘shing' %}{% endif %}">{% if saq %}✓ {{ saq.nom }}{% elif eski %}✓ {% trans "Yuklangan" %}{% else %}{% trans "Qo'shing" %}{% endif %}</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
           {{ field }}</label>
+        {% if saq or eski %}<div class="help">{% trans "Almashtirish uchun yangi fayl tanlang" %}</div>{% endif %}
+        {% endwith %}
         {{ field.errors }}
       </div>
       {% endwith %}

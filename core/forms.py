@@ -66,8 +66,10 @@ class ArizaForm(StyledMixin, forms.ModelForm):
                   "namuna_nomi", "partiya_raqami", "invoys_raqami", "chegara_maskani"] + REKVIZIT_MAYDONLARI
         labels = {"inn": _("INN / JSHSHIR")}
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, saqlangan=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Oldingi urinishda yuklangan (vaqtincha saqlangan) fayllar: {turi: {"path":..., "nom":...}}
+        self.saqlangan = saqlangan or {}
         self.fields["namuna_turi"].choices = namuna_turi_choices()
         self.fields["namuna_soni"].widget.attrs.update({"min": 1, "max": 50})
         for name in self.Meta.fields:
@@ -116,21 +118,24 @@ class ArizaForm(StyledMixin, forms.ModelForm):
                     tekshir_fayl(f)
                 except forms.ValidationError as e:
                     self.add_error(name, e)
-            elif name in zarur and name not in mavjud:
+            elif name in zarur and name not in mavjud and name not in self.saqlangan:
                 self.add_error(name, _("Hujjatni yuklang"))
         return data
 
-    def save(self, commit=True):
-        ariza = super().save(commit=commit)
-        if commit:
-            self.save_hujjatlar(ariza)
-        return ariza
-
     def save_hujjatlar(self, ariza):
-        for name in self.HUJJAT_MAYDONLARI:
-            f = self.cleaned_data.get(name)
-            if f:
-                ArizaHujjat.objects.create(ariza=ariza, turi=name, fayl=f)
+        """Vaqtincha saqlangan fayllarni arizaga biriktiradi. Bir turdagi eski hujjat yangisi bilan almashadi."""
+        from django.core.files import File
+        from django.core.files.storage import default_storage
+
+        for name, info in self.saqlangan.items():
+            if not default_storage.exists(info["path"]):
+                continue
+            for eski in ariza.hujjatlar.filter(turi=name):
+                eski.fayl.delete(save=False)
+                eski.delete()
+            with default_storage.open(info["path"], "rb") as fh:
+                ArizaHujjat.objects.create(ariza=ariza, turi=name, fayl=File(fh, name=info["nom"]))
+            default_storage.delete(info["path"])
 
 
 class NamunaQabulForm(StyledMixin, forms.ModelForm):

@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import Role
 
-from . import xabarnoma
+from . import fayl_saqlash, xabarnoma
 from .forms import ArizaForm, NamunaQabulForm, RadForm
 from .models import ARIZA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna, Shartnoma
 from .permissions import AD, ADMINS, BX, LAB, NQ, role_required, user_role
@@ -69,17 +69,72 @@ def mijoz_required(view):
     return wrapper
 
 
-@mijoz_required
-def ariza_yangi(request):
-    form = ArizaForm(request.POST or None, request.FILES or None, user=request.user)
-    if request.method == "POST" and form.is_valid():
+def _ariza_forma(request, nom, instance=None, user=None):
+    """Ariza formasi: (form, saqlangan_ariza | None). Xato bo'lsa yuklangan fayllar vaqtincha saqlanadi."""
+    if request.method != "POST":
+        fayl_saqlash.tozala(request, nom)
+        return ArizaForm(instance=instance, user=user), None
+    saqlangan = fayl_saqlash.ol(request, nom)
+    form = ArizaForm(request.POST, request.FILES, instance=instance, user=user, saqlangan=saqlangan)
+    valid = form.is_valid()
+    fayl_saqlash.yangilarini_saqla(request, nom, form, saqlangan)
+    if not valid:
+        return form, None
+    with transaction.atomic():
         ariza = form.save(commit=False)
-        ariza.mijoz = request.user
+        if user is not None and not ariza.mijoz_id:
+            ariza.mijoz = user
         ariza.save()
         form.save_hujjatlar(ariza)
+    request.session.pop(f"ariza_fayllar_{nom}", None)
+    return form, ariza
+
+
+def _mavjud_hujjatlar(ariza):
+    return {h.turi: h for h in ariza.hujjatlar.all()} if ariza else {}
+
+
+@mijoz_required
+def ariza_yangi(request):
+    form, ariza = _ariza_forma(request, "yangi", user=request.user)
+    if ariza:
         messages.success(request, _("Arizangiz qabul qilindi. Ariza raqami: %(r)s") % {"r": ariza.raqam})
         return redirect("kabinet")
     return render(request, "public/ariza_form.html", _ariza_ctx(form))
+
+
+@login_required
+def ariza_tahrirlash(request, pk):
+    """Yangi yoki rad etilgan arizani tahrirlab (qayta) yuborish."""
+    ariza = get_object_or_404(Ariza, pk=pk)
+    role = user_role(request.user)
+    if role == Role.MIJOZ:
+        if ariza.mijoz_id != request.user.id:
+            raise PermissionDenied
+    elif role not in (NQ, Role.SUPER_ADMIN):
+        raise PermissionDenied
+    if ariza.holat == Ariza.Holat.QABUL:
+        messages.error(request, _("Qabul qilingan arizani o'zgartirib bo'lmaydi"))
+        return redirect("ariza_detail", pk=pk)
+    rad_edi = ariza.holat == Ariza.Holat.RAD
+    form, saqlandi = _ariza_forma(request, f"tahrir_{pk}", instance=ariza)
+    if saqlandi:
+        if rad_edi:
+            saqlandi.holat = Ariza.Holat.YANGI
+            saqlandi.rad_sababi = ""
+            saqlandi.qabul_qilgan = None
+            saqlandi.qabul_vaqti = None
+            saqlandi.save(update_fields=["holat", "rad_sababi", "qabul_qilgan", "qabul_vaqti"])
+            messages.success(request, _("Ariza %(r)s qayta yuborildi") % {"r": saqlandi.raqam})
+        else:
+            messages.success(request, _("Ariza saqlandi"))
+        if role == Role.MIJOZ:
+            return redirect("kabinet")
+        return redirect("ariza_detail", pk=pk)
+    ctx = _ariza_ctx(form, title=_("Arizani tahrirlash — %(r)s") % {"r": ariza.raqam}, ariza=ariza,
+                     rad_edi=rad_edi, mavjud=_mavjud_hujjatlar(ariza))
+    tpl = "public/ariza_form.html" if role == Role.MIJOZ else "core/ariza_form.html"
+    return render(request, tpl, ctx)
 
 
 @mijoz_required
@@ -119,6 +174,10 @@ def ariza_detail(request, pk):
         "namunalar": ariza.namunalar.select_related("namuna_turi"),
         "shartnomalar": ariza.shartnomalar.filter(is_active=True),
         "can_accept": role in (NQ, Role.SUPER_ADMIN) and ariza.holat == Ariza.Holat.YANGI,
+        "can_edit": ariza.holat != Ariza.Holat.QABUL and (
+            role in (NQ, Role.SUPER_ADMIN) or (role == Role.MIJOZ and ariza.mijoz_id == request.user.id)),
+        "can_contract": role in (Role.ADMIN, Role.SUPER_ADMIN, *LAB) and ariza.holat == Ariza.Holat.QABUL
+        and not ariza.shartnomalar.filter(is_active=True).exists(),
         "rad_form": RadForm(),
     })
 
@@ -150,7 +209,7 @@ def ariza_qabul(request, pk):
         messages.success(request, _("Namunalar qabul qilindi va laboratoriyaga yuborildi"))
         return redirect("namuna_list")
     return render(request, "core/ariza_qabul.html", {
-        "title": _("Namunani qabul qilish"), "ariza": ariza, "forms": forms,
+        "title": _("Arizani qabul qilish"), "ariza": ariza, "forms": forms,
         "hujjatlar": ariza.hujjatlar.all(),
     })
 
@@ -174,9 +233,8 @@ def ariza_rad(request, pk):
 @role_required(NQ)
 def namuna_yaratish(request):
     """Namuna qabul qiluvchi mijoz nomidan ariza yaratadi (mijoz o'zi kelganda)."""
-    form = ArizaForm(request.POST or None, request.FILES or None)
-    if request.method == "POST" and form.is_valid():
-        ariza = form.save()
+    form, ariza = _ariza_forma(request, "xodim")
+    if ariza:
         messages.success(request, _("Ariza yaratildi. Endi namuna ma'lumotlarini kiriting."))
         return redirect("ariza_qabul", pk=ariza.pk)
     return render(request, "core/ariza_form.html", _ariza_ctx(form, title=_("Namuna yaratish")))

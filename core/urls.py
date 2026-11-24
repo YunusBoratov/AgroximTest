@@ -12,6 +12,7 @@ urlpatterns = [
     path("ariza/", views.ariza_list, name="ariza_list"),
     path("ariza/<int:pk>/", views_ariza.ariza_detail, name="ariza_detail"),
     path("ariza/<int:pk>/qabul/", views_ariza.ariza_qabul, name="ariza_qabul"),
+    path("ariza/<int:pk>/tahrirlash/", views_ariza.ariza_tahrirlash, name="ariza_tahrirlash"),
     path("ariza/<int:pk>/rad/", views_ariza.ariza_rad, name="ariza_rad"),
     path("hujjat/<int:pk>/", views_ariza.ariza_hujjat, name="ariza_hujjat"),
     path("namuna/", views.namuna_list, name="namuna_list"),

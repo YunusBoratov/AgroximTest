@@ -96,7 +96,7 @@ def dashboard(request):
         ctx["shartnoma_cards"] = [
             (_("Ariza shakllantirilgan, shartnoma tuzilishi kutilmoqda"),
              lab_scope(request, Ariza.objects.filter(holat=Ariza.Holat.QABUL, shartnomalar__isnull=True),
-                       "kategoriya").count(), reverse("shartnoma_list")),
+                       "kategoriya").count(), reverse("shartnoma_tanlash")),
             (_("Tuzilgan shartnomalar"), sh.count(), reverse("shartnoma_list")),
         ]
         tayyor = namunalar.filter(lab_holat=Namuna.LabHolat.YANGI, shartnoma__isnull=False)
@@ -245,7 +245,12 @@ def _lab_amallar(o):
     H = Namuna.LabHolat
     sh = o.shartnoma if o.shartnoma_id and o.shartnoma.is_active else None
     if o.lab_holat == H.YANGI:
-        if sh and sh.tahlil_boshlash_mumkin:
+        if not sh:
+            # namuna qabul qilindi -> laboratoriya narxnomadan narx belgilaydi (shartnoma tuzadi)
+            return [(_("Narx belgilash"), reverse("shartnoma_yangi", args=[o.ariza_id]), "plus", "btn")]
+        if sh.holat == Shartnoma.Holat.YUBORILMAGAN:
+            return [(_("Buxgalteriyaga yuborish"), reverse("shartnoma_detail", args=[sh.pk]), "send", "btn")]
+        if sh.tahlil_boshlash_mumkin:
             return [(_("Tahlilga olish"), reverse("tahlilga_olish", args=[o.pk]), "send", "btn post")]
         return []
     if o.lab_holat == H.TAHLILDA:

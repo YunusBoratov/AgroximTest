@@ -635,3 +635,89 @@ class TilTests(BaseTest):
     def test_ozbek_tili_standart(self):
         r = self.client.get(reverse("login"))
         self.assertContains(r, "Login va parolni kiriting")
+
+
+# ---------------------------------------------------------------------------
+# Xodimlar sinovidan keyingi tuzatishlar
+# ---------------------------------------------------------------------------
+class SinovTuzatishTests(BaseTest):
+    def setUp(self):
+        self.mijoz = User.objects.create_user("+998905550011", password="parol123", role=Role.MIJOZ)
+        self.client.login(username="+998905550011", password="parol123")
+        self.tur = NamunaTuri.objects.filter(kategoriya="mineral").first()
+
+    def _data(self, **kw):
+        d = {"turi": "importyor", "inn": "123456789", "buyurtmachi_nomi": "Agro", "fish": "Ali",
+             "telefon": "+998905550011", "namuna_soni": 1, "namuna_turi": self.tur.pk, "namuna_nomi": "N",
+             "chegara_maskani": "Olot"}
+        d.update(kw)
+        return d
+
+    def test_xatoda_fayllar_saqlanadi(self):
+        r = self.client.post(reverse("ariza_yangi"), self._data(
+            fish="", invoys=pdf("inv.pdf"), analiz=pdf("an.pdf"), guvohnoma=pdf("gv.pdf")))
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("fish", r.context["form"].errors)
+        self.assertNotIn("invoys", r.context["form"].errors)
+        self.assertContains(r, "inv.pdf")  # fayl nomi "yuklangan" bo'lib ko'rinadi
+        # ikkinchi urinish: fayllarsiz, faqat xato tuzatildi
+        r = self.client.post(reverse("ariza_yangi"), self._data())
+        self.assertRedirects(r, reverse("kabinet"))
+        a = Ariza.objects.get(mijoz=self.mijoz)
+        self.assertEqual(sorted(a.hujjatlar.values_list("turi", flat=True)), ["analiz", "guvohnoma", "invoys"])
+        import os
+        self.assertFalse(os.listdir(os.path.join(TEST_MEDIA, "vaqtincha")))  # vaqtinchalik fayllar tozalandi
+
+    def test_yangi_forma_eski_fayllarni_unutadi(self):
+        self.client.post(reverse("ariza_yangi"), self._data(fish="", invoys=pdf()))
+        self.client.get(reverse("ariza_yangi"))
+        r = self.client.post(reverse("ariza_yangi"), self._data())
+        self.assertIn("invoys", r.context["form"].errors)
+
+    def _rad_ariza(self):
+        a = Ariza.objects.create(mijoz=self.mijoz, turi="importyor", inn="123456789", buyurtmachi_nomi="Agro",
+                                 fish="Ali", telefon="+998", namuna_turi=self.tur, namuna_nomi="N",
+                                 chegara_maskani="Olot", holat=Ariza.Holat.RAD, rad_sababi="Invoys noto'g'ri")
+        for t in ("invoys", "analiz", "guvohnoma"):
+            ArizaHujjat.objects.create(ariza=a, turi=t, fayl=pdf(f"{t}.pdf"))
+        return a
+
+    def test_rad_etilgan_arizani_qayta_yuborish(self):
+        a = self._rad_ariza()
+        eski_invoys = a.hujjatlar.get(turi="invoys").pk
+        r = self.client.get(reverse("ariza_tahrirlash", args=[a.pk]))
+        self.assertContains(r, "Invoys noto")
+        r = self.client.post(reverse("ariza_tahrirlash", args=[a.pk]),
+                             self._data(namuna_nomi="Tuzatilgan", invoys=pdf("yangi_invoys.pdf")))
+        self.assertRedirects(r, reverse("kabinet"))
+        a.refresh_from_db()
+        self.assertEqual(a.holat, Ariza.Holat.YANGI)
+        self.assertEqual(a.rad_sababi, "")
+        self.assertEqual(a.namuna_nomi, "Tuzatilgan")
+        self.assertEqual(a.hujjatlar.count(), 3)  # invoys almashtirildi, qolganlari saqlandi
+        self.assertFalse(a.hujjatlar.filter(pk=eski_invoys).exists())
+
+    def test_begona_va_qabul_qilingan_arizani_tahrirlab_bolmaydi(self):
+        a = self._rad_ariza()
+        boshqa = User.objects.create_user("+998905550012", password="parol123", role=Role.MIJOZ)
+        self.client.logout()
+        self.client.login(username="+998905550012", password="parol123")
+        self.assertEqual(self.client.get(reverse("ariza_tahrirlash", args=[a.pk])).status_code, 403)
+        a.holat = Ariza.Holat.QABUL
+        a.save()
+        self.client.logout()
+        self.client.login(username="+998905550011", password="parol123")
+        self.assertRedirects(self.client.get(reverse("ariza_tahrirlash", args=[a.pk])),
+                             reverse("ariza_detail", args=[a.pk]))
+
+    def test_lab_narx_belgilash_tugmasi(self):
+        a = Ariza.objects.create(turi="davlat", inn="123456789", buyurtmachi_nomi="X", fish="Y", telefon="+998",
+                                 namuna_turi=self.tur, holat=Ariza.Holat.QABUL)
+        Namuna.objects.create(ariza=a, namuna_turi=self.tur, nomi="N")
+        self.client.logout()
+        self.login("lab_mineral")
+        r = self.client.get(reverse("tahlil_holati") + "?q=" + a.raqam)
+        self.assertContains(r, reverse("shartnoma_yangi", args=[a.pk]))
+        self.assertContains(r, "Narx belgilash")
+        r = self.client.get(reverse("ariza_detail", args=[a.pk]))
+        self.assertContains(r, reverse("shartnoma_yangi", args=[a.pk]))

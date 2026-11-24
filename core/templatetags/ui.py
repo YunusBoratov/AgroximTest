@@ -45,3 +45,8 @@ def make_list_words(s):
 @register.filter
 def field(form, name):
     return form[name]
+
+
+@register.filter
+def get(d, key):
+    return d.get(key) if isinstance(d, dict) else None

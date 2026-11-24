@@ -1,8 +1,9 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
-<section class="card"><div class="page-head"><h1 class="page-title">{% trans "Arizani shakllantirish" %}</h1></div>
+<section class="card"><div class="page-head"><h1 class="page-title">{% if ariza %}{{ title }}{% else %}{% trans "Arizani shakllantirish" %}{% endif %}</h1></div>
 <form method="post" enctype="multipart/form-data">{% csrf_token %}
+  {% if rad_edi %}<div class="notice">{% trans "Ariza rad etilgan. Sabab:" %} <b>{{ ariza.rad_sababi }}</b></div>{% endif %}
   {% include "parts/ariza_fields.html" %}
-  <div class="btn-row"><button class="btn btn-primary" type="submit">{% trans "Saqlash va davom etish" %}</button></div>
+  <div class="btn-row"><button class="btn btn-primary" type="submit">{% if rad_edi %}{% trans "Qayta yuborish" %}{% elif ariza %}{% trans "Saqlash" %}{% else %}{% trans "Saqlash va davom etish" %}{% endif %}</button></div>
 </form></section>
 {% endblock %}

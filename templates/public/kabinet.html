@@ -30,7 +30,9 @@
             <button class="btn btn-click" type="submit">Click {% trans "orqali to'lash" %}</button>
           </form>{% endif %}
         {% else %}—{% endif %}{% endwith %}</td>
-        <td>{% include "parts/mijoz_holat.html" %}</td>
+        <td>{% include "parts/mijoz_holat.html" %}
+          {% if a.holat == "rad" %}<br><small class="help">{{ a.rad_sababi|truncatechars:80 }}</small><br>
+          <a class="act btn" href="{% url 'ariza_tahrirlash' a.pk %}">{% include "parts/icon.html" with name="edit" %}<span>{% trans "Tahrirlab qayta yuborish" %}</span></a>{% endif %}</td>
         <td>{% for n in a.namunalar.all %}{% if n.lab_holat == "berildi" %}<a class="doc" href="{% url 'xulosa_hujjat' n.xulosa.pk 'pdf' %}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ n.xulosa.raqam }}</a> {% endif %}{% empty %}—{% endfor %}</td>
       </tr>
     {% empty %}<tr><td class="empty" colspan="8">{% trans "Hozircha arizalar yo'q" %}</td></tr>{% endfor %}
