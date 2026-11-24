@@ -111,14 +111,14 @@ deb yoziladi. Yuborilgan va xato bo'lgan barcha SMS/Telegram xabarlari ham shu j
 
 ## 8. Yangilash
 
+Har safar GitHub'ga yangi versiya yuklanganda serverda bitta buyruq:
+
 ```bash
-cd /srv/agroximtest
-sudo -u agroximtest git pull
-sudo -u agroximtest venv/bin/pip install -r requirements.txt
-sudo -u agroximtest venv/bin/python manage.py migrate
-sudo -u agroximtest venv/bin/python manage.py collectstatic --noinput
-systemctl restart agroximtest
+bash /srv/agroximtest/deploy/yangilash.sh
 ```
+
+Skript avval bazaning zaxira nusxasini oladi (`/var/backups/agroximtest/`), keyin kodni yangilaydi va
+platformani qayta ishga tushiradi. Oxirida `✅ Yangilandi` yozuvi chiqadi.
 
 ## 9. Zaxira nusxa (har kuni)
 
