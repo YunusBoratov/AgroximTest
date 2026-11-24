@@ -36,6 +36,12 @@ class User(AbstractUser):
     def __str__(self):
         return self.fish or self.username
 
+    def save(self, *args, **kwargs):
+        # `createsuperuser` bilan yaratilgan bosh admin "mijoz" bo'lib qolmasin
+        if self.is_superuser and self.role == Role.MIJOZ:
+            self.role = Role.SUPER_ADMIN
+        super().save(*args, **kwargs)
+
     # --- rol yordamchilari ---
     @property
     def is_admin_role(self):
