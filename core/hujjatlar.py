@@ -290,6 +290,9 @@ def _logo_kichrayt(doc, koef=0.84):
         return
 
 
+CHIZIQ_PASTGA = 112000  # EMU (~0.31 sm)
+
+
 def _ajratuvchi_chiziqlar(doc):
     """Sarlavhadagi vertikal ajratuvchi chiziqlarni (shakl) xuddi shu joydagi ingichka rasmga almashtiradi:
     LibreOffice jadval katagidagi vertikal chiziq-shaklni ba'zan gorizontal chizadi (PDF'da yozuv ustidan o'tadi)."""
@@ -313,6 +316,10 @@ def _ajratuvchi_chiziqlar(doc):
         if eff is not None:
             for k in ("l", "t", "r", "b"):
                 eff.set(k, "0")
+        pv = anchor.find(f"{{{WP}}}positionV")
+        off = pv.find(f"{{{WP}}}posOffset") if pv is not None else None
+        if off is not None:  # logotiplar balandligining o'rtasiga tushirish
+            off.text = str(int(off.text) + CHIZIQ_PASTGA)
 
 
 def _ichki_chetsiz(txbx):
