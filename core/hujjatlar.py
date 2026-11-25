@@ -253,6 +253,64 @@ def _uniq_cells(row):
     return cells
 
 
+def _chiziq_png():
+    """1 pt qalinlikdagi vertikal qora chiziq (rasm)."""
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (4, 160), (0, 0, 0)).save(buf, "PNG")
+    buf.seek(0)
+    return buf
+
+
+def _ajratuvchi_chiziqlar(doc):
+    """Sarlavhadagi vertikal ajratuvchi chiziqlarni (shakl) xuddi shu joydagi ingichka rasmga almashtiradi:
+    LibreOffice jadval katagidagi vertikal chiziq-shaklni ba'zan gorizontal chizadi (PDF'da yozuv ustidan o'tadi)."""
+    from docx.shared import Emu
+
+    WP = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+    A = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    for anchor in list(doc.element.body.iter(f"{{{WP}}}anchor")):
+        ext = anchor.find(f"{{{WP}}}extent")
+        graphic = anchor.find(f"{{{A}}}graphic")
+        if ext is None or graphic is None or ext.get("cx") != "0":
+            continue
+        if not any(g.get("prst") == "line" for g in graphic.iter(f"{{{A}}}prstGeom")):
+            continue
+        cy = int(ext.get("cy"))
+        inline = doc.part.new_pic_inline(_chiziq_png(), Emu(12700), Emu(cy))
+        yangi = inline.find(f"{{{A}}}graphic")
+        anchor.replace(graphic, yangi)
+        ext.set("cx", "12700")
+        eff = anchor.find(f"{{{WP}}}effectExtent")
+        if eff is not None:
+            for k in ("l", "t", "r", "b"):
+                eff.set(k, "0")
+
+
+def _ichki_chetsiz(txbx):
+    """Ramka ichidagi chetlarni nolga tushirib, QR'ni markazga qo'yadi."""
+    WPS = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    el = txbx
+    while el is not None and el.tag != f"{{{WPS}}}wsp":
+        el = el.getparent()
+    if el is not None:
+        body = el.find(f"{{{WPS}}}bodyPr")
+        if body is not None:
+            for k in ("lIns", "tIns", "rIns", "bIns"):
+                body.set(k, "0")
+            body.set("anchor", "ctr")
+    for p in txbx.iter(f"{{{W}}}p"):
+        ppr = p.find(f"{{{W}}}pPr")
+        if ppr is None:
+            ppr = p.makeelement(f"{{{W}}}pPr", {})
+            p.insert(0, ppr)
+        for jc in ppr.findall(f"{{{W}}}jc"):
+            ppr.remove(jc)
+        ppr.append(ppr.makeelement(f"{{{W}}}jc", {f"{{{W}}}val": "center"}))
+
+
 def _ramkasiz(txbx):
     """Shablondagi "QR KOD" ramkasi faqat joy ko'rsatkichi: chegara chizig'i olib tashlanadi (QR ramkasiz)."""
     A = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -301,9 +359,10 @@ def _qr_matn_qutisiga(doc, cell, verify_url):
             if anchor is not None:
                 ext = anchor.find(f"{{{WP}}}extent")
                 if ext is not None:
-                    olcham = int(min(int(ext.get("cx")), int(ext.get("cy"))) * 0.86)
+                    olcham = int(min(int(ext.get("cx")), int(ext.get("cy"))) * 0.98)
             for r in list(p.iter(f"{{{W}}}r")):
                 r.getparent().remove(r)
+            _ichki_chetsiz(txbx)
             inline = doc.part.new_pic_inline(qr_png(verify_url), Emu(olcham), Emu(olcham))
             run = OxmlElement("w:r")
             drawing = OxmlElement("w:drawing")
@@ -426,6 +485,8 @@ def xulosa_docx(x, verify_url=""):
             while j < len(runs) and runs[j].text and set(runs[j].text) <= {"_", " "}:
                 runs[j].text = ""
                 j += 1
+
+    _ajratuvchi_chiziqlar(doc)
 
     # QR kod: yangi shaklda imzo jadvalidagi ramkada, eski shaklda sarlavhaning 3-katagida
     if verify_url and not _qr_matn_qutisiga(doc, sc[-1], verify_url) and len(c) > 2:
