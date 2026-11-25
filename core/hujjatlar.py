@@ -263,6 +263,33 @@ def _chiziq_png():
     return buf
 
 
+def _logo_kichrayt(doc, koef=0.84):
+    """Sarlavhadagi markaz logotipini (birinchi katakdagi rasm) kichraytiradi — pastki chiziqqa tegmasin.
+    Yuqori chekka joyida qoladi, gorizontal markaz saqlanadi."""
+    WP = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+    A = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    if not doc.tables:
+        return
+    tc = doc.tables[0].rows[0].cells[0]._tc
+    for anchor in tc.iter(f"{{{WP}}}anchor"):
+        ext = anchor.find(f"{{{WP}}}extent")
+        if ext is None or not list(anchor.iter("{http://schemas.openxmlformats.org/drawingml/2006/picture}pic")):
+            continue
+        cx, cy = int(ext.get("cx")), int(ext.get("cy"))
+        ncx, ncy = int(cx * koef), int(cy * koef)
+        ext.set("cx", str(ncx))
+        ext.set("cy", str(ncy))
+        for e in anchor.iter(f"{{{A}}}ext"):
+            if e.get("cx") == str(cx) and e.get("cy") == str(cy):
+                e.set("cx", str(ncx))
+                e.set("cy", str(ncy))
+        ph = anchor.find(f"{{{WP}}}positionH")
+        off = ph.find(f"{{{WP}}}posOffset") if ph is not None else None
+        if off is not None:
+            off.text = str(int(off.text) + (cx - ncx) // 2)
+        return
+
+
 def _ajratuvchi_chiziqlar(doc):
     """Sarlavhadagi vertikal ajratuvchi chiziqlarni (shakl) xuddi shu joydagi ingichka rasmga almashtiradi:
     LibreOffice jadval katagidagi vertikal chiziq-shaklni ba'zan gorizontal chizadi (PDF'da yozuv ustidan o'tadi)."""
@@ -487,6 +514,7 @@ def xulosa_docx(x, verify_url=""):
                 j += 1
 
     _ajratuvchi_chiziqlar(doc)
+    _logo_kichrayt(doc)
 
     # QR kod: yangi shaklda imzo jadvalidagi ramkada, eski shaklda sarlavhaning 3-katagida
     if verify_url and not _qr_matn_qutisiga(doc, sc[-1], verify_url) and len(c) > 2:
