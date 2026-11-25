@@ -16,6 +16,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404, HttpResponse
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -224,7 +225,8 @@ def topshiriq_natija(request, pk):
     return render(request, "core/topshiriq_natija.html", {
         "title": _("Natijalarni kiritish — %(n)s") % {"n": nam}, "t": t, "nam": nam, "fs": fs,
         "tahrir": t.tahrirlash_mumkin,
-        "hujjatlar": korinadigan_hujjatlar(request.user, nam.ariza.hujjatlar.all()),
+        "hujjatlar": korinadigan_hujjatlar(request.user, nam.ariza.hujjatlar.filter(
+            Q(ariza_namuna__isnull=True) | Q(ariza_namuna_id=nam.ariza_namuna_id))),
     })
 
 

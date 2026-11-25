@@ -66,12 +66,12 @@ def hisobla(guruh, d1, d2, kategoriya=""):
         return {_kalit(r["p"], guruh): r for r in qs.annotate(**agg).order_by("p")}
 
     k = kategoriya
-    ar = Ariza.objects.filter(kategoriya=k) if k else Ariza.objects.all()
+    ar = Ariza.objects.filter(kategoriyalar__contains=k) if k else Ariza.objects.all()
     nam = Namuna.objects.filter(namuna_turi__kategoriya=k) if k else Namuna.objects.all()
     sh = Shartnoma.objects.filter(is_active=True)
     tl = Tolov.objects.all()
     if k:
-        sh, tl = sh.filter(ariza__kategoriya=k), tl.filter(shartnoma__ariza__kategoriya=k)
+        sh, tl = sh.filter(ariza__kategoriyalar__contains=k), tl.filter(shartnoma__ariza__kategoriyalar__contains=k)
     data = {
         "ariza": guruhla(ar, "created_at"),
         "rad": guruhla(ar.filter(holat=Ariza.Holat.RAD), "created_at"),

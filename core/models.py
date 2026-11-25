@@ -130,6 +130,8 @@ class Ariza(models.Model):
     raqam = models.CharField(_("Ariza raqami"), max_length=30, unique=True, editable=False)
     turi = models.CharField(_("Ariza turi"), max_length=20, choices=ArizaTuri.choices)
     kategoriya = models.CharField(_("Kategoriya"), max_length=20, choices=Kategoriya.choices)
+    # Arizadagi barcha namunalarning guruhlari ("mineral,kimyoviy") — laboratoriyalar ko'rinishi uchun
+    kategoriyalar = models.CharField(_("Namuna guruhlari"), max_length=60, blank=True, db_index=True)
     mijoz = models.ForeignKey(
         settings.AUTH_USER_MODEL, verbose_name=_("Mijoz"), on_delete=models.SET_NULL,
         null=True, blank=True, related_name="arizalar",
@@ -184,7 +186,49 @@ class Ariza(models.Model):
             self.raqam = f"ATM-A-{yil}-{n:05d}"
         if self.namuna_turi_id and not self.kategoriya:
             self.kategoriya = self.namuna_turi.kategoriya
+        if not self.kategoriyalar and self.kategoriya:
+            self.kategoriyalar = self.kategoriya
         super().save(*args, **kwargs)
+
+    @property
+    def kategoriyalar_list(self):
+        return [k for k in (self.kategoriyalar or self.kategoriya or "").split(",") if k]
+
+    @property
+    def aralash(self):
+        return len(self.kategoriyalar_list) > 1
+
+    def kategoriyalar_matni(self):
+        nomlar = dict(Kategoriya.choices)
+        return ", ".join(str(nomlar.get(k, k)) for k in self.kategoriyalar_list)
+
+    def namunalar_yangila(self):
+        """Namuna bloklaridan umumiy maydonlarni (eski kod va hujjatlar uchun) to'ldiradi."""
+        bloklar = list(self.arizanamunalar.all())
+        if not bloklar:
+            return
+        kat = []
+        for b in bloklar:
+            if b.kategoriya and b.kategoriya not in kat:
+                kat.append(b.kategoriya)
+
+        def qosh(maydon):
+            q = []
+            for b in bloklar:
+                v = getattr(b, maydon)
+                if v and v not in q:
+                    q.append(v)
+            return ", ".join(q)
+
+        self.kategoriya = kat[0] if kat else self.kategoriya
+        self.kategoriyalar = ",".join(sorted(kat, key=lambda k: Kategoriya.values.index(k)))
+        self.namuna_soni = len(bloklar)
+        self.namuna_nomi = qosh("nomi")[:255]
+        self.partiya_raqami = qosh("partiya_raqami")[:100]
+        self.invoys_raqami = qosh("invoys_raqami")[:100]
+        Ariza.objects.filter(pk=self.pk).update(
+            kategoriya=self.kategoriya, kategoriyalar=self.kategoriyalar, namuna_soni=self.namuna_soni,
+            namuna_nomi=self.namuna_nomi, partiya_raqami=self.partiya_raqami, invoys_raqami=self.invoys_raqami)
 
     @property
     def turlar_matni(self):
@@ -195,7 +239,7 @@ class Ariza(models.Model):
                 turlar.append(str(n.namuna_turi))
         if not turlar and self.namuna_turi_id:
             turlar = [str(self.namuna_turi)]
-        return ", ".join(turlar) or self.get_kategoriya_display()
+        return ", ".join(turlar) or self.kategoriyalar_matni()
 
     @property
     def buyurtmachi(self):
@@ -205,6 +249,25 @@ class Ariza(models.Model):
     def berilgan_soni(self):
         """Buyurtmachiga xulosasi berilgan namunalar soni (prefetch bilan ishlaydi)."""
         return sum(1 for n in self.namunalar.all() if n.lab_holat == "berildi")
+
+
+class ArizaNamuna(models.Model):
+    """Mijoz arizada har bir namuna uchun alohida to'ldiradigan blok."""
+
+    ariza = models.ForeignKey(Ariza, on_delete=models.CASCADE, related_name="arizanamunalar")
+    tartib = models.PositiveIntegerField(default=1)
+    kategoriya = models.CharField(_("Namuna turi"), max_length=20, choices=Kategoriya.choices)
+    nomi = models.CharField(_("Namuna nomi"), max_length=255, blank=True)
+    partiya_raqami = models.CharField(_("Partiya raqami (LOT)"), max_length=100, blank=True)
+    invoys_raqami = models.CharField(_("Invoys raqami"), max_length=100, blank=True)
+
+    class Meta:
+        ordering = ["tartib"]
+        verbose_name = _("Arizadagi namuna")
+        verbose_name_plural = _("Arizadagi namunalar")
+
+    def __str__(self):
+        return f"{self.ariza.raqam} / {self.tartib}"
 
 
 def _hujjat_yoli(instance, filename):
@@ -221,6 +284,8 @@ class ArizaHujjat(models.Model):
         QOSHIMCHA = "qoshimcha", _("Qo'shimcha hujjat")
 
     ariza = models.ForeignKey(Ariza, on_delete=models.CASCADE, related_name="hujjatlar")
+    ariza_namuna = models.ForeignKey(ArizaNamuna, on_delete=models.CASCADE, null=True, blank=True,
+                                     related_name="hujjatlar")
     turi = models.CharField(_("Hujjat turi"), max_length=20, choices=Turi.choices)
     fayl = models.FileField(_("Fayl"), upload_to=_hujjat_yoli)
     yuklangan = models.DateTimeField(auto_now_add=True)
@@ -231,7 +296,14 @@ class ArizaHujjat(models.Model):
 
         return reverse("ariza_hujjat", args=[self.pk])
 
+    @property
+    def nomi(self):
+        if self.ariza_namuna_id:
+            return f"№{self.ariza_namuna.tartib} · {self.get_turi_display()}"
+        return self.get_turi_display()
+
     class Meta:
+        ordering = ["ariza_namuna__tartib", "id"]
         verbose_name = _("Ariza hujjati")
         verbose_name_plural = _("Ariza hujjatlari")
 
@@ -246,18 +318,24 @@ ZARUR_HUJJATLAR = {
 # Har bir ariza turi formada qaysi maydonlarni ko'rsatadi (dizayn bo'yicha)
 ARIZA_MAYDONLARI = {
     ArizaTuri.IMPORTYOR: {
-        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "kategoriya", "namuna_nomi",
-                     "chegara_maskani"],
-        "ixtiyoriy": ["partiya_raqami", "invoys_raqami"],
+        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "chegara_maskani"],
+        "ixtiyoriy": [],
     },
     ArizaTuri.DAVLAT: {
-        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "kategoriya"],
-        "ixtiyoriy": ["namuna_nomi", "partiya_raqami"],
+        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni"],
+        "ixtiyoriy": [],
     },
     ArizaTuri.IXTIYORIY: {
-        "majburiy": ["inn", "fish", "telefon", "namuna_soni", "kategoriya"],
-        "ixtiyoriy": ["namuna_nomi"],
+        "majburiy": ["inn", "fish", "telefon", "namuna_soni"],
+        "ixtiyoriy": [],
     },
+}
+
+# Har bir namuna blokidagi maydonlar (ariza turiga qarab)
+NAMUNA_MAYDONLARI = {
+    ArizaTuri.IMPORTYOR: {"majburiy": ["kategoriya", "partiya_raqami", "nomi"], "ixtiyoriy": ["invoys_raqami"]},
+    ArizaTuri.DAVLAT: {"majburiy": ["kategoriya"], "ixtiyoriy": ["nomi", "partiya_raqami"]},
+    ArizaTuri.IXTIYORIY: {"majburiy": ["kategoriya"], "ixtiyoriy": ["nomi"]},
 }
 REKVIZIT_MAYDONLARI = ["manzil", "rahbar", "hisob_raqam", "bank", "mfo", "oked"]
 
@@ -325,6 +403,16 @@ class Shartnoma(models.Model):
         return self.holat == self.Holat.YUBORILMAGAN and not self.tolovlar.exists()
 
     @property
+    def narxsiz_kategoriyalar(self):
+        """Aralash arizada hali narx belgilamagan laboratoriyalar (bo'lsa, buxgalteriyaga yuborib bo'lmaydi)."""
+        bor = set(self.bandlar.values_list("kategoriya", flat=True))
+        return [k for k in self.ariza.kategoriyalar_list if k not in bor]
+
+    def narxsiz_matni(self):
+        nomlar = dict(Kategoriya.choices)
+        return ", ".join(str(nomlar.get(k, k)) for k in self.narxsiz_kategoriyalar)
+
+    @property
     def tolov_ochirish_mumkin(self):
         """To'lovni faqat shartnomadagi namunalar tahlilga olinmaguncha o'chirish mumkin."""
         return not self.namunalar.exclude(lab_holat=Namuna.LabHolat.YANGI).exists()
@@ -365,6 +453,8 @@ class ShartnomaBand(models.Model):
 
     shartnoma = models.ForeignKey(Shartnoma, on_delete=models.CASCADE, related_name="bandlar")
     narxnoma = models.ForeignKey(Narxnoma, on_delete=models.PROTECT)
+    # qaysi laboratoriya qo'shgan (aralash arizada bitta shartnomaga ikkala laboratoriya narx qo'shadi)
+    kategoriya = models.CharField(max_length=20, choices=Kategoriya.choices, blank=True)
     parametr = models.CharField(max_length=1000)
     tahlil_usuli = models.CharField(max_length=500, blank=True)
     narx = models.DecimalField(max_digits=14, decimal_places=2)
@@ -420,6 +510,8 @@ class Namuna(models.Model):
         BERILDI = "berildi", _("Buyurtmachiga berilgan")
 
     ariza = models.ForeignKey(Ariza, verbose_name=_("Ariza"), on_delete=models.PROTECT, related_name="namunalar")
+    ariza_namuna = models.ForeignKey(ArizaNamuna, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name="qabul_namunalar")
     shartnoma = models.ForeignKey(
         Shartnoma, verbose_name=_("Shartnoma"), on_delete=models.SET_NULL, null=True, blank=True,
         related_name="namunalar",

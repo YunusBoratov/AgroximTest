@@ -17,8 +17,8 @@ from django.views.decorators.http import require_POST
 from accounts.models import Role
 
 from . import fayl_saqlash, xabarnoma
-from .forms import ArizaForm, NamunaQabulForm, RadForm
-from .models import (ARIZA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna,
+from .forms import ArizaToplam, NamunaQabulForm, RadForm
+from .models import (ARIZA_MAYDONLARI, NAMUNA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna,
                      NazoratTarixi, Shartnoma)
 from .permissions import AD, ADMINS, BX, LAB, NQ, hujjat_korinadimi, korinadigan_hujjatlar, role_required, user_role
 
@@ -29,6 +29,8 @@ def _forma_config():
         turi: {
             "majburiy": cfg["majburiy"],
             "ixtiyoriy": cfg["ixtiyoriy"],
+            "n_majburiy": NAMUNA_MAYDONLARI[turi]["majburiy"],
+            "n_ixtiyoriy": NAMUNA_MAYDONLARI[turi]["ixtiyoriy"],
             "hujjat_shart": [str(h) for h in ZARUR_HUJJATLAR[turi]],
             "hujjatlar": {
                 ArizaTuri.IMPORTYOR: ["invoys", "analiz", "guvohnoma"],
@@ -41,8 +43,8 @@ def _forma_config():
     })
 
 
-def _ariza_ctx(form, **extra):
-    ctx = {"form": form, "config": _forma_config(), "turi_choices": ArizaTuri.choices}
+def _ariza_ctx(toplam, **extra):
+    ctx = {"form": toplam.form, "toplam": toplam, "config": _forma_config(), "turi_choices": ArizaTuri.choices}
     ctx.update(extra)
     return ctx
 
@@ -56,7 +58,7 @@ def bosh_sahifa(request):
         if user_role(user) == Role.MIJOZ:
             return redirect("kabinet")
         return redirect("dashboard")
-    return render(request, "public/ariza_form.html", _ariza_ctx(ArizaForm(), preview=True))
+    return render(request, "public/ariza_form.html", _ariza_ctx(ArizaToplam(), preview=True))
 
 
 def mijoz_required(view):
@@ -71,28 +73,20 @@ def mijoz_required(view):
 
 
 def _ariza_forma(request, nom, instance=None, user=None):
-    """Ariza formasi: (form, saqlangan_ariza | None). Xato bo'lsa yuklangan fayllar vaqtincha saqlanadi."""
+    """Ariza formasi: (toplam, saqlangan_ariza | None). Xato bo'lsa yuklangan fayllar vaqtincha saqlanadi."""
     if request.method != "POST":
         fayl_saqlash.tozala(request, nom)
-        return ArizaForm(instance=instance, user=user), None
-    saqlangan = fayl_saqlash.ol(request, nom)
-    form = ArizaForm(request.POST, request.FILES, instance=instance, user=user, saqlangan=saqlangan)
-    valid = form.is_valid()
-    fayl_saqlash.yangilarini_saqla(request, nom, form, saqlangan)
+        return ArizaToplam(instance=instance, user=user), None
+    toplam = ArizaToplam(request.POST, request.FILES, instance=instance, user=user,
+                         saqlangan=fayl_saqlash.ol(request, nom))
+    valid = toplam.is_valid()
+    fayl_saqlash.yangilarini_saqla(request, nom, toplam)
     if not valid:
-        return form, None
+        return toplam, None
     with transaction.atomic():
-        ariza = form.save(commit=False)
-        if user is not None and not ariza.mijoz_id:
-            ariza.mijoz = user
-        ariza.save()
-        form.save_hujjatlar(ariza)
+        ariza = toplam.save(user=user)
     request.session.pop(f"ariza_fayllar_{nom}", None)
-    return form, ariza
-
-
-def _mavjud_hujjatlar(ariza):
-    return {h.turi: h for h in ariza.hujjatlar.all()} if ariza else {}
+    return toplam, ariza
 
 
 @mijoz_required
@@ -134,7 +128,7 @@ def ariza_tahrirlash(request, pk):
             return redirect("kabinet")
         return redirect("ariza_detail", pk=pk)
     ctx = _ariza_ctx(form, title=_("Arizani tahrirlash — %(r)s") % {"r": ariza.raqam}, ariza=ariza,
-                     rad_edi=rad_edi, mavjud=_mavjud_hujjatlar(ariza))
+                     rad_edi=rad_edi)
     tpl = "public/ariza_form.html" if role == Role.MIJOZ else "core/ariza_form.html"
     return render(request, tpl, ctx)
 
@@ -159,7 +153,7 @@ def _ariza_access(request, ariza):
     if role == Role.MIJOZ:
         if ariza.mijoz_id != request.user.id:
             raise PermissionDenied
-    elif role in LAB and request.user.lab_kategoriya != ariza.kategoriya:
+    elif role in LAB and request.user.lab_kategoriya not in ariza.kategoriyalar_list:
         raise PermissionDenied
 
 
@@ -192,16 +186,25 @@ def ariza_qabul(request, pk):
     if ariza.holat != Ariza.Holat.YANGI:
         messages.info(request, _("Bu ariza allaqachon ko'rib chiqilgan"))
         return redirect("ariza_detail", pk=pk)
-    initial = {"nomi": ariza.namuna_nomi, "namuna_olgan": ariza.fish}
-    if ariza.namuna_turi_id:  # eski arizalar: tur oldindan tanlangan
-        initial["namuna_turi"] = ariza.namuna_turi_id
-    forms = [NamunaQabulForm(request.POST or None, prefix=f"n{i}", initial=initial, kategoriya=ariza.kategoriya)
-             for i in range(ariza.namuna_soni)]
+    bloklar = list(ariza.arizanamunalar.prefetch_related("hujjatlar"))
+    if not bloklar:  # juda eski ariza: bloklar yo'q
+        bloklar = [None] * ariza.namuna_soni
+    forms = []
+    for i, blok in enumerate(bloklar):
+        initial = {"nomi": (blok.nomi if blok else "") or ariza.namuna_nomi, "namuna_olgan": ariza.fish}
+        if ariza.namuna_turi_id:  # eski arizalar: tur oldindan tanlangan
+            initial["namuna_turi"] = ariza.namuna_turi_id
+        f = NamunaQabulForm(request.POST or None, prefix=f"n{i}", initial=initial,
+                            kategoriya=blok.kategoriya if blok else ariza.kategoriya)
+        f.blok = blok
+        f.blok_hujjatlar = korinadigan_hujjatlar(request.user, blok.hujjatlar.all()) if blok else []
+        forms.append(f)
     if request.method == "POST" and all(f.is_valid() for f in forms):
         with transaction.atomic():
             for i, f in enumerate(forms, 1):
                 nam = f.save(commit=False)
                 nam.ariza = ariza
+                nam.ariza_namuna = f.blok
                 nam.tartib = i
                 nam.qabul_qilgan = request.user
                 nam.save()

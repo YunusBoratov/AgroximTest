@@ -8,7 +8,13 @@
   <h2 class="section-title">{% trans "Namuna ma'lumotlari" %} ({{ forms|length }} {% trans "ta" %})</h2>
   {% for f in forms %}
   <div class="sample">
-    <div class="sample-n">№ {{ forloop.counter }}</div>
+    <div class="sample-n">№ {{ forloop.counter }}{% if f.blok %} — {{ f.blok.get_kategoriya_display }}{% endif %}</div>
+    {% if f.blok %}<div class="blok-info">
+      {% if f.blok.nomi %}<div><span>{% trans "Namuna nomi" %}:</span> <b>{{ f.blok.nomi }}</b></div>{% endif %}
+      {% if f.blok.partiya_raqami %}<div><span>{% trans "Partiya raqami (LOT)" %}:</span> <b>{{ f.blok.partiya_raqami }}</b></div>{% endif %}
+      {% if f.blok.invoys_raqami %}<div><span>{% trans "Invoys raqami" %}:</span> <b>{{ f.blok.invoys_raqami }}</b></div>{% endif %}
+      {% for h in f.blok_hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}
+    </div>{% endif %}
     <div class="form-grid g3">{% for field in f %}<div class="fld"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div>
   </div>
   {% endfor %}

@@ -20,8 +20,17 @@ def ol(request, nom):
     return dict(request.session.get(_kalit(nom), {}))
 
 
+def _fayllar(saqlangan):
+    """{blok: {turi: info}} (yoki eski {turi: info}) ichidagi barcha fayl ma'lumotlari."""
+    for v in saqlangan.values():
+        if isinstance(v, dict) and "path" in v:
+            yield v
+        elif isinstance(v, dict):
+            yield from v.values()
+
+
 def tozala(request, nom):
-    for info in request.session.pop(_kalit(nom), {}).values():
+    for info in list(_fayllar(request.session.pop(_kalit(nom), {}))):
         if default_storage.exists(info["path"]):
             default_storage.delete(info["path"])
 
@@ -46,20 +55,20 @@ def eskilarini_tozala(soat=24):
             pass
 
 
-def yangilarini_saqla(request, nom, form, saqlangan):
-    """Formadan kelgan (va tekshiruvdan o'tgan) yangi fayllarni vaqtincha saqlaydi."""
-    data = getattr(form, "cleaned_data", {}) or {}
-    for name in form.HUJJAT_MAYDONLARI:
-        f = data.get(name)
-        if not f or name in form.errors:
-            continue
-        eski = saqlangan.get(name)
-        if eski and default_storage.exists(eski["path"]):
-            default_storage.delete(eski["path"])
-        ext = f.name.rsplit(".", 1)[-1].lower() if "." in f.name else "bin"
-        path = default_storage.save(f"{VAQTINCHA_DIR}/{uuid.uuid4().hex}.{ext}", f)
-        saqlangan[name] = {"path": path, "nom": f.name}
-    request.session[_kalit(nom)] = saqlangan
-    form.saqlangan = saqlangan
+def yangilarini_saqla(request, nom, toplam):
+    """Bloklardagi (tekshiruvdan o'tgan) yangi fayllarni vaqtincha saqlaydi: {blok prefiksi: {turi: info}}."""
+    for blok in toplam.bloklar:
+        data = getattr(blok, "cleaned_data", {}) or {}
+        for name in blok.HUJJAT_MAYDONLARI:
+            f = data.get(name)
+            if not f or name in blok.errors:
+                continue
+            eski = blok.saqlangan.get(name)
+            if eski and default_storage.exists(eski["path"]):
+                default_storage.delete(eski["path"])
+            ext = f.name.rsplit(".", 1)[-1].lower() if "." in f.name else "bin"
+            path = default_storage.save(f"{VAQTINCHA_DIR}/{uuid.uuid4().hex}.{ext}", f)
+            blok.saqlangan[name] = {"path": path, "nom": f.name}
+    request.session[_kalit(nom)] = toplam.saqlangan
     eskilarini_tozala()
-    return saqlangan
+    return toplam.saqlangan

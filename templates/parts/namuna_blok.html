@@ -1,0 +1,23 @@
+{% load i18n ui %}
+<div class="sample blok" data-blok="{{ b.prefix }}">
+  <div class="sample-n">№ <span class="blok-n">{{ b.tartib }}</span></div>
+  <div class="form-grid g3">
+    {% for name in "kategoriya partiya_raqami nomi invoys_raqami"|make_list_words %}{% with field=b|field:name %}
+    <div class="fld" data-nfield="{{ name }}"><label for="{{ field.id_for_label }}">{{ field.label }}<i class="req">*</i></label>{{ field }}{{ field.errors }}</div>
+    {% endwith %}{% endfor %}
+  </div>
+  <div class="blok-hujjat-title">{% trans "Zarur hujjatlar" %}</div>
+  <div class="form-grid g4">
+    {% for name in "guvohnoma invoys analiz qoshimcha"|make_list_words %}{% with field=b|field:name %}
+    <div class="fld" data-hujjat="{{ name }}">
+      <label>{{ field.label }}<i class="req">*</i></label>
+      {% with saq=b.saqlangan|get:name eski=b.mavjud|get:name %}
+      <label class="upload{% if saq or eski %} has{% endif %}"><span class="upload-name" data-empty="{% if saq %}✓ {{ saq.nom }}{% elif eski %}✓ {% trans 'Yuklangan' %}{% else %}{% trans 'Qo‘shing' %}{% endif %}">{% if saq %}✓ {{ saq.nom }}{% elif eski %}✓ {% trans "Yuklangan" %}{% else %}{% trans "Qo'shing" %}{% endif %}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
+        {{ field }}</label>
+      {% endwith %}
+      {{ field.errors }}
+    </div>
+    {% endwith %}{% endfor %}
+  </div>
+</div>

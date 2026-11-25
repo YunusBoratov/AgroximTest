@@ -18,6 +18,41 @@ from django.test import override_settings  # noqa: E402
 
 TEST_MEDIA = tempfile.mkdtemp()
 
+from django.core.files.uploadedfile import SimpleUploadedFile as _SUF  # noqa: E402
+from django.test import Client  # noqa: E402
+
+_BLOK_KALIT = {"kategoriya": "kategoriya", "namuna_nomi": "nomi", "partiya_raqami": "partiya_raqami",
+               "invoys_raqami": "invoys_raqami"}
+_HUJJAT = ("invoys", "analiz", "guvohnoma", "qoshimcha")
+_ARIZA_YOLLARI = ("/ariza/yangi/", "/tahrirlash/", "/namuna/yaratish/")
+
+
+def bloklar(data):
+    """Eski (bitta namunali) test ma'lumotini har bir namuna bloki uchun s0-, s1-... ko'rinishiga o'tkazadi."""
+    d = dict(data)
+    n = int(d.get("namuna_soni") or 1)
+    tekis = {k: d.pop(k) for k in list(d) if k in _BLOK_KALIT or k in _HUJJAT}
+    for i in range(n):
+        for k, v in tekis.items():
+            if k in _HUJJAT:
+                if v and i:
+                    v = _SUF(v.name, b"%PDF-1.4 test", content_type="application/pdf") \
+                        if v.name.endswith(".pdf") else _SUF(v.name, b"MZ")
+                d[f"s{i}-{k}"] = v
+            else:
+                d[f"s{i}-{_BLOK_KALIT[k]}"] = v
+    return d
+
+
+class ArizaClient(Client):
+    def post(self, path, data=None, *a, **kw):
+        if data and any(y in path for y in _ARIZA_YOLLARI) and not any(k.startswith("s0-") for k in data):
+            data = bloklar(data)
+        return super().post(path, data, *a, **kw)
+
+
+TestCase.client_class = ArizaClient
+
 
 @override_settings(MEDIA_ROOT=TEST_MEDIA)
 class BaseTest(TestCase):
@@ -167,12 +202,13 @@ class MijozTests(BaseTest):
         self.assertRedirects(r, reverse("kabinet"))
         a = Ariza.objects.get(mijoz=self.mijoz)
         self.assertEqual(a.kategoriya, "mineral")
-        self.assertEqual(a.hujjatlar.count(), 3)
+        self.assertEqual(a.hujjatlar.count(), 6)  # 2 namuna x 3 hujjat
+        self.assertEqual(a.arizanamunalar.count(), 2)
 
     def test_hujjatsiz_ariza_qabul_qilinmaydi(self):
         r = self._importyor(invoys="")
         self.assertEqual(r.status_code, 200)
-        self.assertIn("invoys", r.context["form"].errors)
+        self.assertIn("invoys", r.context["toplam"].bloklar[0].errors)
         self.assertFalse(Ariza.objects.filter(mijoz=self.mijoz).exists())
 
     def test_ixtiyoriy_jshshir_tekshiruvi(self):
@@ -185,7 +221,7 @@ class MijozTests(BaseTest):
 
     def test_notogri_fayl_turi(self):
         r = self._importyor(invoys=SimpleUploadedFile("x.exe", b"MZ"))
-        self.assertIn("invoys", r.context["form"].errors)
+        self.assertIn("invoys", r.context["toplam"].bloklar[0].errors)
 
     def test_boshqa_mijoz_arizasini_korolmaydi(self):
         begona = Ariza.objects.first()
@@ -711,6 +747,7 @@ class SinovTuzatishTests(BaseTest):
     def _data(self, **kw):
         d = {"turi": "importyor", "inn": "123456789", "buyurtmachi_nomi": "Agro", "fish": "Ali",
              "telefon": "+998905550011", "namuna_soni": 1, "kategoriya": "mineral", "namuna_nomi": "N",
+             "partiya_raqami": "LOT-1",
              "chegara_maskani": "Olot"}
         d.update(kw)
         return d
@@ -720,7 +757,7 @@ class SinovTuzatishTests(BaseTest):
             fish="", invoys=pdf("inv.pdf"), analiz=pdf("an.pdf"), guvohnoma=pdf("gv.pdf")))
         self.assertEqual(r.status_code, 200)
         self.assertIn("fish", r.context["form"].errors)
-        self.assertNotIn("invoys", r.context["form"].errors)
+        self.assertNotIn("invoys", r.context["toplam"].bloklar[0].errors)
         self.assertContains(r, "inv.pdf")  # fayl nomi "yuklangan" bo'lib ko'rinadi
         # ikkinchi urinish: fayllarsiz, faqat xato tuzatildi
         r = self.client.post(reverse("ariza_yangi"), self._data())
@@ -734,7 +771,7 @@ class SinovTuzatishTests(BaseTest):
         self.client.post(reverse("ariza_yangi"), self._data(fish="", invoys=pdf()))
         self.client.get(reverse("ariza_yangi"))
         r = self.client.post(reverse("ariza_yangi"), self._data())
-        self.assertIn("invoys", r.context["form"].errors)
+        self.assertIn("invoys", r.context["toplam"].bloklar[0].errors)
 
     def _rad_ariza(self):
         a = Ariza.objects.create(mijoz=self.mijoz, turi="importyor", inn="123456789", buyurtmachi_nomi="Agro",
@@ -792,8 +829,8 @@ class KategoriyaTests(BaseTest):
         self.client.login(username="+998905550099", password="parol123")
         r = self.client.get(reverse("ariza_yangi"))
         html = r.content.decode()
-        self.assertIn('name="kategoriya"', html)
-        self.assertNotIn("Azotli o", html.split('name="kategoriya"')[1].split("</select>")[0])
+        self.assertIn('name="s0-kategoriya"', html)
+        self.assertNotIn("Azotli o", html.split('name="s0-kategoriya"')[1].split("</select>")[0])
         self.client.post(reverse("ariza_yangi"), {
             "turi": "ixtiyoriy", "inn": "12345678901234", "fish": "Ali", "telefon": "+998905550099",
             "namuna_soni": 2, "kategoriya": "kimyoviy", "guvohnoma": pdf()})
@@ -1069,3 +1106,63 @@ class ParolTests(TestCase):
     def test_sms_ulanmagan(self):
         r = self.client.post(reverse("parol_unutdim"), {"telefon": "+998 90 111 22 33"}, follow=True)
         self.assertContains(r, "SMS xizmati hali ulanmagan")
+
+
+class KopNamunaTests(BaseTest):
+    def test_aralash_ariza_bitta_shartnoma(self):
+        from .models import Narxnoma
+        mijoz = User.objects.create_user("+998905557788", password="parol123", role=Role.MIJOZ)
+        self.client.login(username="+998905557788", password="parol123")
+        data = {"turi": "importyor", "inn": "123456789", "buyurtmachi_nomi": "Agro", "fish": "Ali",
+                "telefon": "+998905557788", "namuna_soni": 2, "chegara_maskani": "Olot"}
+        for i, (kat, nom) in enumerate([("mineral", "Ammofos"), ("kimyoviy", "Fungitsid X")]):
+            data.update({f"s{i}-kategoriya": kat, f"s{i}-nomi": nom, f"s{i}-partiya_raqami": f"LOT-{i}",
+                         f"s{i}-invoys_raqami": f"INV-{i}", f"s{i}-invoys": pdf(f"inv{i}.pdf"),
+                         f"s{i}-analiz": pdf(f"an{i}.pdf"), f"s{i}-guvohnoma": pdf(f"gv{i}.pdf")})
+        r = self.client.post(reverse("ariza_yangi"), data)
+        self.assertRedirects(r, reverse("kabinet"))
+        a = Ariza.objects.get(mijoz=mijoz)
+        self.assertEqual(a.kategoriyalar, "mineral,kimyoviy")
+        self.assertEqual(a.arizanamunalar.count(), 2)
+        self.assertEqual(a.hujjatlar.filter(ariza_namuna__tartib=2).count(), 3)
+
+        # namuna qabul qiluvchi: har bir blok o'z guruhining turlarini ko'radi
+        self.client.logout()
+        self.login("namuna")
+        r = self.client.get(reverse("ariza_qabul", args=[a.pk]))
+        html = r.content.decode()
+        self.assertIn("Azotli", html.split('name="n0-namuna_turi"')[1].split("</select>")[0])
+        self.assertIn("Fungitsidlar", html.split('name="n1-namuna_turi"')[1].split("</select>")[0])
+        self.assertIn("LOT-1", html)
+        post = {}
+        for i, t in enumerate([NamunaTuri.objects.get(nomi="Azotli o'g'itlar"),
+                               NamunaTuri.objects.get(nomi="Fungitsidlar")]):
+            post.update({f"n{i}-namuna_turi": t.pk, f"n{i}-nomi": f"N{i}", f"n{i}-namuna_olgan": "Ali",
+                         f"n{i}-ogirligi": "1 kg"})
+        self.assertRedirects(self.client.post(reverse("ariza_qabul", args=[a.pk]), post), reverse("namuna_list"))
+
+        # mineral laboratoriya o'z qismini qo'shadi
+        self.client.logout()
+        self.login("lab_mineral")
+        nx_m = Narxnoma.objects.filter(sinov_obyekti__in=Narxnoma.KATEGORIYA_OBYEKTLARI["mineral"]).first()
+        r = self.client.post(reverse("shartnoma_yangi", args=[a.pk]), {f"band_{nx_m.pk}": "1", f"soni_{nx_m.pk}": "1"})
+        sh = Shartnoma.objects.get(ariza=a, is_active=True)
+        self.assertEqual(sh.narxsiz_kategoriyalar, ["kimyoviy"])
+        self.client.post(reverse("shartnoma_yuborish", args=[sh.pk]))
+        sh.refresh_from_db()
+        self.assertEqual(sh.holat, Shartnoma.Holat.YUBORILMAGAN)  # kimyoviy narxi yo'q — yuborilmaydi
+
+        # kimyoviy laboratoriya: ariza ro'yxatda, xuddi shu shartnomaga qo'shadi
+        self.client.logout()
+        self.login("lab_kimyo")
+        self.assertContains(self.client.get(reverse("shartnoma_tanlash")), a.raqam)
+        self.assertRedirects(self.client.get(reverse("shartnoma_yangi", args=[a.pk])),
+                             reverse("shartnoma_edit", args=[sh.pk]))
+        nx_k = Narxnoma.objects.filter(sinov_obyekti__in=Narxnoma.KATEGORIYA_OBYEKTLARI["kimyoviy"]).first()
+        self.client.post(reverse("shartnoma_edit", args=[sh.pk]), {f"band_{nx_k.pk}": "1", f"soni_{nx_k.pk}": "1"})
+        self.assertEqual(sorted(sh.bandlar.values_list("kategoriya", flat=True)), ["kimyoviy", "mineral"])
+        self.assertEqual(Shartnoma.objects.filter(ariza=a, is_active=True).count(), 1)
+        self.client.post(reverse("shartnoma_yuborish", args=[sh.pk]))
+        sh.refresh_from_db()
+        self.assertEqual(sh.holat, Shartnoma.Holat.YUBORILGAN)
+        self.assertEqual(sh.namunalar.count(), 2)

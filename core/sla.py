@@ -74,6 +74,8 @@ class Muddat:
             if not sh:
                 return self.otdimi(n.ariza.qabul_vaqti or n.qabul_vaqti, "muddat_narx_belgilash")
             if sh.holat == Shartnoma.Holat.YUBORILMAGAN:
+                if n.namuna_turi_id and n.namuna_turi.kategoriya in sh.narxsiz_kategoriyalar:  # aralash ariza
+                    return self.otdimi(n.ariza.qabul_vaqti or n.qabul_vaqti, "muddat_narx_belgilash")
                 return self.shartnoma_lab(sh)
             return sh.tahlil_boshlash_mumkin and self.otdimi(sh.tahlilga_ruxsat_at, "muddat_tahlilga_yuborish")
         if n.lab_holat in (H.TAHLILDA, H.JARAYONDA):

@@ -9,9 +9,11 @@
     <div><span>{% trans "Namuna turi" %}</span><b>{{ ariza.turlar_matni }}</b></div>
     <div><span>{% trans "Namunalar soni" %}</span><b>{{ namuna_soni }}</b></div>
   </div>
-  <div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>
+  {% if ariza.aralash %}<div class="notice">{% blocktrans %}Arizada bir nechta turdagi namuna bor — shartnoma bitta bo'ladi. Siz faqat «{{ kat_nomi }}» namunalari uchun ko'rsatkichlarni tanlaysiz; boshqa laboratoriya o'z qismini qo'shadi.{% endblocktrans %}
+    {% if boshqa_bandlar %}<br>{% trans "Boshqa laboratoriya qo'shgan ko'rsatkichlar" %}: <b>{{ boshqa_bandlar|length }}</b>{% endif %}</div>{% endif %}
+  <div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.nomi }}</a>{% endfor %}</div>
 </section>
-<form method="post" class="card">{% csrf_token %}
+<form method="post" class="card">{% csrf_token %}<input type="hidden" name="kategoriya" value="{{ kat }}">
   <div class="page-head">
     <h2 class="section-title" style="margin:0">{% trans "Tekshiriladigan ko'rsatkichlar (narxnomadan)" %}</h2>
     <input class="input" id="filter" placeholder="{% trans 'Ko‘rsatkich yoki GOST bo‘yicha qidirish' %}" style="min-width:280px">

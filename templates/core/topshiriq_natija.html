@@ -9,10 +9,10 @@
     <div><span>{% trans "Namuna" %}</span><b>{{ nam.nomi }} ({{ nam.namuna_turi }})</b></div>
     {% if nam.tavsifi %}<div><span>{% trans "Namuna tavsifi" %}</span><b>{{ nam.tavsifi }}</b></div>{% endif %}
     {% if nam.tasir_etuvchi_modda %}<div><span>{% trans "Ta'sir etuvchi modda" %}</span><b>{{ nam.tasir_etuvchi_modda }}</b></div>{% endif %}
-    <div><span>{% trans "Partiya raqami (LOT)" %}</span><b>{{ nam.ariza.partiya_raqami|default:"—" }}</b></div>
+    <div><span>{% trans "Partiya raqami (LOT)" %}</span><b>{% if nam.ariza_namuna %}{{ nam.ariza_namuna.partiya_raqami|default:"—" }}{% else %}{{ nam.ariza.partiya_raqami|default:"—" }}{% endif %}</b></div>
     <div><span>{% trans "Yuborilgan vaqt" %}</span><b>{{ t.yuborilgan_at|dt }} {{ t.yuborilgan_at|tm }}</b></div>
   </div>
-  <div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>
+  <div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.nomi }}</a>{% endfor %}</div>
 </section>
 {% if t.holat == "yuborildi" %}
 <section class="card"><form method="post" action="{% url 'topshiriq_qabul' t.pk %}">{% csrf_token %}

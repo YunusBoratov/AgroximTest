@@ -277,3 +277,6 @@ table.res tr.deleted td { opacity: .35; text-decoration: line-through; }
 .fld .hafta label.kun { justify-content: flex-start; width: auto; }
 .stat-box.green b { color: var(--green, #3e7b4f); }
 .t tfoot th { background: #f3f6f4; text-align: left; }
+.blok-hujjat-title { font-weight: 600; font-size: 13px; margin: 12px 0 6px; color: var(--muted); }
+.blok-info { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; margin-bottom: 10px; }
+.blok-info span { color: var(--muted); }

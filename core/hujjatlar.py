@@ -318,12 +318,14 @@ def xulosa_docx(x, verify_url=""):
 
     # Ma'lumotlar jadvali
     rows = [_uniq_cells(r) for r in t_info.rows]
+    b = n.ariza_namuna  # mijoz kiritgan namuna bloki (partiya, invoys)
     nomi = n.nomi or a.namuna_nomi
     tavsif = ", ".join(v for v in [nomi, n.tavsifi, n.tasir_etuvchi_modda] if v)
     vals = [
         a.buyurtmachi_nomi or a.fish,
         f"{tavsif} ({n.namuna_turi.nomi})",
-        f"LOT (partiya raqami): {a.partiya_raqami or '—'}   |   INVOICE: {a.invoys_raqami or '—'}",
+        f"LOT (partiya raqami): {(b.partiya_raqami if b else a.partiya_raqami) or '—'}   |   "
+        f"INVOICE: {(b.invoys_raqami if b else a.invoys_raqami) or '—'}",
         f"{_sana(n.qabul_vaqti)} y.   |   Oğirligi/hajmi: {n.ogirligi or '—'}",
         f"{_sana(x.sinov_sanasi)} y.   |   Dalolatnoma №: {x.dalolatnoma or '—'}",
         f"{x.sinov_joyi}   |   {x.harorat}, {x.namlik}",

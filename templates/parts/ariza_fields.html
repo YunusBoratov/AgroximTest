@@ -11,7 +11,7 @@
   </div>
   {% if form.non_field_errors %}<ul class="messages"><li class="error">{{ form.non_field_errors|join:" " }}</li></ul>{% endif %}
   <div class="form-grid g3">
-    {% for name in "inn buyurtmachi_nomi fish telefon namuna_soni chegara_maskani kategoriya partiya_raqami namuna_nomi invoys_raqami"|make_list_words %}
+    {% for name in "inn buyurtmachi_nomi fish telefon namuna_soni chegara_maskani"|make_list_words %}
       {% with field=form|field:name %}
       <div class="fld" data-field="{{ name }}">
         <label for="{{ field.id_for_label }}" data-label-ixtiyoriy="{% trans 'JSHSHIR / ID' %}" data-label-inn="{% trans 'INN' %}">{% if name == "inn" %}{% trans "INN" %}{% else %}{{ field.label }}{% endif %}<i class="req">*</i></label>
@@ -23,24 +23,10 @@
 </div>
 
 <div class="box">
-  <h3 class="box-title">{% trans "Zarur hujjatlar" %}</h3>
-  <div class="form-grid g3">
-    {% for name in "guvohnoma invoys analiz qoshimcha"|make_list_words %}
-      {% with field=form|field:name %}
-      <div class="fld" data-hujjat="{{ name }}">
-        <label>{{ field.label }}<i class="req">*</i></label>
-        {% with saq=form.saqlangan|get:name eski=mavjud|get:name %}
-        <label class="upload{% if saq or eski %} has{% endif %}"><span class="upload-name" data-empty="{% if saq %}✓ {{ saq.nom }}{% elif eski %}✓ {% trans 'Yuklangan' %}{% else %}{% trans 'Qo‘shing' %}{% endif %}">{% if saq %}✓ {{ saq.nom }}{% elif eski %}✓ {% trans "Yuklangan" %}{% else %}{% trans "Qo'shing" %}{% endif %}</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
-          {{ field }}</label>
-        {% if saq or eski %}<div class="help">{% trans "Almashtirish uchun yangi fayl tanlang" %}</div>{% endif %}
-        {% endwith %}
-        {{ field.errors }}
-      </div>
-      {% endwith %}
-    {% endfor %}
-  </div>
-  <p class="help">{% trans "PDF, JPG, PNG, Word yoki Excel, har biri 15 MB gacha." %}</p>
+  <h3 class="box-title">{% trans "Namunalar" %}</h3>
+  <p class="help">{% trans "Namuna sonini o'zgartirsangiz, bloklar soni ham o'zgaradi. Har bir namuna uchun ma'lumot va hujjatlarni alohida kiriting. PDF, JPG, PNG, Word yoki Excel, har biri 15 MB gacha." %}</p>
+  <div id="bloklar">{% for b in toplam.bloklar %}{% include "parts/namuna_blok.html" %}{% endfor %}</div>
+  <template id="blok-andoza">{% with b=toplam.andoza %}{% include "parts/namuna_blok.html" %}{% endwith %}</template>
 </div>
 
 <details class="box" id="rekvizit-box" {% if form.errors %}open{% endif %}>
@@ -67,18 +53,46 @@
       const lbl = el.querySelector("label");
       if (n === "inn") lbl.firstChild.textContent = sel.value === "ixtiyoriy" ? lbl.dataset.labelIxtiyoriy : lbl.dataset.labelInn;
     });
-    document.querySelectorAll("[data-hujjat]").forEach(el => {
+    document.querySelectorAll("#bloklar [data-nfield]").forEach(el => {
+      const n = el.dataset.nfield, req = c.n_majburiy.includes(n);
+      el.hidden = !(req || c.n_ixtiyoriy.includes(n));
+      el.querySelector(".req").hidden = !req;
+    });
+    document.querySelectorAll("#bloklar [data-hujjat]").forEach(el => {
       const n = el.dataset.hujjat;
       el.hidden = !c.hujjatlar.includes(n);
       el.querySelector(".req").hidden = !c.hujjat_shart.includes(n);
     });
     document.querySelectorAll("[data-rekvizit]").forEach(el => { el.hidden = !c.rekvizit.includes(el.dataset.rekvizit); });
   }
-  sel.addEventListener("change", apply); apply();
-  document.querySelectorAll(".upload input[type=file]").forEach(inp => inp.addEventListener("change", () => {
-    const s = inp.closest(".upload").querySelector(".upload-name");
-    s.textContent = inp.files.length ? inp.files[0].name : s.dataset.empty;
-    inp.closest(".upload").classList.toggle("has", inp.files.length > 0);
-  }));
+  function faylTinglash(root) {
+    root.querySelectorAll(".upload input[type=file]").forEach(inp => inp.addEventListener("change", () => {
+      const s = inp.closest(".upload").querySelector(".upload-name");
+      s.textContent = inp.files.length ? inp.files[0].name : s.dataset.empty;
+      inp.closest(".upload").classList.toggle("has", inp.files.length > 0);
+    }));
+  }
+  // namuna soniga qarab bloklar
+  const soni = document.getElementById("id_namuna_soni"), box = document.getElementById("bloklar"),
+        andoza = document.getElementById("blok-andoza").innerHTML;
+  function bloklar() {
+    let n = parseInt(soni.value, 10);
+    if (!n || n < 1) return;
+    n = Math.min(n, 50);
+    let bor = box.querySelectorAll(".blok");
+    for (let i = bor.length; i < n; i++) {
+      const t = document.createElement("div");
+      t.innerHTML = andoza.replaceAll("s__i__", "s" + i).replace(/__n__/g, i + 1);
+      const el = t.firstElementChild;
+      el.querySelector(".blok-n").textContent = i + 1;
+      box.appendChild(el); faylTinglash(el);
+    }
+    bor = box.querySelectorAll(".blok");
+    for (let i = bor.length - 1; i >= n; i--) bor[i].remove();
+    apply();
+  }
+  soni.addEventListener("input", bloklar);
+  sel.addEventListener("change", apply);
+  faylTinglash(document); bloklar(); apply();
 })();
 </script>

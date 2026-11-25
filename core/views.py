@@ -16,6 +16,7 @@ from .models import (Ariza, ArizaTuri, Kategoriya, NamunaTuri, Namuna, Narxnoma,
                      Xulosa)
 from .permissions import ADMINS, AD, BX, LAB, NQ, SA, role_required, user_role, korinadigan_hujjatlar
 from . import sla
+from .views_shartnoma import shartnoma_kutayotgan_arizalar
 
 # Holat -> badge rangi
 BADGE = {
@@ -137,7 +138,7 @@ def dashboard(request):
         ctx["title"] = _("Asosiy panel")
         groups = []
         for kat, label in Kategoriya.choices:
-            qs = davrda(Shartnoma.objects.filter(is_active=True, ariza__kategoriya=kat).exclude(
+            qs = davrda(Shartnoma.objects.filter(is_active=True, ariza__kategoriyalar__contains=kat).exclude(
                 holat=Shartnoma.Holat.YUBORILMAGAN), "created_at")
             groups.append((label, [
                 (lbl, qs.filter(tolov_holati=val).count(),
@@ -152,11 +153,10 @@ def dashboard(request):
     namunalar = lab_scope(request, Namuna.objects.all())
     if role in LAB:
         ctx["title"] = _("Asosiy panel")
-        sh = davrda(lab_scope(request, Shartnoma.objects.filter(is_active=True), "ariza__kategoriya"), "created_at")
+        sh = davrda(lab_scope(request, Shartnoma.objects.filter(is_active=True), "ariza__kategoriyalar__contains"), "created_at")
         ctx["shartnoma_cards"] = [
             (_("Ariza shakllantirilgan, shartnoma tuzilishi kutilmoqda"),
-             lab_scope(request, Ariza.objects.filter(holat=Ariza.Holat.QABUL).exclude(shartnomalar__is_active=True),
-                       "kategoriya").count(), reverse("shartnoma_tanlash")),
+             shartnoma_kutayotgan_arizalar(request.user.lab_kategoriya).count(), reverse("shartnoma_tanlash")),
             (_("Tuzilgan shartnomalar"), sh.count(), reverse("shartnoma_list") + "?" + q.lstrip("&")),
         ]
         tayyor = namunalar.filter(lab_holat=Namuna.LabHolat.YANGI, shartnoma__isnull=False)
@@ -274,7 +274,7 @@ def _shartnoma_cols():
 
 @role_required(AD, *LAB)
 def shartnoma_list(request):
-    qs = lab_scope(request, Shartnoma.objects.filter(is_active=True).select_related("ariza"), "ariza__kategoriya")
+    qs = lab_scope(request, Shartnoma.objects.filter(is_active=True).select_related("ariza"), "ariza__kategoriyalar__contains")
     cols = _shartnoma_cols() + [
         Column(_("Biriktirilgan hujjatlar"), lambda o: korinadigan_hujjatlar(request.user, o.ariza.hujjatlar.all()),
                "file"),
@@ -303,7 +303,7 @@ def oferta_list(request):
         qs = qs.exclude(holat=Shartnoma.Holat.YUBORILMAGAN)
     kat = request.GET.get("kategoriya")
     if kat in Kategoriya.values:
-        qs = qs.filter(ariza__kategoriya=kat)
+        qs = qs.filter(ariza__kategoriyalar__contains=kat)
     cols = _shartnoma_cols() + [
         Column(_("Qoldiq"), "qoldiq", "money"),
         Column(_("Holati"), "get_tolov_holati_display", "badge", badge=badge("tolov_holati")),
@@ -333,6 +333,9 @@ def _lab_amallar(o):
             # namuna qabul qilindi -> laboratoriya narxnomadan narx belgilaydi (shartnoma tuzadi)
             return [(_("Narx belgilash"), reverse("shartnoma_yangi", args=[o.ariza_id]), "plus", "btn")]
         if sh.holat == Shartnoma.Holat.YUBORILMAGAN:
+            if o.namuna_turi_id and o.namuna_turi.kategoriya in sh.narxsiz_kategoriyalar:  # aralash ariza
+                return [(_("Narx belgilash"), reverse("shartnoma_edit", args=[sh.pk]) +
+                         f"?kategoriya={o.namuna_turi.kategoriya}", "plus", "btn")]
             return [(_("Buxgalteriyaga yuborish"), reverse("shartnoma_detail", args=[sh.pk]), "send", "btn")]
         if sh.tahlil_boshlash_mumkin:
             return [(_("Tahlilga yuborish"), reverse("tahlilga_yuborish", args=[o.pk]), "send", "btn")]

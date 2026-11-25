@@ -10,11 +10,16 @@
       <a class="btn btn-grey" href="{% url 'shartnoma_hujjat' sh.pk 'pdf' %}" target="_blank">PDF</a>
       <a class="btn btn-grey" href="{% url 'shartnoma_hujjat' sh.pk 'docx' %}">Word</a>
       {% if is_lab and sh.tahrirlash_mumkin %}
+        {% if ariza.aralash and not request.user.lab_kategoriya %}
+          {% for k in ariza.kategoriyalar_list %}<a class="btn btn-light" href="{% url 'shartnoma_edit' sh.pk %}?kategoriya={{ k }}">{% trans "Ko'rsatkichlar" %}: {{ kat_nomlari|get:k }}</a>{% endfor %}
+        {% else %}
         <a class="btn btn-light" href="{% url 'shartnoma_edit' sh.pk %}">{% trans "Ko'rsatkichlarni o'zgartirish" %}</a>
+        {% endif %}
         <form method="post" action="{% url 'shartnoma_yuborish' sh.pk %}">{% csrf_token %}<button class="btn btn-green">{% trans "Buxgalteriyaga yuborish" %}</button></form>
       {% endif %}
     </div>
   </div>
+  {% if narxsiz %}<div class="notice">{% blocktrans %}Bu arizada bir nechta turdagi namuna bor. Shartnoma bitta: {{ narxsiz }} laboratoriyasi ham o'z ko'rsatkichlarini qo'shgach, buxgalteriyaga yuborish mumkin bo'ladi.{% endblocktrans %}</div>{% endif %}
   <div class="info-grid">
     <div><span>{% trans "Ariza" %}</span><b><a class="row-link" href="{% url 'ariza_detail' ariza.pk %}">{{ ariza.raqam }}</a> · {{ ariza.get_turi_display }}</b></div>
     <div><span>{% trans "Buyurtmachi" %}</span><b>{{ ariza.buyurtmachi }}</b></div>
@@ -36,12 +41,12 @@
 <section class="card">
   <h2 class="section-title">{% trans "Tekshiriladigan ko'rsatkichlar" %}</h2>
   <table class="t">
-    <thead><tr><th>N</th><th>{% trans "Aniqlanadigan tavsif (parametr)" %}</th><th>{% trans "Tahlil usuli" %}</th><th>{% trans "Narxi, so'm" %}</th><th>{% trans "Namuna soni" %}</th><th>{% trans "Summa" %}</th></tr></thead>
-    <tbody>{% for b in bandlar %}<tr><td>{{ forloop.counter }}</td><td>{{ b.parametr }}</td><td>{{ b.tahlil_usuli|default:"—" }}</td><td class="money">{{ b.narx|money }}</td><td>{% if b.narxnoma.har_namunaga %}{{ b.namuna_soni }}{% else %}1{% endif %}</td><td class="money">{{ b.summa|money }}</td></tr>{% endfor %}
-    <tr><td></td><td colspan="4" class="bold">{% trans "Jami" %}</td><td class="money">{{ sh.jami_summa|money }}</td></tr></tbody>
+    <thead><tr><th>N</th><th>{% trans "Aniqlanadigan tavsif (parametr)" %}</th>{% if ariza.aralash %}<th>{% trans "Laboratoriya" %}</th>{% endif %}<th>{% trans "Tahlil usuli" %}</th><th>{% trans "Narxi, so'm" %}</th><th>{% trans "Namuna soni" %}</th><th>{% trans "Summa" %}</th></tr></thead>
+    <tbody>{% for b in bandlar %}<tr><td>{{ forloop.counter }}</td><td>{{ b.parametr }}</td>{% if ariza.aralash %}<td>{{ b.get_kategoriya_display }}</td>{% endif %}<td>{{ b.tahlil_usuli|default:"—" }}</td><td class="money">{{ b.narx|money }}</td><td>{% if b.narxnoma.har_namunaga %}{{ b.namuna_soni }}{% else %}1{% endif %}</td><td class="money">{{ b.summa|money }}</td></tr>{% endfor %}
+    <tr><td></td><td colspan="{% if ariza.aralash %}5{% else %}4{% endif %}" class="bold">{% trans "Jami" %}</td><td class="money">{{ sh.jami_summa|money }}</td></tr></tbody>
   </table>
   {% if namunalar %}<p class="help" style="margin-top:12px">{% trans "Namunalar" %}: {% for n in namunalar %}{{ n }} ({{ n.nomi }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
-  {% if hujjatlar %}<div class="docs" style="margin-top:8px">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.get_turi_display }}</a>{% endfor %}</div>{% endif %}
+  {% if hujjatlar %}<div class="docs" style="margin-top:8px">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.nomi }}</a>{% endfor %}</div>{% endif %}
 </section>
 
 <section class="card">

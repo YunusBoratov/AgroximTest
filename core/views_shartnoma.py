@@ -19,13 +19,41 @@ from accounts.models import Role
 from . import xabarnoma
 from .forms import RekvizitForm, TolovForm
 from .hujjatlar import docx_to_pdf, shartnoma_docx
-from .models import Ariza, Narxnoma, NazoratTarixi, Shartnoma, ShartnomaBand, Tolov
+from .models import Ariza, Kategoriya, Narxnoma, NazoratTarixi, Shartnoma, ShartnomaBand, Tolov
 from .permissions import AD, BX, LAB, SA, korinadigan_hujjatlar, role_required, user_role
 
 
-def _lab_kategoriya_tekshir(request, kategoriya):
-    if user_role(request.user) in LAB and request.user.lab_kategoriya != kategoriya:
+def _lab_kategoriya_tekshir(request, ariza):
+    """Laboratoriya faqat o'z guruhidagi namunasi bor arizaning shartnomasiga kiradi."""
+    if user_role(request.user) in LAB and request.user.lab_kategoriya not in ariza.kategoriyalar_list:
         raise PermissionDenied
+
+
+def _ish_kategoriyasi(request, ariza, sh=None):
+    """Qaysi laboratoriya qismining narxlari tahrirlanadi: laboratoriya — o'ziniki; admin — ?kategoriya= yoki
+    hali narx belgilanmagan birinchi guruh."""
+    if user_role(request.user) in LAB:
+        return request.user.lab_kategoriya
+    k = request.GET.get("kategoriya") or request.POST.get("kategoriya")
+    if k in ariza.kategoriyalar_list:
+        return k
+    if sh is not None and sh.narxsiz_kategoriyalar:
+        return sh.narxsiz_kategoriyalar[0]
+    return ariza.kategoriyalar_list[0] if ariza.kategoriyalar_list else ariza.kategoriya
+
+
+def shartnoma_kutayotgan_arizalar(kat=None):
+    """Narx belgilanishi kutilayotgan arizalar: shartnomasi yo'q yoki (aralash arizada) shartnomada
+    bu laboratoriya hali narx qo'shmagan va shartnoma buxgalteriyaga yuborilmagan."""
+    qs = Ariza.objects.filter(holat=Ariza.Holat.QABUL)
+    if kat:
+        qs = qs.filter(kategoriyalar__contains=kat)
+    yoq = qs.exclude(shartnomalar__is_active=True)
+    if not kat:
+        return yoq
+    qisman = (Shartnoma.objects.filter(is_active=True, holat=Shartnoma.Holat.YUBORILMAGAN, ariza__in=qs)
+              .exclude(bandlar__kategoriya=kat).values_list("ariza_id", flat=True))
+    return Ariza.objects.filter(pk__in=list(yoq.values_list("pk", flat=True)) + list(qisman))
 
 
 def _narxnoma_qatorlari(kategoriya):
@@ -42,12 +70,9 @@ def _narxnoma_qatorlari(kategoriya):
 @role_required(AD, *LAB)
 def shartnoma_tanlash(request):
     """Shartnoma tuzilishi kutilayotgan (qabul qilingan) arizalar."""
-    qs = (Ariza.objects.filter(holat=Ariza.Holat.QABUL)
-          .exclude(shartnomalar__is_active=True)
-          .select_related("namuna_turi").prefetch_related("namunalar"))
     kat = request.user.lab_kategoriya if user_role(request.user) in LAB else None
-    if kat:
-        qs = qs.filter(kategoriya=kat)
+    qs = shartnoma_kutayotgan_arizalar(kat).select_related("namuna_turi").prefetch_related(
+        "namunalar", "arizanamunalar")
     return render(request, "core/shartnoma_tanlash.html", {"title": _("Yangi shartnoma"), "arizalar": qs})
 
 
@@ -75,14 +100,19 @@ def shartnoma_form(request, ariza_pk=None, pk=None):
     else:
         sh = None
         ariza = get_object_or_404(Ariza, pk=ariza_pk, holat=Ariza.Holat.QABUL)
-        if ariza.shartnomalar.filter(is_active=True).exists():
+        mavjud = ariza.shartnomalar.filter(is_active=True).first()
+        if mavjud:
+            if mavjud.tahrirlash_mumkin:  # aralash ariza: ikkinchi laboratoriya shu shartnomaga qo'shadi
+                return redirect("shartnoma_edit", pk=mavjud.pk)
             messages.info(request, _("Bu ariza uchun shartnoma allaqachon tuzilgan"))
-            return redirect("shartnoma_detail", pk=ariza.shartnomalar.filter(is_active=True).first().pk)
-    _lab_kategoriya_tekshir(request, ariza.kategoriya)
+            return redirect("shartnoma_detail", pk=mavjud.pk)
+    _lab_kategoriya_tekshir(request, ariza)
+    kat = _ish_kategoriyasi(request, ariza, sh)
 
-    qatorlar = list(_narxnoma_qatorlari(ariza.kategoriya))
-    namuna_soni = ariza.namunalar.count() or ariza.namuna_soni
-    oldingi = {b.narxnoma_id: b.namuna_soni for b in sh.bandlar.all()} if sh else {}
+    qatorlar = list(_narxnoma_qatorlari(kat))
+    namuna_soni = (ariza.namunalar.filter(namuna_turi__kategoriya=kat).count()
+                   or ariza.arizanamunalar.filter(kategoriya=kat).count() or ariza.namuna_soni)
+    oldingi = {b.narxnoma_id: b.namuna_soni for b in sh.bandlar.filter(kategoriya=kat)} if sh else {}
 
     if request.method == "POST":
         tanlangan = _bandlar_postdan(request, qatorlar)
@@ -94,9 +124,10 @@ def shartnoma_form(request, ariza_pk=None, pk=None):
                     sh = Shartnoma.objects.create(ariza=ariza, yaratgan=request.user)
                     ariza.namunalar.update(shartnoma=sh)
                 else:
-                    sh.bandlar.all().delete()
+                    sh.bandlar.filter(kategoriya=kat).delete()
                 for nx, soni in tanlangan:
-                    ShartnomaBand.objects.create(shartnoma=sh, narxnoma=nx, narx=nx.narx, namuna_soni=soni)
+                    ShartnomaBand.objects.create(shartnoma=sh, narxnoma=nx, narx=nx.narx, namuna_soni=soni,
+                                                 kategoriya=kat)
                 sh.qayta_hisobla()
             messages.success(request, _("Shartnoma №%(r)s saqlandi") % {"r": sh.raqam})
             return redirect("shartnoma_detail", pk=sh.pk)
@@ -105,7 +136,9 @@ def shartnoma_form(request, ariza_pk=None, pk=None):
     rows = [(nx, nx.pk in oldingi, oldingi.get(nx.pk, namuna_soni)) for nx in qatorlar]
     return render(request, "core/shartnoma_form.html", {
         "title": (_("Shartnoma №%(r)s — ko'rsatkichlar") % {"r": sh.raqam}) if sh else _("Yangi shartnoma"),
-        "ariza": ariza, "sh": sh, "rows": rows, "namuna_soni": namuna_soni,
+        "ariza": ariza, "sh": sh, "rows": rows, "namuna_soni": namuna_soni, "kat": kat,
+        "kat_nomi": dict(Kategoriya.choices).get(kat, ""),
+        "boshqa_bandlar": sh.bandlar.exclude(kategoriya=kat) if sh else [],
         "hujjatlar": korinadigan_hujjatlar(request.user, ariza.hujjatlar.all()),
     })
 
@@ -118,7 +151,7 @@ def shartnoma_detail(request, pk):
     sh = get_object_or_404(Shartnoma.objects.select_related("ariza", "ariza__namuna_turi", "yaratgan"),
                            pk=pk, is_active=True)
     role = user_role(request.user)
-    _lab_kategoriya_tekshir(request, sh.ariza.kategoriya)
+    _lab_kategoriya_tekshir(request, sh.ariza)
     if role == BX and sh.holat == Shartnoma.Holat.YUBORILMAGAN:
         raise PermissionDenied
 
@@ -135,6 +168,8 @@ def shartnoma_detail(request, pk):
     return render(request, "core/shartnoma_detail.html", {
         "title": _("Shartnoma №%(r)s") % {"r": sh.raqam},
         "sh": sh, "ariza": sh.ariza, "bandlar": sh.bandlar.select_related("narxnoma"),
+        "narxsiz": sh.narxsiz_matni() if sh.holat == Shartnoma.Holat.YUBORILMAGAN else "",
+        "kat_nomlari": dict(Kategoriya.choices),
         "tolovlar": sh.tolovlar.select_related("kiritgan"), "namunalar": sh.namunalar.all(),
         "hujjatlar": korinadigan_hujjatlar(request.user, sh.ariza.hujjatlar.all()),
         "is_lab": role in LAB or role in (AD, SA), "is_bux": is_bux,
@@ -147,7 +182,11 @@ def shartnoma_detail(request, pk):
 @require_POST
 def shartnoma_yuborish(request, pk):
     sh = get_object_or_404(Shartnoma, pk=pk, is_active=True)
-    _lab_kategoriya_tekshir(request, sh.ariza.kategoriya)
+    _lab_kategoriya_tekshir(request, sh.ariza)
+    if sh.narxsiz_kategoriyalar:
+        messages.error(request, _("Shartnomani yuborib bo'lmaydi: %(k)s laboratoriyasi hali narx belgilamagan")
+                       % {"k": sh.narxsiz_matni()})
+        return redirect("shartnoma_detail", pk=pk)
     if sh.holat == Shartnoma.Holat.YUBORILMAGAN and sh.jami_summa > 0:
         sh.holat = Shartnoma.Holat.YUBORILGAN
         sh.yuborilgan_at = timezone.now()
@@ -161,9 +200,16 @@ def shartnoma_yuborish(request, pk):
 @require_POST
 def shartnoma_ochirish(request, pk):
     sh = get_object_or_404(Shartnoma, pk=pk, is_active=True)
-    _lab_kategoriya_tekshir(request, sh.ariza.kategoriya)
+    _lab_kategoriya_tekshir(request, sh.ariza)
     if not sh.tahrirlash_mumkin:
         messages.error(request, _("Buxgalteriyaga yuborilgan shartnomani o'chirib bo'lmaydi"))
+        return redirect("shartnoma_detail", pk=pk)
+    kat = _ish_kategoriyasi(request, sh.ariza, sh)
+    if sh.bandlar.exclude(kategoriya=kat).exists():
+        # aralash shartnoma: faqat shu laboratoriyaning ko'rsatkichlari olib tashlanadi
+        sh.bandlar.filter(kategoriya=kat).delete()
+        sh.qayta_hisobla()
+        messages.success(request, _("Laboratoriyangiz ko'rsatkichlari shartnomadan olib tashlandi"))
         return redirect("shartnoma_detail", pk=pk)
     with transaction.atomic():
         sh.is_active = False
@@ -253,7 +299,7 @@ def shartnoma_hujjat(request, pk, fmt):
     elif role == Role.NAMUNA_QABUL:
         raise PermissionDenied
     else:
-        _lab_kategoriya_tekshir(request, sh.ariza.kategoriya)
+        _lab_kategoriya_tekshir(request, sh.ariza)
     data = shartnoma_docx(sh)
     nom = f"shartnoma_{sh.raqam}"
     if fmt == "pdf":
