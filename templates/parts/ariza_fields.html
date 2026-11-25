@@ -11,7 +11,7 @@
   </div>
   {% if form.non_field_errors %}<ul class="messages"><li class="error">{{ form.non_field_errors|join:" " }}</li></ul>{% endif %}
   <div class="form-grid g3">
-    {% for name in "inn buyurtmachi_nomi fish telefon namuna_soni chegara_maskani namuna_turi partiya_raqami namuna_nomi invoys_raqami"|make_list_words %}
+    {% for name in "inn buyurtmachi_nomi fish telefon namuna_soni chegara_maskani kategoriya partiya_raqami namuna_nomi invoys_raqami"|make_list_words %}
       {% with field=form|field:name %}
       <div class="fld" data-field="{{ name }}">
         <label for="{{ field.id_for_label }}" data-label-ixtiyoriy="{% trans 'JSHSHIR / ID' %}" data-label-inn="{% trans 'INN' %}">{% if name == "inn" %}{% trans "INN" %}{% else %}{{ field.label }}{% endif %}<i class="req">*</i></label>

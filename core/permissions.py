@@ -9,12 +9,14 @@ from accounts.models import Role
 SA, AD, BX, LM, LK, NQ = (Role.SUPER_ADMIN, Role.ADMIN, Role.BUXGALTERIYA,
                           Role.LAB_MINERAL, Role.LAB_KIMYO, Role.NAMUNA_QABUL)
 LAB = (LM, LK)
+MASUL = (Role.MASUL_MINERAL, Role.MASUL_KIMYO)
 ADMINS = (SA, AD)
 
 # (url nomi, yorliq, kimlarga ko'rinadi)
 MENU = [
     ("dashboard", _("Monitoring"), ADMINS + (NQ,)),
     ("dashboard", _("Asosiy panel"), (BX,) + LAB),
+    ("masul_topshiriqlar", _("Topshiriqlar"), MASUL),
     ("ariza_list", _("Ariza"), ADMINS + (NQ,)),
     ("namuna_yaratish", _("Namuna yaratish"), (NQ,)),
     ("namuna_list", _("Namuna"), ADMINS),
@@ -23,8 +25,12 @@ MENU = [
     ("oferta_list", _("Oferta"), ADMINS + (BX,)),
     ("tahlil_holati", _("Laboratoriya tahlil holati"), ADMINS + LAB),
     ("xulosa_list", _("Xulosa"), ADMINS + LAB),
-    ("narxnoma_list", _("Narxnoma"), ADMINS + (BX,)),
+    ("narxnoma_list", _("Narxnoma"), (SA, BX)),
     ("xodim_list", _("Xodimlar"), (SA,)),
+    ("buyurtmachi_list", _("Buyurtmachilar"), (SA,)),
+    ("statistika", _("Statistika"), ADMINS + (BX,)),
+    ("sozlamalar", _("Sozlamalar"), ADMINS),
+    ("nazorat_tarixi", _("Nazorat tarixi"), (SA,)),
 ]
 
 
@@ -62,3 +68,19 @@ def role_required(*roles):
         return wrapper
 
     return deco
+
+
+def hujjat_korinadimi(user, hujjat):
+    """Invoysni faqat ruxsat etilgan rollar (sozlamada) va arizaning egasi (mijoz) ko'radi."""
+    from django.conf import settings
+
+    if hujjat.turi != "invoys":
+        return True
+    role = user_role(user)
+    if role in settings.INVOYS_KORADI_ROLLAR:
+        return True
+    return role == Role.MIJOZ and hujjat.ariza.mijoz_id == user.id
+
+
+def korinadigan_hujjatlar(user, hujjatlar):
+    return [h for h in hujjatlar if hujjat_korinadimi(user, h)]

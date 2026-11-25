@@ -62,7 +62,7 @@ class ArizaForm(StyledMixin, forms.ModelForm):
 
     class Meta:
         model = Ariza
-        fields = ["turi", "inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "namuna_turi",
+        fields = ["turi", "inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "kategoriya",
                   "namuna_nomi", "partiya_raqami", "invoys_raqami", "chegara_maskani"] + REKVIZIT_MAYDONLARI
         labels = {"inn": _("INN / JSHSHIR")}
 
@@ -70,7 +70,8 @@ class ArizaForm(StyledMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Oldingi urinishda yuklangan (vaqtincha saqlangan) fayllar: {turi: {"path":..., "nom":...}}
         self.saqlangan = saqlangan or {}
-        self.fields["namuna_turi"].choices = namuna_turi_choices()
+        self.fields["kategoriya"].choices = [("", _("Tanlang"))] + list(Kategoriya.choices)
+        self.fields["kategoriya"].label = _("Namuna turi")
         self.fields["namuna_soni"].widget.attrs.update({"min": 1, "max": 50})
         for name in self.Meta.fields:
             if name != "turi":
@@ -143,10 +144,17 @@ class NamunaQabulForm(StyledMixin, forms.ModelForm):
 
     class Meta:
         model = Namuna
-        fields = ["nomi", "tavsifi", "tasir_etuvchi_modda", "namuna_olgan", "ogirligi"]
+        fields = ["namuna_turi", "nomi", "tavsifi", "tasir_etuvchi_modda", "namuna_olgan", "ogirligi"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, kategoriya=None, **kwargs):
         super().__init__(*args, **kwargs)
+        kategoriya = kategoriya or (self.instance.ariza.kategoriya if self.instance.pk else None)
+        qs = NamunaTuri.objects.filter(aktiv=True)
+        if kategoriya:
+            qs = qs.filter(kategoriya=kategoriya)
+        self.fields["namuna_turi"].queryset = qs
+        self.fields["namuna_turi"].empty_label = _("Tanlang")
+        self.fields["namuna_turi"].required = True
         self.fields["nomi"].required = True
         self.fields["namuna_olgan"].required = True
 
@@ -194,15 +202,26 @@ class TolovForm(StyledMixin, forms.Form):
 from .models import Xulosa, XulosaNatija  # noqa: E402
 
 
+def masul_xodimlar(kategoriya):
+    """Laboratoriyaning faol mas'ul xodimlari."""
+    from accounts.models import Role, User
+
+    role = {"mineral": Role.MASUL_MINERAL, "kimyoviy": Role.MASUL_KIMYO}.get(kategoriya)
+    return User.objects.filter(role=role, is_active=True).order_by("fish", "username")
+
+
 class XulosaForm(StyledMixin, forms.ModelForm):
-    ogirligi = forms.CharField(label=_("Og'irligi / hajmi"), max_length=50, required=False)
+    """Mudir xulosani tasdiqlashda to'ldiradi (barcha maydonlar majburiy, tavsif ixtiyoriy)."""
+
+    ogirligi = forms.CharField(label=_("Og'irligi / hajmi"), max_length=50)
     tavsifi = forms.CharField(label=_("Namuna tavsifi"), max_length=500, required=False)
+    bosh_agrokimyogar = forms.ChoiceField(label=_("Bosh agrokimyogar"))
+    yetakchi_agrokimyogar = forms.ChoiceField(label=_("Yetakchi agrokimyogar"))
 
     class Meta:
         model = Xulosa
-        fields = ["sinov_sanasi", "dalolatnoma", "sinov_joyi", "harorat", "namlik", "tasdiqlagan",
-                  "bosh_agrokimyogar", "yetakchi_agrokimyogar"]
-        widgets = {"sinov_sanasi": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
+        fields = ["sinov_sanasi", "dalolatnoma", "sinov_joyi", "harorat", "namlik", "bosh_agrokimyogar",
+                  "yetakchi_agrokimyogar"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -214,7 +233,12 @@ class XulosaForm(StyledMixin, forms.ModelForm):
         nam = self.instance.namuna
         self.initial.setdefault("ogirligi", nam.ogirligi)
         self.initial.setdefault("tavsifi", nam.tavsifi)
-        for name in ("tasdiqlagan", "bosh_agrokimyogar"):
+        ismlar = [("", _("Tanlang"))] + [(u.fish or u.username, u.fish or u.username)
+                                         for u in masul_xodimlar(nam.kategoriya)]
+        for name in ("bosh_agrokimyogar", "yetakchi_agrokimyogar"):
+            self.fields[name].choices = ismlar
+            self.fields[name].widget.attrs["class"] = "input"
+        for name in ("dalolatnoma", "sinov_joyi", "harorat", "namlik"):
             self.fields[name].required = True
 
     def save(self, commit=True):
@@ -232,16 +256,34 @@ class XulosaForm(StyledMixin, forms.ModelForm):
 
 
 class NatijaForm(forms.ModelForm):
+    """Mas'ul xodim o'z ko'rsatkichi natijasini kiritadi: barcha maydonlar majburiy."""
+
     class Meta:
         model = XulosaNatija
-        fields = ["korsatkich", "meyor", "natija", "sinov_usuli", "muvofiqlik"]
+        fields = ["meyor", "natija", "sinov_usuli", "muvofiqlik"]
         widgets = {
-            "korsatkich": forms.Textarea(attrs={"rows": 2, "class": "input"}),
             "meyor": forms.TextInput(attrs={"class": "input"}),
             "natija": forms.TextInput(attrs={"class": "input"}),
             "sinov_usuli": forms.TextInput(attrs={"class": "input"}),
             "muvofiqlik": forms.TextInput(attrs={"class": "input", "list": "muvofiqlik-list"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for f in self.fields.values():
+            f.required = True
+            f.error_messages["required"] = _("To'ldirilishi shart")
 
-NatijaFormSet = forms.inlineformset_factory(Xulosa, XulosaNatija, form=NatijaForm, extra=0, can_delete=True)
+
+NatijaFormSet = forms.modelformset_factory(XulosaNatija, form=NatijaForm, extra=0, can_delete=False)
+
+
+class QaytarishForm(forms.Form):
+    topshiriq = forms.ModelChoiceField(label=_("Kimga qaytarilsin"), queryset=None, empty_label=_("Tanlang"),
+                                       widget=forms.Select(attrs={"class": "input"}))
+    izoh = forms.CharField(label=_("Nima tuzatilishi kerak"), widget=forms.Textarea(attrs={"rows": 3, "class": "input"}))
+
+    def __init__(self, *args, namuna=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["topshiriq"].queryset = namuna.topshiriqlar.select_related("masul") if namuna else None
+        self.fields["topshiriq"].label_from_instance = lambda t: f"{t.masul} — {t.natijalar.count()} " + str(_("ko'rsatkich"))

@@ -1,5 +1,6 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
+{% include "parts/dash_top.html" %}
 <h2 class="section-title">{% trans "Arizalar" %}</h2>
 <div class="grid">
   {% for label, n, href in cards %}

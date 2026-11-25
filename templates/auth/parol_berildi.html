@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load i18n %}
+{% block content %}
+<section class="card" style="max-width:620px">
+  <h1 class="page-title">{{ title }}</h1>
+  <div class="info-grid">
+    <div><span>{% trans "Foydalanuvchi" %}</span><b>{{ u.fish|default:u.username }}</b></div>
+    <div><span>{% trans "Login" %}</span><b>{{ u.username }}</b></div>
+  </div>
+  <div class="notice" style="margin-top:14px">{% trans "Vaqtinchalik parol" %}: <b style="font-size:22px;letter-spacing:2px">{{ parol }}</b></div>
+  <p class="help">{% trans "Bu parol faqat hozir bir marta ko'rsatiladi. Uni foydalanuvchiga bering — u birinchi kirishda o'z parolini o'rnatishi shart. Harakat Nazorat tarixiga yozildi." %}</p>
+  <a class="btn btn-primary" href="{{ orqaga }}">{% trans "Orqaga" %}</a>
+</section>
+{% endblock %}

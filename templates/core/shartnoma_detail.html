@@ -50,7 +50,7 @@
     <thead><tr><th>N</th><th>{% trans "Sana" %}</th><th>{% trans "Summa" %}</th><th>{% trans "Usul" %}</th><th>{% trans "Izoh" %}</th><th>{% trans "Kiritgan" %}</th><th></th></tr></thead>
     <tbody>
     {% for t in tolovlar %}<tr><td>{{ forloop.counter }}</td><td>{{ t.sana|dt }}</td><td class="money">{{ t.summa|money }}</td><td>{{ t.get_usul_display }}</td><td>{{ t.izoh|default:"—" }}</td><td>{{ t.kiritgan|default:"—" }}</td>
-      <td>{% if is_bux %}<form class="inline" method="post" action="{% url 'tolov_ochirish' sh.pk t.pk %}" onsubmit="return confirm('{% trans "To‘lovni o‘chirasizmi?" %}')">{% csrf_token %}<button class="act danger" title="{% trans "O'chirish" %}">{% include "parts/icon.html" with name="delete" %}</button></form>{% endif %}</td></tr>
+      <td>{% if is_bux and tolov_ochirish_mumkin %}<form class="inline" method="post" action="{% url 'tolov_ochirish' sh.pk t.pk %}" onsubmit="var s=prompt('{% trans "To‘lovni o‘chirish sababini yozing:" %}'); if(!s||s.trim().length<3){return false;} this.sabab.value=s; return true;">{% csrf_token %}<input type="hidden" name="sabab"><button class="act danger" title="{% trans "O'chirish" %}">{% include "parts/icon.html" with name="delete" %}</button></form>{% elif is_bux %}<span class="help" title="{% trans "Namuna tahlilga olingan" %}">🔒</span>{% endif %}</td></tr>
     {% empty %}<tr><td class="empty" colspan="7">{% trans "To'lov hali kelib tushmagan" %}</td></tr>{% endfor %}
     </tbody>
   </table>

@@ -14,6 +14,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _l
 
 
 @dataclass
@@ -56,22 +57,47 @@ def _parse_date(s):
         return None
 
 
+DAVRLAR = [("kun", _l("Bugun")), ("oy", _l("Shu oy")), ("yil", _l("Shu yil")), ("", _l("Barchasi"))]
+
+
+def davr_oraligi(davr, bugun=None):
+    """'kun' | 'oy' | 'yil' -> (boshlanish, tugash) sanalari."""
+    bugun = bugun or timezone.localdate()
+    if davr == "kun":
+        return bugun, bugun
+    if davr == "oy":
+        return bugun.replace(day=1), bugun
+    if davr == "yil":
+        return bugun.replace(month=1, day=1), bugun
+    return None, None
+
+
+def sana_filtri(qs, field, d1, d2):
+    tz = timezone.get_current_timezone()
+    if d1:
+        qs = qs.filter(**{f"{field}__gte": timezone.make_aware(datetime.combine(d1, time.min), tz)})
+    if d2:
+        qs = qs.filter(**{f"{field}__lte": timezone.make_aware(datetime.combine(d2, time.max), tz)})
+    return qs
+
+
 def apply_filters(request, qs, f: Filters):
     g = request.GET
     state = {"q": g.get("q", "").strip(), "dan": g.get("dan", ""), "gacha": g.get("gacha", ""),
-             "holat": g.get("holat", ""), "summa": g.get("summa", ""), "turi": g.get("turi", "")}
+             "holat": g.get("holat", ""), "summa": g.get("summa", ""), "turi": g.get("turi", ""),
+             "davr": g.get("davr", "")}
+    if state["davr"] in ("kun", "oy", "yil"):
+        d1, d2 = davr_oraligi(state["davr"])
+        state["dan"], state["gacha"] = d1.isoformat(), d2.isoformat()
+    # qaysi davr tugmasi faol: tanlangan davr, sana qo'lda kiritilgan bo'lsa hech biri, aks holda "Barchasi"
+    state["davr_faol"] = state["davr"] if state["davr"] else ("qolda" if state["dan"] or state["gacha"] else "")
     if state["q"] and f.search_fields:
         cond = Q()
         for fld in f.search_fields:
             cond |= Q(**{f"{fld}__icontains": state["q"]})
         qs = qs.filter(cond)
     if f.date_field:
-        tz = timezone.get_current_timezone()
-        d1, d2 = _parse_date(state["dan"]), _parse_date(state["gacha"])
-        if d1:
-            qs = qs.filter(**{f"{f.date_field}__gte": timezone.make_aware(datetime.combine(d1, time.min), tz)})
-        if d2:
-            qs = qs.filter(**{f"{f.date_field}__lte": timezone.make_aware(datetime.combine(d2, time.max), tz)})
+        qs = sana_filtri(qs, f.date_field, _parse_date(state["dan"]), _parse_date(state["gacha"]))
     if f.holat_field and state["holat"]:
         qs = qs.filter(**{f.holat_field: state["holat"]})
     if f.summa_field and state["summa"]:
@@ -120,8 +146,12 @@ def excel_response(title, columns, rows):
 
 
 def list_page(request, *, title, qs, columns, filters: Filters, template="core/list.html",
-              add_url=None, add_label=None, extra=None, turi_tabs=None, per_page=20):
+              add_url=None, add_label=None, extra=None, turi_tabs=None, per_page=20,
+              stats=None, row_class=None, post_filter=None):
+    """stats(qs) -> [(yorliq, qiymat, tur)], row_class(obj) -> css klass, post_filter(request, qs) -> qs."""
     qs, state = apply_filters(request, qs, filters)
+    if post_filter:
+        qs = post_filter(request, qs)
     if request.GET.get("export") == "excel":
         return excel_response(title, columns, qs)
     page = Paginator(qs, per_page).get_page(request.GET.get("page"))
@@ -133,8 +163,10 @@ def list_page(request, *, title, qs, columns, filters: Filters, template="core/l
         "columns": columns,
         "page": page,
         "rows": [(obj, [(c, c.get(obj), c.badge(obj) if c.badge else "", c.url(obj) if c.url else "")
-                        for c in columns])
+                        for c in columns], row_class(obj) if row_class else "")
                  for obj in page.object_list],
+        "stats": stats(qs) if stats else None,
+        "davrlar": DAVRLAR if filters.date_field else None,
         "total": page.paginator.count,
         "f": filters,
         "state": state,

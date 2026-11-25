@@ -1,0 +1,6 @@
+{% load ui %}
+<section class="stats-row">
+  {% for label, val, kind in stats %}
+  <div class="stat-box {{ kind }}"><span>{{ label }}</span><b>{% if kind == "money" %}{{ val|money }}{% else %}{{ val }}{% endif %}</b></div>
+  {% endfor %}
+</section>

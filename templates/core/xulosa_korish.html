@@ -7,11 +7,8 @@
       <span class="badge {% if nam.lab_holat == 'berildi' %}green{% else %}blue{% endif %}">{{ nam.get_lab_holat_display }}</span></h1>
     <div class="btn-row">
       <a class="btn btn-grey" href="{% url 'xulosa_hujjat' x.pk 'pdf' %}" target="_blank">PDF</a>
-      <a class="btn btn-grey" href="{% url 'xulosa_hujjat' x.pk 'docx' %}">Word</a>
-      {% if not x.tasdiqlangan %}
-        <a class="btn btn-light" href="{% url 'xulosa_kiritish' nam.pk %}">{% trans "Tahrirlash" %}</a>
-        <form method="post" action="{% url 'xulosa_tasdiqlash' x.pk %}" onsubmit="return confirm('{% trans "Tasdiqlangan xulosani o‘zgartirib bo‘lmaydi. Tasdiqlaysizmi?" %}')">{% csrf_token %}<button class="btn btn-green">{% trans "Tasdiqlash" %}</button></form>
-      {% elif berish_mumkin %}
+      {% if word_mumkin %}<a class="btn btn-grey" href="{% url 'xulosa_hujjat' x.pk 'docx' %}">Word</a>{% endif %}
+      {% if berish_mumkin %}
         <form method="post" action="{% url 'xulosa_berish' x.pk %}">{% csrf_token %}<button class="btn btn-green">{% trans "Buyurtmachiga yuborish" %}</button></form>
       {% endif %}
     </div>
@@ -23,11 +20,41 @@
   <div class="info-grid">
     <div><span>{% trans "Buyurtmachi" %}</span><b>{{ nam.ariza.buyurtmachi }}</b></div>
     <div><span>{% trans "Namuna" %}</span><b>{{ nam }} · {{ nam.nomi }}</b></div>
-    <div><span>{% trans "Sinov sanasi" %}</span><b>{{ x.sinov_sanasi|dt }}</b></div>
-    <div><span>{% trans "Tayyor qilingan" %}</span><b>{{ x.tayyor_at|dt }} {{ x.tayyor_at|tm }}</b></div>
+    {% if x.sinov_sanasi %}<div><span>{% trans "Sinov sanasi" %}</span><b>{{ x.sinov_sanasi|dt }}</b></div>{% endif %}
     {% if x.tasdiqlangan %}<div><span>{% trans "Tasdiqlagan" %}</span><b>{{ x.tasdiqlagan_user }} · {{ x.tasdiqlangan_at|dt }}</b></div>{% endif %}
     {% if nam.berilgan_vaqti %}<div><span>{% trans "Buyurtmachiga berilgan" %}</span><b>{{ nam.berilgan_vaqti|dt }} {{ nam.berilgan_vaqti|tm }}</b></div>{% endif %}
   </div>
+  <h3 class="box-title" style="text-align:left">{% trans "Mas'ullar" %}</h3>
+  <div class="docs">{% for t in topshiriqlar %}<span class="doc"><span class="badge {% if t.holat == 'tayyor' %}green{% elif t.holat == 'qabul' %}yellow{% else %}red{% endif %}">{{ t.masul }} — {{ t.get_holat_display }}</span></span>{% empty %}<span class="help">—</span>{% endfor %}</div>
+</section>
+
+<section class="card">
+  <h2 class="section-title">{% trans "Sinov natijalari" %}</h2>
+  <table class="t">
+    <thead><tr><th>№</th><th>{% trans "Ko'rsatkich" %}</th><th>{% trans "Me'yor" %}</th><th>{% trans "Natija" %}</th><th>{% trans "Sinov usuli" %}</th><th>{% trans "Muvofiqlik" %}</th><th>{% trans "Mas'ul" %}</th></tr></thead>
+    <tbody>{% for n in natijalar %}<tr><td>{{ forloop.counter }}</td><td>{{ n.korsatkich }}</td><td>{{ n.meyor|default:"—" }}</td><td><b>{{ n.natija|default:"—" }}</b></td><td>{{ n.sinov_usuli|default:"—" }}</td><td>{{ n.muvofiqlik|default:"—" }}</td><td>{{ n.topshiriq.masul|default:"—" }}</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+
+{% if tekshiruv %}
+<section class="card">
+  <h2 class="section-title">{% trans "Tasdiqlash" %}</h2>
+  <p class="help">{% trans "Barcha mas'ullar natijani yubordi. Bayonnomani PDF ko'rinishida tekshirib, ma'lumotlarni to'ldiring va tasdiqlang yoki xatoni mas'ulga qaytaring." %}</p>
+  <form method="post" action="{% url 'xulosa_tasdiqlash' x.pk %}" onsubmit="return confirm('{% trans "Tasdiqlangan xulosani o‘zgartirib bo‘lmaydi. Tasdiqlaysizmi?" %}')">{% csrf_token %}
+    {% if form.errors %}<ul class="messages"><li class="error">{% trans "Formada xatolar bor, tekshiring" %}</li></ul>{% endif %}
+    <div class="form-grid g4">{% for f in form %}<div class="fld"><label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} *{% endif %}</label>{{ f }}{{ f.errors }}</div>{% endfor %}</div>
+    <div class="btn-row" style="margin-top:16px"><button class="btn btn-green" type="submit">{% trans "Tasdiqlash" %}</button></div>
+  </form>
+  <details class="rad-box"><summary>{% trans "Tuzatish uchun mas'ulga qaytarish" %}</summary>
+    <form method="post" action="{% url 'xulosa_qaytarish' x.pk %}">{% csrf_token %}
+      <div class="form-grid g2" style="margin-top:10px">{% for f in qaytarish_form %}<div class="fld"><label>{{ f.label }}</label>{{ f }}</div>{% endfor %}</div>
+      <button class="btn btn-grey" type="submit" style="margin-top:8px">{% trans "Qaytarish" %}</button></form>
+  </details>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2 class="section-title">{% trans "Bayonnoma ko'rinishi" %}</h2>
   <iframe class="doc-preview" src="{% url 'xulosa_hujjat' x.pk 'pdf' %}#toolbar=0&view=FitH" title="PDF"></iframe>
 </section>
 {% endblock %}

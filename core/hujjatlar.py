@@ -253,9 +253,48 @@ def _uniq_cells(row):
     return cells
 
 
+def _qr_matn_qutisiga(doc, cell, verify_url):
+    """Imzo jadvalidagi "QR KOD" yozuvli ramka ichiga QR rasmini joylaydi. Topilmasa False."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    from docx.shared import Emu
+
+    W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    WP = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+    joylandi = False
+    for txbx in cell._tc.iter(f"{{{W}}}txbxContent"):
+        for p in txbx.iter(f"{{{W}}}p"):
+            if "QR" not in "".join(t.text or "" for t in p.iter(f"{{{W}}}t")):
+                continue
+            # ramka o'lchami (wp:extent) bo'yicha QR kattaligi
+            anchor = txbx
+            while anchor is not None and anchor.tag != f"{{{WP}}}anchor":
+                anchor = anchor.getparent()
+            olcham = 1_000_000
+            if anchor is not None:
+                ext = anchor.find(f"{{{WP}}}extent")
+                if ext is not None:
+                    olcham = int(min(int(ext.get("cx")), int(ext.get("cy"))) * 0.86)
+            for r in list(p.iter(f"{{{W}}}r")):
+                r.getparent().remove(r)
+            inline = doc.part.new_pic_inline(qr_png(verify_url), Emu(olcham), Emu(olcham))
+            run = OxmlElement("w:r")
+            drawing = OxmlElement("w:drawing")
+            drawing.append(inline)
+            run.append(drawing)
+            p.append(run)
+            ppr = p.find(qn("w:pPr"))
+            if ppr is not None:
+                for sp in ppr.findall(qn("w:spacing")):
+                    ppr.remove(sp)
+            joylandi = True
+    return joylandi
+
+
 def xulosa_docx(x, verify_url=""):
-    """Sinov bayonnomasi DOCX (bytes)."""
+    """Sinov bayonnomasi DOCX (bytes) — docs/shablonlar/xulosa_shakli.docx asosida."""
     import docx
+    from docx.oxml.ns import qn as qn_
     from docx.shared import Cm
 
     n = x.namuna
@@ -263,14 +302,19 @@ def xulosa_docx(x, verify_url=""):
     doc = docx.Document(SHABLON_DIR / "xulosa_shakli.docx")
     t_head, t_info, t_res, t_sign = doc.tables[1], doc.tables[2], doc.tables[3], doc.tables[4]
 
-    # Sarlavha: raqam, sana, QR
+    # Sarlavha: raqam va sana
     c = _uniq_cells(t_head.rows[0])
     _set_runs(c[0].paragraphs[0], f"SINOV BAYONNOMASI № {x.raqam}")
-    _set_runs(c[1].paragraphs[0], f"Sana: {_sana(x.tayyor_at or x.created_at)} y.")
-    if verify_url and len(c) > 2:
-        p = c[2].paragraphs[0]
-        p.alignment = 2  # o'ngga
-        p.add_run().add_picture(qr_png(verify_url), width=Cm(2.1))
+    from docx.shared import Pt as _Pt
+
+    for r in c[0].paragraphs[0].runs:
+        r.font.size = _Pt(10.5)
+    from docx.oxml import OxmlElement as _OE
+
+    tcpr = c[0]._tc.get_or_add_tcPr()
+    if tcpr.find(qn_("w:noWrap")) is None:
+        tcpr.append(_OE("w:noWrap"))
+    _set_runs(c[1].paragraphs[0], f"Sana: {_sana(x.tasdiqlangan_at or x.tayyor_at or x.created_at)} y.")
 
     # Ma'lumotlar jadvali
     rows = [_uniq_cells(r) for r in t_info.rows]
@@ -280,7 +324,7 @@ def xulosa_docx(x, verify_url=""):
         a.buyurtmachi_nomi or a.fish,
         f"{tavsif} ({n.namuna_turi.nomi})",
         f"LOT (partiya raqami): {a.partiya_raqami or '—'}   |   INVOICE: {a.invoys_raqami or '—'}",
-        f"{_sana(n.qabul_vaqti)} y.   |   Og‘irligi/hajmi: {n.ogirligi or '—'}",
+        f"{_sana(n.qabul_vaqti)} y.   |   Oğirligi/hajmi: {n.ogirligi or '—'}",
         f"{_sana(x.sinov_sanasi)} y.   |   Dalolatnoma №: {x.dalolatnoma or '—'}",
         f"{x.sinov_joyi}   |   {x.harorat}, {x.namlik}",
     ]
@@ -299,8 +343,7 @@ def xulosa_docx(x, verify_url=""):
         for cell, v in zip(cells, [i, nt.korsatkich, nt.meyor, nt.natija, nt.sinov_usuli, nt.muvofiqlik]):
             _cell(cell, v or "", size=10)
 
-    # Shablonda imzo va "Rasmiy eslatma" orasida bo'sh qatorlar bor (eslatma sahifa pastida turishi uchun).
-    # Natijalar ko'p bo'lsa, bayonnoma bitta sahifaga sig'ishi uchun shu bo'sh qatorlardan olib tashlaymiz.
+    # Bayonnoma bitta sahifaga sig'ishi uchun imzo va "Rasmiy eslatma" orasidagi bo'sh qatorlardan olib tashlash
     import math
 
     satrlar = sum(max(1, math.ceil(len(nt.korsatkich) / 30), math.ceil(len(nt.sinov_usuli or "") / 16),
@@ -316,6 +359,8 @@ def xulosa_docx(x, verify_url=""):
         el.getparent().remove(el)
 
     # Hujjat oxiridagi majburiy bo'sh paragraf ortiqcha sahifa ochmasin
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
     from docx.shared import Pt
 
     oxirgi = doc.paragraphs[-1]
@@ -323,11 +368,6 @@ def xulosa_docx(x, verify_url=""):
         pf = oxirgi.paragraph_format
         pf.space_before = pf.space_after = Pt(0)
         pf.line_spacing = Pt(1)
-        for r in oxirgi.runs:
-            r.font.size = Pt(1)
-        from docx.oxml import OxmlElement
-        from docx.oxml.ns import qn
-
         rpr = oxirgi._p.get_or_add_pPr()
         mark = OxmlElement("w:rPr")
         sz = OxmlElement("w:sz")
@@ -335,23 +375,89 @@ def xulosa_docx(x, verify_url=""):
         mark.append(sz)
         rpr.append(mark)
 
-    # Imzolar
+    # Imzolar: "TASDIQLANDI" — laboratoriya mudiri; sinov o'tkazuvchilar
     sc = _uniq_cells(t_sign.rows[0])
-    for r in sc[0].paragraphs[0].runs:
-        if r.text.strip().startswith("____"):
-            r.text = r.text + " " + (x.tasdiqlagan or "")
-            break
+    runs0 = sc[0].paragraphs[0].runs
+    mudir_run = None
+    for r in runs0:
+        if r.text.strip().startswith("____") or (r.text.strip() and r is runs0[-1]):
+            mudir_run = r
+    if mudir_run is not None and x.tasdiqlagan:
+        mudir_run.text = x.tasdiqlagan if not mudir_run.text.strip().startswith("____") \
+            else mudir_run.text + " " + x.tasdiqlagan
     runs = sc[1].paragraphs[0].runs
     for i, r in enumerate(runs):
-        if r.text.startswith(":") and "___" in r.text and "Bosh" in "".join(z.text for z in runs[max(0, i - 3):i]):
-            r.text = f":   ________________  {x.bosh_agrokimyogar}"
+        oldin = "".join(z.text for z in runs[max(0, i - 4):i])
+        if r.text.startswith(":") and "_" in r.text:
+            if "Bo" in oldin and "agrokimyogar" in oldin:
+                r.text = f":   {x.bosh_agrokimyogar or '________________'}"
+            elif "Yetak" in oldin and "agrokimyogar" in oldin:
+                r.text = f":   {x.yetakchi_agrokimyogar or '________________'}"
             j = i + 1
-            while j < len(runs) and set(runs[j].text) <= {"_"} and runs[j].text:
+            while j < len(runs) and runs[j].text and set(runs[j].text) <= {"_", " "}:
                 runs[j].text = ""
                 j += 1
-        elif r.text.startswith(": ___") and "Yetakchi" in "".join(z.text for z in runs[max(0, i - 3):i]):
-            r.text = f":   ________________  {x.yetakchi_agrokimyogar}"
+
+    # QR kod: yangi shaklda imzo jadvalidagi ramkada, eski shaklda sarlavhaning 3-katagida
+    if verify_url and not _qr_matn_qutisiga(doc, sc[-1], verify_url) and len(c) > 2:
+        p = c[2].paragraphs[0]
+        p.alignment = 2
+        p.add_run().add_picture(qr_png(verify_url), width=Cm(2.1))
 
     buf = io.BytesIO()
     doc.save(buf)
     return buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# PDF himoyasi: xira fon yozuvi + tahrirlashni taqiqlash
+# ---------------------------------------------------------------------------
+SUV_BELGISI = "Agrokimyo va tuproq tahlili markazi"
+
+
+def _suv_belgisi_sahifa(width, height, matn=SUV_BELGISI):
+    from reportlab.lib.colors import Color
+    from reportlab.pdfgen import canvas
+
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(width, height))
+    c.setFillColor(Color(0.55, 0.62, 0.57, alpha=0.13))
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    shrift, olcham = "Helvetica-Bold", 15
+    c.setFont(shrift, olcham)
+    qadam_x, qadam_y = int(stringWidth(matn, shrift, olcham)) + 70, 110
+    c.translate(width / 2, height / 2)
+    c.rotate(32)
+    diag = int((width ** 2 + height ** 2) ** 0.5)
+    for i, y in enumerate(range(-diag, diag, qadam_y)):
+        siljish = (qadam_x // 2) if i % 2 else 0
+        for x in range(-diag - siljish, diag, qadam_x):
+            c.drawString(x, y, matn)
+    c.save()
+    buf.seek(0)
+    from pypdf import PdfReader
+
+    return PdfReader(buf).pages[0]
+
+
+def pdf_himoyala(pdf_bytes: bytes) -> bytes:
+    """Har bir sahifa ostiga xira qiya yozuv qo'yadi va PDF'ni tahrirlashdan himoyalaydi
+    (ochish uchun parol kerak emas; faqat ko'rish va chop etishga ruxsat)."""
+    import secrets
+
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.constants import UserAccessPermissions as P
+
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    writer = PdfWriter()
+    for page in reader.pages:
+        w, h = float(page.mediabox.width), float(page.mediabox.height)
+        page.merge_page(_suv_belgisi_sahifa(w, h), over=False)  # matn ostida
+        writer.add_page(page)
+    writer.add_metadata({"/Title": "Sinov bayonnomasi", "/Author": SUV_BELGISI, "/Producer": SUV_BELGISI})
+    writer.encrypt(user_password="", owner_password=secrets.token_hex(16), algorithm="AES-128",
+                   permissions_flag=P.PRINT | P.PRINT_TO_REPRESENTATION)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()

@@ -18,8 +18,9 @@ from accounts.models import Role
 
 from . import fayl_saqlash, xabarnoma
 from .forms import ArizaForm, NamunaQabulForm, RadForm
-from .models import ARIZA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna, Shartnoma
-from .permissions import AD, ADMINS, BX, LAB, NQ, role_required, user_role
+from .models import (ARIZA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna,
+                     NazoratTarixi, Shartnoma)
+from .permissions import AD, ADMINS, BX, LAB, NQ, hujjat_korinadimi, korinadigan_hujjatlar, role_required, user_role
 
 
 def _forma_config():
@@ -124,7 +125,8 @@ def ariza_tahrirlash(request, pk):
             saqlandi.rad_sababi = ""
             saqlandi.qabul_qilgan = None
             saqlandi.qabul_vaqti = None
-            saqlandi.save(update_fields=["holat", "rad_sababi", "qabul_qilgan", "qabul_vaqti"])
+            saqlandi.yuborilgan_at = timezone.now()
+            saqlandi.save(update_fields=["holat", "rad_sababi", "qabul_qilgan", "qabul_vaqti", "yuborilgan_at"])
             messages.success(request, _("Ariza %(r)s qayta yuborildi") % {"r": saqlandi.raqam})
         else:
             messages.success(request, _("Ariza saqlandi"))
@@ -140,7 +142,7 @@ def ariza_tahrirlash(request, pk):
 @mijoz_required
 def kabinet(request):
     arizalar = (Ariza.objects.filter(mijoz=request.user)
-                .select_related("namuna_turi").prefetch_related("namunalar__xulosa", Prefetch("shartnomalar", Shartnoma.objects.filter(is_active=True))))
+                .select_related("namuna_turi").prefetch_related("namunalar__xulosa", "namunalar__namuna_turi", Prefetch("shartnomalar", Shartnoma.objects.filter(is_active=True))))
     from .views_tolov import click_sozlangan
 
     return render(request, "public/kabinet.html", {
@@ -163,14 +165,15 @@ def _ariza_access(request, ariza):
 
 @login_required
 def ariza_detail(request, pk):
-    ariza = get_object_or_404(Ariza.objects.select_related("namuna_turi", "qabul_qilgan", "mijoz"), pk=pk)
+    ariza = get_object_or_404(Ariza.objects.select_related("namuna_turi", "qabul_qilgan", "mijoz")
+                              .prefetch_related("namunalar__namuna_turi"), pk=pk)
     _ariza_access(request, ariza)
     role = user_role(request.user)
     tpl = "public/ariza_detail.html" if role == Role.MIJOZ else "core/ariza_detail.html"
     return render(request, tpl, {
         "title": _("Ariza") + f" {ariza.raqam}",
         "ariza": ariza,
-        "hujjatlar": ariza.hujjatlar.all(),
+        "hujjatlar": korinadigan_hujjatlar(request.user, ariza.hujjatlar.all()),
         "namunalar": ariza.namunalar.select_related("namuna_turi"),
         "shartnomalar": ariza.shartnomalar.filter(is_active=True),
         "can_accept": role in (NQ, Role.SUPER_ADMIN) and ariza.holat == Ariza.Holat.YANGI,
@@ -190,7 +193,9 @@ def ariza_qabul(request, pk):
         messages.info(request, _("Bu ariza allaqachon ko'rib chiqilgan"))
         return redirect("ariza_detail", pk=pk)
     initial = {"nomi": ariza.namuna_nomi, "namuna_olgan": ariza.fish}
-    forms = [NamunaQabulForm(request.POST or None, prefix=f"n{i}", initial=initial)
+    if ariza.namuna_turi_id:  # eski arizalar: tur oldindan tanlangan
+        initial["namuna_turi"] = ariza.namuna_turi_id
+    forms = [NamunaQabulForm(request.POST or None, prefix=f"n{i}", initial=initial, kategoriya=ariza.kategoriya)
              for i in range(ariza.namuna_soni)]
     if request.method == "POST" and all(f.is_valid() for f in forms):
         with transaction.atomic():
@@ -198,7 +203,6 @@ def ariza_qabul(request, pk):
                 nam = f.save(commit=False)
                 nam.ariza = ariza
                 nam.tartib = i
-                nam.namuna_turi = ariza.namuna_turi
                 nam.qabul_qilgan = request.user
                 nam.save()
             ariza.holat = Ariza.Holat.QABUL
@@ -210,7 +214,7 @@ def ariza_qabul(request, pk):
         return redirect("namuna_list")
     return render(request, "core/ariza_qabul.html", {
         "title": _("Arizani qabul qilish"), "ariza": ariza, "forms": forms,
-        "hujjatlar": ariza.hujjatlar.all(),
+        "hujjatlar": korinadigan_hujjatlar(request.user, ariza.hujjatlar.all()),
     })
 
 
@@ -225,6 +229,8 @@ def ariza_rad(request, pk):
         ariza.qabul_qilgan = request.user
         ariza.qabul_vaqti = timezone.now()
         ariza.save(update_fields=["holat", "rad_sababi", "qabul_qilgan", "qabul_vaqti"])
+        NazoratTarixi.yoz(request.user, NazoratTarixi.Turi.ARIZA_RAD, f"{ariza.raqam} — {ariza.buyurtmachi}",
+                          _("Sabab: %(s)s") % {"s": ariza.rad_sababi}, ariza.pk)
         xabarnoma.ariza_rad(ariza)
         messages.success(request, _("Ariza rad etildi"))
     return redirect("ariza_list")
@@ -283,6 +289,8 @@ def ariza_hujjat(request, pk):
     if role == Role.BUXGALTERIYA and not h.ariza.shartnomalar.exclude(holat=Shartnoma.Holat.YUBORILMAGAN).exists():
         raise PermissionDenied
     _ariza_access(request, h.ariza)
+    if not hujjat_korinadimi(request.user, h):
+        raise PermissionDenied
     ext = h.fayl.name.rsplit(".", 1)[-1]
     return FileResponse(h.fayl.open("rb"), filename=f"{h.ariza.raqam}_{h.turi}.{ext}",
                         as_attachment=ext not in ("pdf", "jpg", "jpeg", "png"))

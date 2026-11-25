@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.utils import timezone
@@ -155,7 +156,7 @@ class MijozTests(BaseTest):
     def _importyor(self, **extra):
         data = {"turi": "importyor", "inn": "123456789", "buyurtmachi_nomi": "Agro MCHJ", "fish": "Karimov",
                 "telefon": "+998901112233", "namuna_soni": 2,
-                "namuna_turi": NamunaTuri.objects.filter(kategoriya="mineral").first().pk,
+                "kategoriya": "mineral",
                 "namuna_nomi": "Ammofos", "chegara_maskani": "Olot", "partiya_raqami": "LOT-1",
                 "invoys": pdf("inv.pdf"), "analiz": pdf("an.pdf"), "guvohnoma": pdf("gv.pdf")}
         data.update(extra)
@@ -176,7 +177,7 @@ class MijozTests(BaseTest):
 
     def test_ixtiyoriy_jshshir_tekshiruvi(self):
         base = {"turi": "ixtiyoriy", "fish": "Ali", "telefon": "+998901112233", "namuna_soni": 1,
-                "namuna_turi": NamunaTuri.objects.first().pk, "guvohnoma": pdf()}
+                "kategoriya": "mineral", "guvohnoma": pdf()}
         r = self.client.post(reverse("ariza_yangi"), dict(base, inn="123456789"))
         self.assertIn("inn", r.context["form"].errors)
         r = self.client.post(reverse("ariza_yangi"), dict(base, inn="12345678901234", guvohnoma=pdf()))
@@ -202,7 +203,8 @@ class NamunaQabulTests(BaseTest):
         url = reverse("ariza_qabul", args=[self.ariza.pk])
         data = {}
         for i in range(2):
-            data.update({f"n{i}-nomi": f"Namuna {i}", f"n{i}-namuna_olgan": "R. Qarayev", f"n{i}-ogirligi": "0.5 kg"})
+            data.update({f"n{i}-nomi": f"Namuna {i}", f"n{i}-namuna_olgan": "R. Qarayev", f"n{i}-ogirligi": "0.5 kg",
+                         f"n{i}-namuna_turi": self.ariza.namuna_turi_id})
         r = self.client.post(url, data)
         self.assertRedirects(r, reverse("namuna_list"))
         self.ariza.refresh_from_db()
@@ -233,7 +235,7 @@ class NamunaQabulTests(BaseTest):
     def test_xodim_ariza_yaratadi(self):
         r = self.client.post(reverse("namuna_yaratish"), {
             "turi": "ixtiyoriy", "inn": "12345678901234", "fish": "Ali Valiyev", "telefon": "+998901234567",
-            "namuna_soni": 1, "namuna_turi": NamunaTuri.objects.first().pk, "guvohnoma": pdf()})
+            "namuna_soni": 1, "kategoriya": "kimyoviy", "guvohnoma": pdf()})
         a = Ariza.objects.get(fish="Ali Valiyev")
         self.assertRedirects(r, reverse("ariza_qabul", args=[a.pk]))
         self.assertIsNone(a.mijoz)
@@ -353,6 +355,12 @@ from core.models import Xulosa, XulosaNatija  # noqa: E402
 
 
 class LabJarayonTests(ShartnomaTests):
+    def setUp(self):
+        super().setUp()
+        # demo foydalanuvchilar (boshlangich --demo): ikki mineral va bitta kimyoviy mas'ul
+        self.m1, self.m2 = User.objects.get(username="masul1"), User.objects.get(username="masul2")
+        self.mk = User.objects.get(username="masul_k")
+
     def _yuborilgan_shartnoma(self, foiz):
         sh = self._tuz()
         self.client.post(reverse("shartnoma_yuborish", args=[sh.pk]))
@@ -361,73 +369,107 @@ class LabJarayonTests(ShartnomaTests):
             sh.qayta_hisobla()
         return sh
 
-    def _natija_post(self, x, natija="12.4"):
-        data = {"sinov_sanasi": timezone.localdate().isoformat(), "dalolatnoma": "5", "sinov_joyi": "Laboratoriya",
-                "harorat": "T=(23±1)°C", "namlik": "W=(45±1)%", "tasdiqlagan": "N. Baysunova",
-                "bosh_agrokimyogar": "X. Sottiyev", "yetakchi_agrokimyogar": "F. Egamova",
-                "ogirligi": "0.5 kg", "tavsifi": "oq donador"}
-        rows = list(x.natijalar.all())
-        data.update({"nt-TOTAL_FORMS": len(rows) + 1, "nt-INITIAL_FORMS": len(rows),
-                     "nt-MIN_NUM_FORMS": 0, "nt-MAX_NUM_FORMS": 1000})
+    def _masul_post(self, t, toliq=True):
+        rows = list(t.natijalar.order_by("tartib", "id"))
+        data = {"nt-TOTAL_FORMS": len(rows), "nt-INITIAL_FORMS": len(rows), "nt-MIN_NUM_FORMS": 0,
+                "nt-MAX_NUM_FORMS": 1000}
         for i, r in enumerate(rows):
-            data.update({f"nt-{i}-id": r.pk, f"nt-{i}-xulosa": x.pk, f"nt-{i}-korsatkich": r.korsatkich,
-                         f"nt-{i}-meyor": "12±1", f"nt-{i}-natija": natija, f"nt-{i}-sinov_usuli": r.sinov_usuli,
-                         f"nt-{i}-muvofiqlik": "Muvofiq"})
-        i = len(rows)  # narxnomada yo'q qo'shimcha ko'rsatkich
-        data.update({f"nt-{i}-xulosa": x.pk, f"nt-{i}-korsatkich": "Zichlik, g/sm3", f"nt-{i}-natija": "1.1"})
+            data.update({f"nt-{i}-id": r.pk, f"nt-{i}-meyor": "12±1", f"nt-{i}-natija": "12.4",
+                         f"nt-{i}-sinov_usuli": r.sinov_usuli or "Vizual",
+                         f"nt-{i}-muvofiqlik": "Muvofiq" if toliq else ""})
         return data
 
-    def test_30_foizsiz_tahlil_boshlanmaydi(self):
+    def test_30_foizsiz_tahlilga_yuborilmaydi(self):
         sh = self._yuborilgan_shartnoma(10)
         nam = sh.namunalar.first()
-        self.client.post(reverse("tahlilga_olish", args=[nam.pk]))
+        r = self.client.get(reverse("tahlilga_yuborish", args=[nam.pk]))
+        self.assertRedirects(r, reverse("tahlil_holati"))
         nam.refresh_from_db()
         self.assertEqual(nam.lab_holat, Namuna.LabHolat.YANGI)
 
     def test_toliq_lab_jarayoni(self):
+        from core.models import NazoratTarixi, Topshiriq
         sh = self._yuborilgan_shartnoma(40)
         nam = sh.namunalar.order_by("tartib").first()
-        self.client.post(reverse("tahlilga_olish", args=[nam.pk]))
+        # mudir: faqat o'z laboratoriyasi mas'ullari ro'yxatda
+        r = self.client.get(reverse("tahlilga_yuborish", args=[nam.pk]))
+        self.assertContains(r, "Sh. Rahimova")
+        self.assertNotContains(r, "B. Aliyev")
+        rows = r.context["rows"]
+        self.assertEqual(rows[0][1], "Tashqi ko‘rinishi, rangi")
+        self.assertFalse(any(k.startswith("Namuna olish") for _i, k, _u, _t in rows))
+        # birinchi qator 1-mas'ulga, qolganlari 2-mas'ulga
+        data = {f"masul_{i}": (self.m1.pk if i == 0 else self.m2.pk) for i, *_r in rows}
+        self.client.post(reverse("tahlilga_yuborish", args=[nam.pk]), data)
         nam.refresh_from_db()
         self.assertEqual(nam.lab_holat, Namuna.LabHolat.TAHLILDA)
-        r = self.client.post(reverse("natija_tayyor", args=[nam.pk]))
-        self.assertRedirects(r, reverse("xulosa_kiritish", args=[nam.pk]))
-        # natija sahifasi xulosani shartnoma ko'rsatkichlari bilan yaratadi (namuna olish kirmaydi)
-        self.client.get(reverse("xulosa_kiritish", args=[nam.pk]))
-        x = Xulosa.objects.get(namuna=nam)
-        korsatkichlar = list(x.natijalar.values_list("korsatkich", flat=True))
-        self.assertEqual(korsatkichlar[0], "Tashqi ko‘rinishi, rangi")
-        self.assertIn(self.azot.parametr, korsatkichlar)
-        self.assertFalse(any(k.startswith("Namuna olish") for k in korsatkichlar))
-        r = self.client.post(reverse("xulosa_kiritish", args=[nam.pk]), self._natija_post(x))
-        self.assertRedirects(r, reverse("xulosa_korish", args=[x.pk]))
+        t1, t2 = Topshiriq.objects.get(namuna=nam, masul=self.m1), Topshiriq.objects.get(namuna=nam, masul=self.m2)
+        self.assertEqual(t1.natijalar.count(), 1)
+        self.assertEqual(t2.natijalar.count(), len(rows) - 1)
+        # mas'ullar qabul qiladi
+        self.client.logout()
+        self.client.login(username="masul1", password="demo12345")
+        self.assertEqual(self.client.get(reverse("topshiriq_natija", args=[t2.pk])).status_code, 403)  # begona
+        self.client.post(reverse("topshiriq_qabul", args=[t1.pk]))
         nam.refresh_from_db()
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.TAHLILDA)  # 2-mas'ul hali qabul qilmagan
+        # bo'sh maydon bilan saqlanmaydi
+        self.client.post(reverse("topshiriq_natija", args=[t1.pk]), self._masul_post(t1, toliq=False))
+        t1.refresh_from_db()
+        self.assertEqual(t1.holat, Topshiriq.Holat.QABUL)
+        self.client.post(reverse("topshiriq_natija", args=[t1.pk]), self._masul_post(t1))
+        t1.refresh_from_db()
+        self.assertEqual(t1.holat, Topshiriq.Holat.TAYYOR)
+        self.client.logout()
+        self.client.login(username="masul2", password="demo12345")
+        self.client.post(reverse("topshiriq_qabul", args=[t2.pk]))
+        nam.refresh_from_db()
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.JARAYONDA)
+        self.client.post(reverse("topshiriq_natija", args=[t2.pk]), self._masul_post(t2))
+        nam.refresh_from_db()
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.NATIJA)  # "Xulosa tayyor"
+        # mudir qaytaradi
+        self.client.logout()
+        self.login("lab_mineral")
+        x = Xulosa.objects.get(namuna=nam)
+        self.client.post(reverse("xulosa_qaytarish", args=[x.pk]), {"topshiriq": t2.pk, "izoh": "pH qayta o'lchansin"})
+        t2.refresh_from_db()
+        nam.refresh_from_db()
+        self.assertEqual(t2.holat, Topshiriq.Holat.QAYTARILDI)
+        self.assertEqual(nam.lab_holat, Namuna.LabHolat.JARAYONDA)
+        self.assertTrue(NazoratTarixi.objects.filter(turi="xulosa_qaytarish").exists())
+        self.client.logout()
+        self.client.login(username="masul2", password="demo12345")
+        self.assertContains(self.client.get(reverse("topshiriq_natija", args=[t2.pk])), "pH qayta")
+        self.client.post(reverse("topshiriq_natija", args=[t2.pk]), self._masul_post(t2))
+        # mudir tasdiqlaydi: majburiy maydonlarsiz tasdiqlanmaydi
+        self.client.logout()
+        self.login("lab_mineral")
+        self.client.post(reverse("xulosa_tasdiqlash", args=[x.pk]), {})
         x.refresh_from_db()
+        self.assertFalse(x.tasdiqlangan)
+        self.client.post(reverse("xulosa_tasdiqlash", args=[x.pk]), {
+            "sinov_sanasi": timezone.localdate().isoformat(), "dalolatnoma": "5", "sinov_joyi": "Laboratoriya",
+            "harorat": "T=(23±1)°C", "namlik": "W=(45±1)%", "bosh_agrokimyogar": "Sh. Rahimova",
+            "yetakchi_agrokimyogar": "D. Tursunov", "ogirligi": "0.5 kg"})
+        x.refresh_from_db()
+        nam.refresh_from_db()
+        self.assertTrue(x.tasdiqlangan)
         self.assertEqual(nam.lab_holat, Namuna.LabHolat.XULOSA)
-        self.assertEqual(x.natijalar.count(), len(korsatkichlar) + 1)
-        self.assertEqual(x.natijalar.order_by("tartib").last().korsatkich, "Zichlik, g/sm3")
-        self.assertEqual(nam.ogirligi, "0.5 kg")
-        # hujjat
+        self.assertEqual(x.bosh_agrokimyogar, "Sh. Rahimova")
+        # Word hujjat (faqat mudirga): yangi shakl, raqam, mudir va agrokimyogarlar
         r = self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"]))
         import io
 
         import docx
         d = docx.Document(io.BytesIO(r.content))
-        jadval = "\n".join(c.text for row in d.tables[3].rows for c in row.cells)
-        self.assertIn("Zichlik, g/sm3", jadval)
         self.assertIn(x.raqam, d.tables[1].rows[0].cells[0].text)
-        # tasdiqlanmagan xulosa QR orqali ochilmaydi
-        self.assertEqual(self.client.get(reverse("xulosa_tekshirish", args=[x.verify_token])).status_code, 404)
-        self.client.post(reverse("xulosa_tasdiqlash", args=[x.pk]))
-        x.refresh_from_db()
-        self.assertTrue(x.tasdiqlangan)
-        # tasdiqlangandan keyin tahrirlab bo'lmaydi
-        self.assertRedirects(self.client.get(reverse("xulosa_kiritish", args=[nam.pk])),
-                             reverse("xulosa_korish", args=[x.pk]))
-        self.client.logout()
+        imzo = d.tables[4].rows[0].cells[1].text
+        self.assertIn("Sh. Rahimova", imzo)
+        self.assertIn("D. Tursunov", imzo)
+        self.assertNotIn("QR KOD", d.tables[4]._tbl.xml)  # QR rasm qo'yilgan
         self.assertEqual(self.client.get(reverse("xulosa_tekshirish", args=[x.verify_token])).status_code, 200)
-        # 40% to'lovda mijozga berilmaydi
-        self.login("lab_mineral")
+        # 40% to'lovda mijozga berilmaydi, 100% da beriladi
         self.client.post(reverse("xulosa_berish", args=[x.pk]))
         nam.refresh_from_db()
         self.assertEqual(nam.lab_holat, Namuna.LabHolat.XULOSA)
@@ -437,6 +479,19 @@ class LabJarayonTests(ShartnomaTests):
         nam.refresh_from_db()
         self.assertEqual(nam.lab_holat, Namuna.LabHolat.BERILDI)
 
+    def test_word_faqat_mudirga(self):
+        nam = self.ariza.namunalar.first()
+        x = Xulosa.objects.create(namuna=nam, tasdiqlangan_at=timezone.now())
+        XulosaNatija.objects.create(xulosa=x, korsatkich="pH", natija="7")
+        for user in ("admin", "superadmin", "namuna"):
+            self.client.logout()
+            self.login(user)
+            with self.subTest(user=user):
+                self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 403)
+        self.client.logout()
+        self.login("lab_mineral")
+        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 200)
+
     def test_mijoz_faqat_berilgan_xulosani_yuklaydi(self):
         mijoz = User.objects.create_user("+998900000001", password="parol123", role=Role.MIJOZ)
         self.ariza.mijoz = mijoz
@@ -445,16 +500,23 @@ class LabJarayonTests(ShartnomaTests):
         x = Xulosa.objects.create(namuna=nam, tasdiqlangan_at=timezone.now())
         XulosaNatija.objects.create(xulosa=x, korsatkich="pH", natija="7")
         self.client.login(username="+998900000001", password="parol123")
-        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 403)
+        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "pdf"])).status_code, 403)
         nam.lab_holat = Namuna.LabHolat.BERILDI
         nam.save()
-        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 200)
+        r = self.client.get(reverse("xulosa_hujjat", args=[x.pk, "pdf"]))
+        self.assertEqual(r.status_code, 200)
+        from pypdf import PdfReader
+        self.assertTrue(PdfReader(io.BytesIO(r.content)).is_encrypted)  # tahrirlashdan himoyalangan
+        self.assertEqual(r.headers.get("X-Frame-Options"), "SAMEORIGIN")
 
     def test_buxgalter_xulosa_yuklay_olmaydi(self):
         nam = self.ariza.namunalar.first()
         x = Xulosa.objects.create(namuna=nam)
         self.login("buxgalter")
-        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 403)
+        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "pdf"])).status_code, 403)
+
+
+import io  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -648,7 +710,7 @@ class SinovTuzatishTests(BaseTest):
 
     def _data(self, **kw):
         d = {"turi": "importyor", "inn": "123456789", "buyurtmachi_nomi": "Agro", "fish": "Ali",
-             "telefon": "+998905550011", "namuna_soni": 1, "namuna_turi": self.tur.pk, "namuna_nomi": "N",
+             "telefon": "+998905550011", "namuna_soni": 1, "kategoriya": "mineral", "namuna_nomi": "N",
              "chegara_maskani": "Olot"}
         d.update(kw)
         return d
@@ -721,3 +783,289 @@ class SinovTuzatishTests(BaseTest):
         self.assertContains(r, "Narx belgilash")
         r = self.client.get(reverse("ariza_detail", args=[a.pk]))
         self.assertContains(r, reverse("shartnoma_yangi", args=[a.pk]))
+
+
+
+class KategoriyaTests(BaseTest):
+    def test_mijoz_faqat_guruh_tanlaydi_qabulda_tur_kiritiladi(self):
+        mijoz = User.objects.create_user("+998905550099", password="parol123", role=Role.MIJOZ)
+        self.client.login(username="+998905550099", password="parol123")
+        r = self.client.get(reverse("ariza_yangi"))
+        html = r.content.decode()
+        self.assertIn('name="kategoriya"', html)
+        self.assertNotIn("Azotli o", html.split('name="kategoriya"')[1].split("</select>")[0])
+        self.client.post(reverse("ariza_yangi"), {
+            "turi": "ixtiyoriy", "inn": "12345678901234", "fish": "Ali", "telefon": "+998905550099",
+            "namuna_soni": 2, "kategoriya": "kimyoviy", "guvohnoma": pdf()})
+        a = Ariza.objects.get(mijoz=mijoz)
+        self.assertEqual(a.kategoriya, "kimyoviy")
+        self.assertIsNone(a.namuna_turi)
+        self.client.logout()
+        self.login("namuna")
+        r = self.client.get(reverse("ariza_qabul", args=[a.pk]))
+        select = r.content.decode().split('name="n0-namuna_turi"')[1].split("</select>")[0]
+        self.assertIn("Fungitsidlar", select)
+        self.assertNotIn("Azotli", select)  # faqat o'z guruhining turlari
+        fung = NamunaTuri.objects.get(nomi="Fungitsidlar")
+        gerb = NamunaTuri.objects.get(nomi="Gerbitsidlar")
+        self.client.post(reverse("ariza_qabul", args=[a.pk]), {
+            "n0-namuna_turi": fung.pk, "n0-nomi": "A", "n0-namuna_olgan": "X",
+            "n1-namuna_turi": gerb.pk, "n1-nomi": "B", "n1-namuna_olgan": "X"})
+        a.refresh_from_db()
+        self.assertEqual(a.holat, Ariza.Holat.QABUL)
+        self.assertEqual(sorted(a.namunalar.values_list("namuna_turi__nomi", flat=True)), ["Fungitsidlar", "Gerbitsidlar"])
+        self.assertIn("Fungitsidlar", a.turlar_matni)
+
+    def test_boshqa_guruh_turi_qabul_qilinmaydi(self):
+        a = Ariza.objects.create(turi="ixtiyoriy", inn="12345678901234", fish="A", telefon="+998",
+                                 kategoriya="kimyoviy", namuna_soni=1)
+        self.login("namuna")
+        azot = NamunaTuri.objects.get(nomi="Azotli o'g'itlar")
+        r = self.client.post(reverse("ariza_qabul", args=[a.pk]), {"n0-namuna_turi": azot.pk, "n0-nomi": "A",
+                                                                     "n0-namuna_olgan": "X"})
+        self.assertEqual(r.status_code, 200)
+        a.refresh_from_db()
+        self.assertEqual(a.holat, Ariza.Holat.YANGI)
+
+
+class InvoysTests(BaseTest):
+    def setUp(self):
+        self.mijoz = User.objects.create_user("+998901110077", password="parol123", role=Role.MIJOZ)
+        self.a = Ariza.objects.create(turi="importyor", inn="123456789", buyurtmachi_nomi="T", fish="Y",
+                                      telefon="+998", kategoriya="mineral", mijoz=self.mijoz,
+                                      holat=Ariza.Holat.QABUL)
+        self.inv = ArizaHujjat.objects.create(ariza=self.a, turi="invoys", fayl=pdf("inv.pdf"))
+        self.gv = ArizaHujjat.objects.create(ariza=self.a, turi="guvohnoma", fayl=pdf("gv.pdf"))
+        sh = Shartnoma.objects.create(ariza=self.a, holat=Shartnoma.Holat.QABUL)
+        self.sh = sh
+
+    def test_invoys_kimga_korinadi(self):
+        inv_url = reverse("ariza_hujjat", args=[self.inv.pk])
+        gv_url = reverse("ariza_hujjat", args=[self.gv.pk])
+        for user, kutilgan in [("namuna", 200), ("superadmin", 403), ("admin", 403), ("lab_mineral", 403),
+                               ("buxgalter", 403)]:
+            self.client.logout()
+            self.login(user)
+            with self.subTest(user=user):
+                self.assertEqual(self.client.get(inv_url).status_code, kutilgan)
+                self.assertEqual(self.client.get(gv_url).status_code, 200)
+        self.client.logout()
+        self.client.login(username="+998901110077", password="parol123")
+        self.assertEqual(self.client.get(inv_url).status_code, 200)
+
+    def test_sahifalarda_invoys_havolasi_yoq(self):
+        inv_url = reverse("ariza_hujjat", args=[self.inv.pk])
+        self.login("lab_mineral")
+        for url in [reverse("ariza_detail", args=[self.a.pk]), reverse("shartnoma_detail", args=[self.sh.pk]),
+                    reverse("shartnoma_list")]:
+            with self.subTest(url=url):
+                r = self.client.get(url)
+                self.assertNotContains(r, inv_url)
+                self.assertContains(r, reverse("ariza_hujjat", args=[self.gv.pk]))
+        self.client.logout()
+        self.login("namuna")
+        self.assertContains(self.client.get(reverse("ariza_detail", args=[self.a.pk])), inv_url)
+
+
+class TolovOchirishTests(BaseTest):
+    def setUp(self):
+        from core.models import NazoratTarixi  # noqa: F401
+        self.a = Ariza.objects.create(turi="davlat", inn="123456789", buyurtmachi_nomi="T", fish="Y",
+                                      telefon="+998", kategoriya="mineral", holat=Ariza.Holat.QABUL)
+        self.nam = Namuna.objects.create(ariza=self.a, namuna_turi=NamunaTuri.objects.filter(kategoriya="mineral").first(), nomi="N")
+        self.sh = Shartnoma.objects.create(ariza=self.a, holat=Shartnoma.Holat.QABUL)
+        self.nam.shartnoma = self.sh
+        self.nam.save()
+        self.t = Tolov.objects.create(shartnoma=self.sh, summa=Decimal("50000"))
+        self.url = reverse("tolov_ochirish", args=[self.sh.pk, self.t.pk])
+        self.login("buxgalter")
+
+    def test_sababsiz_ochmaydi(self):
+        self.client.post(self.url, {"sabab": ""})
+        self.assertTrue(Tolov.objects.filter(pk=self.t.pk).exists())
+
+    def test_sabab_bilan_ochadi_va_tarixga_yoziladi(self):
+        from core.models import NazoratTarixi
+        self.client.post(self.url, {"sabab": "Xato summa kiritilgan"})
+        self.assertFalse(Tolov.objects.filter(pk=self.t.pk).exists())
+        log = NazoratTarixi.objects.get(turi="tolov_ochirish")
+        self.assertIn("50 000", log.tafsilot)
+        self.assertIn("Xato summa", log.tafsilot)
+        self.assertIn("Buxgalteriya", log.user_nomi)
+
+    def test_tahlildan_keyin_ochmaydi(self):
+        self.nam.lab_holat = Namuna.LabHolat.TAHLILDA
+        self.nam.save()
+        self.client.post(self.url, {"sabab": "Xato summa kiritilgan"})
+        self.assertTrue(Tolov.objects.filter(pk=self.t.pk).exists())
+        self.assertNotContains(self.client.get(reverse("shartnoma_detail", args=[self.sh.pk])), self.url)
+
+    def test_tarixni_faqat_superadmin_koradi(self):
+        self.assertEqual(self.client.get(reverse("nazorat_tarixi")).status_code, 403)
+        self.client.logout()
+        self.login("superadmin")
+        self.assertEqual(self.client.get(reverse("nazorat_tarixi")).status_code, 200)
+
+
+class NarxnomaHuquqTests(BaseTest):
+    def test_huquqlar_va_tarix(self):
+        from core.models import NazoratTarixi
+        nx = Narxnoma.objects.filter(sinov_obyekti="mineral").first()
+        edit = reverse("narxnoma_edit", args=[nx.pk])
+        for user, ro_yxat, tahrir in [("admin", 403, 403), ("lab_mineral", 403, 403), ("superadmin", 200, 403),
+                                      ("buxgalter", 200, 200)]:
+            self.client.logout()
+            self.login(user)
+            with self.subTest(user=user):
+                self.assertEqual(self.client.get(reverse("narxnoma_list")).status_code, ro_yxat)
+                self.assertEqual(self.client.get(edit).status_code, tahrir)
+        # buxgalter narxni o'zgartiradi -> tarix
+        data = {"tartib": nx.tartib, "parametr": nx.parametr, "tahlil_usuli": nx.tahlil_usuli,
+                "sinov_obyekti": nx.sinov_obyekti, "obyekt_nomi": nx.obyekt_nomi, "narx": "90000",
+                "har_namunaga": "on", "aktiv": "on"}
+        self.client.post(edit, data)
+        log = NazoratTarixi.objects.get(turi="narxnoma", obyekt_id=str(nx.pk))
+        self.assertIn("→ 90 000", log.tafsilot)
+        self.assertIn("Buxgalteriya", log.user_nomi)
+        # buxgalter tarixni ko'rmaydi, super admin ko'radi
+        self.assertEqual(self.client.get(reverse("nazorat_tarixi")).status_code, 403)
+        self.assertNotContains(self.client.get(reverse("narxnoma_list")), "nazorat-tarixi")
+        self.client.logout()
+        self.login("superadmin")
+        r = self.client.get(reverse("nazorat_tarixi") + f"?holat=narxnoma&obyekt_id={nx.pk}")
+        self.assertContains(r, "90 000")
+
+
+class NamunaQabulBayonnomaTests(BaseTest):
+    def test_nq_tasdiqlangan_bayonnomani_koradi(self):
+        a = Ariza.objects.create(turi="davlat", inn="123456789", buyurtmachi_nomi="T", fish="Y", telefon="+998",
+                                 kategoriya="mineral", holat=Ariza.Holat.QABUL)
+        nam = Namuna.objects.create(ariza=a, namuna_turi=NamunaTuri.objects.filter(kategoriya="mineral").first(),
+                                    nomi="N", lab_holat=Namuna.LabHolat.NATIJA)
+        x = Xulosa.objects.create(namuna=nam)
+        XulosaNatija.objects.create(xulosa=x, korsatkich="pH", natija="7")
+        pdf_url = reverse("xulosa_hujjat", args=[x.pk, "pdf"])
+        self.login("namuna")
+        self.assertNotContains(self.client.get(reverse("namuna_list")), pdf_url)  # tasdiqlanmagan
+        self.assertEqual(self.client.get(pdf_url).status_code, 403)
+        x.tasdiqlangan_at = timezone.now()
+        x.save()
+        self.assertContains(self.client.get(reverse("namuna_list")), pdf_url)
+        r = self.client.get(pdf_url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertEqual(self.client.get(reverse("xulosa_hujjat", args=[x.pk, "docx"])).status_code, 403)
+
+
+class SlaTests(TestCase):
+    def setUp(self):
+        from django.core.management import call_command
+        call_command("boshlangich", "--demo", stdout=io.StringIO())
+
+    def _t(self, y, mo, d, h, mi=0):
+        from datetime import datetime
+        return timezone.make_aware(datetime(y, mo, d, h, mi))
+
+    def test_ish_daqiqalari(self):
+        from .sla import Muddat
+        m = Muddat(hozir=self._t(2026, 11, 23, 9, 30))  # dushanba 9:30
+        self.assertEqual(m.ish_daqiqalari(self._t(2026, 11, 20, 17, 30)), 60)  # juma 17:30 -> 30+30
+        self.assertFalse(m.otdimi(self._t(2026, 11, 20, 17, 30), "muddat_ariza_qabul"))
+        self.assertTrue(Muddat(hozir=self._t(2026, 11, 23, 9, 31)).otdimi(self._t(2026, 11, 20, 17, 30),
+                                                                         "muddat_ariza_qabul"))
+
+    def test_bayram_hisoblanmaydi(self):
+        from .models import Bayram
+        from .sla import Muddat
+        Bayram.objects.create(sana=self._t(2026, 11, 23, 0).date(), nomi="Test")
+        m = Muddat(hozir=self._t(2026, 11, 24, 9, 0))
+        self.assertEqual(m.ish_daqiqalari(self._t(2026, 11, 20, 17, 30)), 30)
+
+    def test_kechikkan_ariza_miltillaydi(self):
+        a = Ariza.objects.filter(holat=Ariza.Holat.YANGI).first()
+        Ariza.objects.filter(pk=a.pk).update(yuborilgan_at=timezone.now() - timedelta(days=10))
+        self.client.force_login(User.objects.get(username="namuna"))
+        r = self.client.get(reverse("ariza_list") + "?kechikkan=1")
+        self.assertContains(r, 'class="kechikdi"')
+        r = self.client.get(reverse("dashboard"))
+        self.assertContains(r, "Kechikkan arizalar")
+
+    def test_sozlamalar_admin_va_tarix(self):
+        from .models import NazoratTarixi, Sozlama
+        self.client.force_login(User.objects.get(username="admin"))
+        data = {"sozlama": "1", "ish_boshlanishi": "08:00", "ish_tugashi": "17:00",
+                "ish_kunlari_tanlov": ["0", "1", "2", "3", "4", "5"]}
+        for f in Sozlama.MUDDAT_MAYDONLARI:
+            data[f] = 120
+        r = self.client.post(reverse("sozlamalar"), data)
+        self.assertEqual(r.status_code, 302)
+        s = Sozlama.ol()
+        self.assertEqual(s.ish_kunlari, "0,1,2,3,4,5")
+        self.assertEqual(s.muddat_tahlil, 120)
+        self.assertTrue(NazoratTarixi.objects.filter(turi=NazoratTarixi.Turi.SOZLAMA).exists())
+        self.client.force_login(User.objects.get(username="buxgalter"))
+        self.assertEqual(self.client.get(reverse("sozlamalar")).status_code, 403)
+
+
+class StatistikaTests(TestCase):
+    def setUp(self):
+        call_command("boshlangich", "--demo", stdout=io.StringIO())
+
+    def test_oylik_kunlik_yillik_va_excel(self):
+        self.client.force_login(User.objects.get(username="buxgalter"))
+        for g in ("kun", "oy", "yil"):
+            r = self.client.get(reverse("statistika") + f"?guruh={g}")
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.context["jami"]["ariza"], Ariza.objects.count())
+            self.assertEqual(r.context["jami"]["tolov_soni"], Tolov.objects.count())
+        r = self.client.get(reverse("statistika") + "?guruh=oy&kategoriya=mineral&excel=1")
+        self.assertIn("spreadsheetml", r["Content-Type"])
+        self.client.force_login(User.objects.get(username="namuna"))
+        self.assertEqual(self.client.get(reverse("statistika")).status_code, 403)
+
+
+class ParolTests(TestCase):
+    def setUp(self):
+        call_command("boshlangich", "--demo", stdout=io.StringIO())
+        self.mijoz = User.objects.create_user(username="+998901112233", password="eski12345", role=Role.MIJOZ,
+                                              fish="Mijoz Test")
+
+    def test_sa_tiklaydi_majburiy_almashtirish(self):
+        from .models import NazoratTarixi
+        sa = User.objects.get(username="superadmin")
+        self.client.force_login(sa)
+        r = self.client.get(reverse("buyurtmachi_list"))
+        self.assertContains(r, "+998901112233")
+        self.assertNotContains(r, "pbkdf2")
+        r = self.client.post(reverse("parol_tiklash", args=[self.mijoz.pk]))
+        parol = r.context["parol"]
+        self.assertTrue(NazoratTarixi.objects.filter(turi=NazoratTarixi.Turi.PAROL).exists())
+        self.client.logout()
+        self.assertTrue(self.client.login(username="+998901112233", password=parol))
+        r = self.client.get(reverse("kabinet"))
+        self.assertRedirects(r, reverse("parol_almashtirish"))
+        r = self.client.post(reverse("parol_almashtirish"),
+                             {"new_password1": "YangiParol!77", "new_password2": "YangiParol!77"})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(self.client.get(reverse("kabinet")).status_code, 200)
+        # boshqa rollar kira olmaydi
+        self.client.force_login(User.objects.get(username="admin"))
+        self.assertEqual(self.client.get(reverse("buyurtmachi_list")).status_code, 403)
+
+    def test_sms_kod_orqali(self):
+        from unittest import mock
+        with mock.patch("core.xabarnoma.sms_sozlangan", return_value=True), \
+                mock.patch("core.xabarnoma.sms_yubor") as yubor:
+            self.client.post(reverse("parol_unutdim"), {"telefon": "+998 90 111 22 33"})
+            matn = yubor.call_args[0][1]
+        kod = "".join(ch for ch in matn if ch.isdigit())[:6]
+        r = self.client.post(reverse("parol_unutdim"), {"kod": "000000" if kod != "000000" else "111111",
+                                                        "parol1": "yangi123", "parol2": "yangi123"})
+        self.assertContains(r, "Kod noto")
+        r = self.client.post(reverse("parol_unutdim"), {"kod": kod, "parol1": "yangi123", "parol2": "yangi123"})
+        self.assertRedirects(r, reverse("login"))
+        self.assertTrue(self.client.login(username="+998901112233", password="yangi123"))
+
+    def test_sms_ulanmagan(self):
+        r = self.client.post(reverse("parol_unutdim"), {"telefon": "+998 90 111 22 33"}, follow=True)
+        self.assertContains(r, "SMS xizmati hali ulanmagan")

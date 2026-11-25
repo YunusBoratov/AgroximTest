@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% load static i18n %}
+{% block title %}{% trans "Parolni tiklash" %}{% endblock %}
+{% block body %}
+<div class="auth-page">
+  <form class="auth-card" method="post">{% csrf_token %}
+    <img src="{% static 'img/logo.png' %}" alt="">
+    <h1>{% trans "Parolni tiklash" %}</h1>
+    {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+    {% if bosqich == "kod" %}
+      <p class="sub">{% blocktrans %}{{ tel }} raqamiga yuborilgan SMS kodni va yangi parolni kiriting.{% endblocktrans %}</p>
+    {% else %}
+      <p class="sub">{% trans "Ro'yxatdan o'tgan telefon raqamingizni kiriting — unga tasdiqlash kodi yuboriladi." %}</p>
+    {% endif %}
+    {% for f in form %}<div class="fld"><label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}{{ f.errors }}</div>{% endfor %}
+    <button class="btn btn-primary" type="submit">{% if bosqich == "kod" %}{% trans "Parolni yangilash" %}{% else %}{% trans "Kod olish" %}{% endif %}</button>
+    {% if bosqich == "kod" %}<a class="row-link" href="?qayta=1">{% trans "Kodni qayta olish" %}</a>{% endif %}
+    <p class="sub" style="margin-top:14px"><a class="row-link" href="{% url 'login' %}">{% trans "Kirish sahifasiga qaytish" %}</a></p>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load static i18n %}
+{% block title %}{% trans "Parolni almashtirish" %}{% endblock %}
+{% block body %}
+<div class="auth-page">
+  <form class="auth-card" method="post">{% csrf_token %}
+    <img src="{% static 'img/logo.png' %}" alt="">
+    <h1>{% trans "Yangi parol o'rnating" %}</h1>
+    {% if majburiy %}<p class="sub">{% trans "Siz vaqtinchalik parol bilan kirdingiz. Davom etish uchun o'zingizning yangi parolingizni o'rnating." %}</p>{% endif %}
+    {% for f in form %}<div class="fld"><label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}{{ f.errors }}</div>{% endfor %}
+    <button class="btn btn-primary" type="submit">{% trans "Saqlash" %}</button>
+    <a class="btn btn-light" href="{% url 'logout' %}" onclick="event.preventDefault();document.getElementById('chiq').submit()">{% trans "Chiqish" %}</a>
+  </form>
+  <form id="chiq" method="post" action="{% url 'logout' %}">{% csrf_token %}</form>
+</div>
+{% endblock %}

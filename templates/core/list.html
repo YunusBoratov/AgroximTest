@@ -7,6 +7,7 @@
       <a class="btn btn-grey" href="?{{ querystring }}{% if querystring %}&{% endif %}export=excel">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg> Excel</a>
       {% if add_url %}<a class="btn btn-green" href="{{ add_url }}">+ {{ add_label }}</a>{% endif %}
+      {% if tg_havola %}<a class="btn btn-tg" href="{{ tg_havola }}" target="_blank">{% trans "Telegram'ni ulash" %}</a>{% endif %}
     </div>
   </div>
   {% if kategoriya_tabs %}
@@ -15,13 +16,14 @@
   </div>{% endif %}
   {% include "parts/filters.html" %}
 </section>
+{% if stats %}{% include "parts/stats.html" %}{% endif %}
 <section class="card">
   <div class="table-wrap">
   <table class="t">
     <thead><tr><th>N</th>{% for c in columns %}<th{% if c.width %} style="width:{{ c.width }}"{% endif %}>{{ c.title }}</th>{% endfor %}</tr></thead>
     <tbody>
-    {% for obj, cells in rows %}
-      <tr><td>{{ page.start_index|add:forloop.counter0 }}</td>
+    {% for obj, cells, rcls in rows %}
+      <tr class="{{ rcls }}"><td>{{ page.start_index|add:forloop.counter0 }}</td>
       {% for col, val, badge_cls, link in cells %}{% include "parts/cell.html" %}{% endfor %}
       </tr>
     {% empty %}

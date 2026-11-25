@@ -55,6 +55,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.ParolAlmashtirishMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -128,7 +129,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Biznes qoidalari
 TAHLIL_BOSHLASH_MIN_FOIZ = 30  # tahlil kamida 30% to'lovdan keyin boshlanadi
-XULOSA_YUBORISH_MIN_FOIZ = 100  # xulosa buyurtmachiga faqat to'liq to'lovdan keyin
+XULOSA_YUBORISH_MIN_FOIZ = 100
+# Buyurtmachi yuklagan invoysni kim ko'radi (mijozning o'zidan tashqari). Rahbarlarga ochish uchun
+# masalan "admin", "super_admin" qo'shiladi.
+INVOYS_KORADI_ROLLAR = ["namuna_qabul"]  # xulosa buyurtmachiga faqat to'liq to'lovdan keyin
 
 # Markaz ma'lumotlari (sayt sarlavhasida)
 MARKAZ = {
@@ -137,7 +141,7 @@ MARKAZ = {
     "shior_ru": "Почва — наше единственное богатство",
     "manzil_ru": "111215, Ташкентская область, Кибрайский район, ул. Бобура, 8",
     "shior": "Tuproq yagona boylik",
-    "telefonlar": ["+998 71 203 14 14 (1015)", "+998 71 260 42 20"],
+    "telefonlar": ["+998 71 203 14 14 (1015)"],
     "manzil": "111215, Toshkent viloyati, Qibray tumani, Bobur ko'chasi, 8-uy",
     "sayt": "www.agrokimlab.uz",
     "email": "info@agrokimlab.uz",

@@ -1,0 +1,11 @@
+{% load i18n %}
+<div class="tabs davr">
+  {% for val, label in davrlar %}<a class="tab {% if davr == val %}active{% endif %}" href="?davr={{ val }}{% if state.turi %}&turi={{ state.turi }}{% endif %}">{{ label }}</a>{% endfor %}
+</div>
+{% if kechikkan %}
+<div class="grid">
+  {% for label, n, href in kechikkan %}
+  <a class="stat {% if n %}kechik{% endif %}" href="{{ href }}"><div class="n">{{ n }}</div><div class="l">{% if n %}⚠ {% endif %}{{ label }}</div></a>
+  {% endfor %}
+</div>
+{% endif %}

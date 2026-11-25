@@ -1,4 +1,5 @@
 import uuid
+from datetime import time
 from decimal import Decimal
 
 from django.conf import settings
@@ -150,7 +151,10 @@ class Ariza(models.Model):
 
     # Namuna ma'lumotlari
     namuna_soni = models.PositiveIntegerField(_("Namuna soni"), default=1)
-    namuna_turi = models.ForeignKey(NamunaTuri, verbose_name=_("Namuna turi"), on_delete=models.PROTECT)
+    # Mijoz faqat guruhni (kategoriya) tanlaydi; aniq turni namuna qabul qiluvchi har bir namuna uchun kiritadi.
+    # Bu maydon eski arizalar uchun saqlanib qolgan.
+    namuna_turi = models.ForeignKey(NamunaTuri, verbose_name=_("Namuna turi"), on_delete=models.PROTECT,
+                                    null=True, blank=True)
     namuna_nomi = models.CharField(_("Namuna nomi"), max_length=255, blank=True)
     partiya_raqami = models.CharField(_("Partiya raqami (LOT)"), max_length=100, blank=True)
     invoys_raqami = models.CharField(_("Invoys raqami"), max_length=100, blank=True)
@@ -164,6 +168,7 @@ class Ariza(models.Model):
     qabul_vaqti = models.DateTimeField(_("Qabul qilingan vaqt"), null=True, blank=True)
     rad_sababi = models.CharField(_("Rad etish sababi"), max_length=500, blank=True)
     created_at = models.DateTimeField(_("Yaratilgan vaqt"), default=timezone.now)
+    yuborilgan_at = models.DateTimeField(_("Yuborilgan (qayta yuborilgan) vaqt"), default=timezone.now)
 
     class Meta:
         ordering = ["-created_at"]
@@ -180,6 +185,17 @@ class Ariza(models.Model):
         if self.namuna_turi_id and not self.kategoriya:
             self.kategoriya = self.namuna_turi.kategoriya
         super().save(*args, **kwargs)
+
+    @property
+    def turlar_matni(self):
+        """Namunalar qabul qilingan bo'lsa ularning aniq turlari, aks holda guruh nomi."""
+        turlar = []
+        for n in self.namunalar.all():
+            if n.namuna_turi_id and str(n.namuna_turi) not in turlar:
+                turlar.append(str(n.namuna_turi))
+        if not turlar and self.namuna_turi_id:
+            turlar = [str(self.namuna_turi)]
+        return ", ".join(turlar) or self.get_kategoriya_display()
 
     @property
     def buyurtmachi(self):
@@ -230,16 +246,16 @@ ZARUR_HUJJATLAR = {
 # Har bir ariza turi formada qaysi maydonlarni ko'rsatadi (dizayn bo'yicha)
 ARIZA_MAYDONLARI = {
     ArizaTuri.IMPORTYOR: {
-        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "namuna_turi", "namuna_nomi",
+        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "kategoriya", "namuna_nomi",
                      "chegara_maskani"],
         "ixtiyoriy": ["partiya_raqami", "invoys_raqami"],
     },
     ArizaTuri.DAVLAT: {
-        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "namuna_turi"],
+        "majburiy": ["inn", "buyurtmachi_nomi", "fish", "telefon", "namuna_soni", "kategoriya"],
         "ixtiyoriy": ["namuna_nomi", "partiya_raqami"],
     },
     ArizaTuri.IXTIYORIY: {
-        "majburiy": ["inn", "fish", "telefon", "namuna_soni", "namuna_turi"],
+        "majburiy": ["inn", "fish", "telefon", "namuna_soni", "kategoriya"],
         "ixtiyoriy": ["namuna_nomi"],
     },
 }
@@ -275,6 +291,8 @@ class Shartnoma(models.Model):
     created_at = models.DateTimeField(_("Shakllantirilgan vaqt"), default=timezone.now)
     yuborilgan_at = models.DateTimeField(_("Buxgalteriyaga yuborilgan vaqt"), null=True, blank=True)
     qabul_at = models.DateTimeField(_("Buxgalter qabul qilgan vaqt"), null=True, blank=True)
+    tahlilga_ruxsat_at = models.DateTimeField(_("30% to'langan vaqt"), null=True, blank=True)
+    toliq_tolangan_at = models.DateTimeField(_("100% to'langan vaqt"), null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -307,6 +325,11 @@ class Shartnoma(models.Model):
         return self.holat == self.Holat.YUBORILMAGAN and not self.tolovlar.exists()
 
     @property
+    def tolov_ochirish_mumkin(self):
+        """To'lovni faqat shartnomadagi namunalar tahlilga olinmaguncha o'chirish mumkin."""
+        return not self.namunalar.exclude(lab_holat=Namuna.LabHolat.YANGI).exists()
+
+    @property
     def xulosa_yuborish_mumkin(self):
         return self.jami_summa > 0 and self.tolangan_foiz >= settings.XULOSA_YUBORISH_MIN_FOIZ
 
@@ -323,7 +346,18 @@ class Shartnoma(models.Model):
             self.tolov_holati = self.TolovHolati.QISMAN
         else:
             self.tolov_holati = self.TolovHolati.TOLANGAN
-        self.save(update_fields=["jami_summa", "tolangan_summa", "tolov_holati"])
+        # muddatlarni hisoblash uchun: 30% va 100% chegarasi qachon o'tilgan
+        now = timezone.now()
+        if self.tahlil_boshlash_mumkin:
+            self.tahlilga_ruxsat_at = self.tahlilga_ruxsat_at or now
+        else:
+            self.tahlilga_ruxsat_at = None
+        if self.xulosa_yuborish_mumkin:
+            self.toliq_tolangan_at = self.toliq_tolangan_at or now
+        else:
+            self.toliq_tolangan_at = None
+        self.save(update_fields=["jami_summa", "tolangan_summa", "tolov_holati", "tahlilga_ruxsat_at",
+                                 "toliq_tolangan_at"])
 
 
 class ShartnomaBand(models.Model):
@@ -379,9 +413,10 @@ class Tolov(models.Model):
 class Namuna(models.Model):
     class LabHolat(models.TextChoices):
         YANGI = "yangi", _("Yangi namuna")
-        TAHLILDA = "tahlilda", _("Tahlil uchun yuborilgan")
-        NATIJA = "natija", _("Tahlil natijalari tayyor")
-        XULOSA = "xulosa", _("Xulosa kiritilgan")
+        TAHLILDA = "tahlilda", _("Tahlil uchun yuborilgan")       # mas'ullarga yuborildi, qabul kutilmoqda
+        JARAYONDA = "jarayonda", _("Tahlil jarayonida")          # mas'ullar qabul qilib oldi
+        NATIJA = "natija", _("Xulosa tayyor")                     # barcha mas'ullar natijani yubordi
+        XULOSA = "xulosa", _("Xulosa tasdiqlangan")               # mudir tasdiqladi
         BERILDI = "berildi", _("Buyurtmachiga berilgan")
 
     ariza = models.ForeignKey(Ariza, verbose_name=_("Ariza"), on_delete=models.PROTECT, related_name="namunalar")
@@ -473,6 +508,8 @@ class Xulosa(models.Model):
 
 class XulosaNatija(models.Model):
     xulosa = models.ForeignKey(Xulosa, on_delete=models.CASCADE, related_name="natijalar")
+    topshiriq = models.ForeignKey("Topshiriq", verbose_name=_("Topshiriq"), on_delete=models.SET_NULL,
+                                  null=True, blank=True, related_name="natijalar")
     tartib = models.PositiveIntegerField(default=1)
     korsatkich = models.CharField(_("Ko'rsatkich nomi, o'lchov birligi"), max_length=500)
     meyor = models.CharField(_("Me'yoriy qiymat"), max_length=255, blank=True)
@@ -535,3 +572,133 @@ class ClickTranzaksiya(models.Model):
         ordering = ["-created_at"]
         verbose_name = _("Click tranzaksiya")
         verbose_name_plural = _("Click tranzaksiyalar")
+
+
+# ---------------------------------------------------------------------------
+# Nazorat tarixi (faqat Super admin ko'radi, o'chirib bo'lmaydi)
+# ---------------------------------------------------------------------------
+class NazoratTarixi(models.Model):
+    class Turi(models.TextChoices):
+        NARXNOMA = "narxnoma", _("Narxnoma o'zgarishi")
+        TOLOV_OCHIRISH = "tolov_ochirish", _("To'lov o'chirildi")
+        ARIZA_RAD = "ariza_rad", _("Ariza rad etildi")
+        XODIM = "xodim", _("Xodim o'zgarishi")
+        XULOSA_QAYTARISH = "xulosa_qaytarish", _("Xulosa qaytarildi")
+        SOZLAMA = "sozlama", _("Sozlamalar o'zgarishi")
+        PAROL = "parol", _("Parol tiklandi")
+
+    vaqt = models.DateTimeField(_("Vaqt"), default=timezone.now, db_index=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("Xodim"), on_delete=models.SET_NULL,
+                             null=True, blank=True, related_name="+")
+    user_nomi = models.CharField(_("Xodim"), max_length=255, blank=True)
+    turi = models.CharField(_("Harakat turi"), max_length=30, choices=Turi.choices, db_index=True)
+    obyekt = models.CharField(_("Obyekt"), max_length=500, blank=True)
+    obyekt_id = models.CharField(max_length=40, blank=True, db_index=True)
+    tafsilot = models.TextField(_("Tafsilot"), blank=True)
+
+    class Meta:
+        ordering = ["-vaqt", "-id"]
+        verbose_name = _("Nazorat tarixi")
+        verbose_name_plural = _("Nazorat tarixi")
+
+    def __str__(self):
+        return f"{self.vaqt:%d.%m.%Y %H:%M} {self.get_turi_display()}"
+
+    @classmethod
+    def yoz(cls, user, turi, obyekt="", tafsilot="", obyekt_id=""):
+        nom = ""
+        if user is not None and getattr(user, "is_authenticated", False):
+            nom = f"{user.fish or user.username} ({user.get_role_display()})"
+        return cls.objects.create(user=user if nom else None, user_nomi=nom, turi=turi, obyekt=str(obyekt)[:500],
+                                  obyekt_id=str(obyekt_id), tafsilot=tafsilot)
+
+
+
+class Topshiriq(models.Model):
+    """Laboratoriya mudiri namunaning ko'rsatkichlarini mas'ul xodimlarga taqsimlaydi."""
+
+    class Holat(models.TextChoices):
+        YUBORILDI = "yuborildi", _("Qabul qilinishi kutilmoqda")
+        QABUL = "qabul", _("Tahlil jarayonida")
+        TAYYOR = "tayyor", _("Natija yuborildi")
+        QAYTARILDI = "qaytarildi", _("Tuzatish uchun qaytarildi")
+
+    namuna = models.ForeignKey(Namuna, on_delete=models.CASCADE, related_name="topshiriqlar")
+    masul = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("Mas'ul xodim"), on_delete=models.PROTECT,
+                              related_name="topshiriqlar")
+    yuborgan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name="+")
+    holat = models.CharField(_("Holati"), max_length=12, choices=Holat.choices, default=Holat.YUBORILDI)
+    yuborilgan_at = models.DateTimeField(_("Yuborilgan vaqt"), default=timezone.now)
+    qabul_at = models.DateTimeField(_("Qabul qilingan vaqt"), null=True, blank=True)
+    tayyor_at = models.DateTimeField(_("Natija yuborilgan vaqt"), null=True, blank=True)
+    qaytarilgan_at = models.DateTimeField(_("Qaytarilgan vaqt"), null=True, blank=True)
+    izoh = models.TextField(_("Qaytarish sababi"), blank=True)
+
+    class Meta:
+        ordering = ["-yuborilgan_at"]
+        unique_together = ("namuna", "masul")
+        verbose_name = _("Topshiriq")
+        verbose_name_plural = _("Topshiriqlar")
+
+    def __str__(self):
+        return f"{self.namuna} — {self.masul}"
+
+    @property
+    def tahrirlash_mumkin(self):
+        return self.holat in (self.Holat.QABUL, self.Holat.QAYTARILDI)
+
+
+
+# ---------------------------------------------------------------------------
+# Ish muddatlari (kechikish ogohlantirishi) sozlamalari
+# ---------------------------------------------------------------------------
+class Sozlama(models.Model):
+    """Yagona yozuv (pk=1). Muddatlar ish vaqti bo'yicha, daqiqalarda."""
+
+    ish_boshlanishi = models.TimeField(_("Ish boshlanishi"), default=time(9, 0))
+    ish_tugashi = models.TimeField(_("Ish tugashi"), default=time(18, 0))
+    ish_kunlari = models.CharField(_("Ish kunlari"), max_length=20, default="0,1,2,3,4",
+                                   help_text=_("0 — dushanba ... 6 — yakshanba"))
+    muddat_ariza_qabul = models.PositiveIntegerField(_("Arizani qabul qilish yoki rad etish"), default=60)
+    muddat_narx_belgilash = models.PositiveIntegerField(_("Namuna qabul qilingach narx belgilash"), default=60)
+    muddat_shartnoma_yuborish = models.PositiveIntegerField(_("Shartnomani buxgalteriyaga yuborish"), default=60)
+    muddat_bux_korish = models.PositiveIntegerField(_("Buxgalter shartnomani ko'rishi"), default=60)
+    muddat_tahlilga_yuborish = models.PositiveIntegerField(_("30% to'langach tahlilga yuborish"), default=60)
+    muddat_topshiriq_qabul = models.PositiveIntegerField(_("Mas'ul topshiriqni qabul qilishi"), default=60)
+    muddat_tahlil = models.PositiveIntegerField(_("Tahlil va natija kiritish"), default=540,
+                                                help_text=_("540 daqiqa = 1 ish kuni"))
+    muddat_qaytarilgan = models.PositiveIntegerField(_("Qaytarilgan natijani tuzatish"), default=60)
+    muddat_xulosa_tasdiqlash = models.PositiveIntegerField(_("Mudir xulosani tasdiqlashi"), default=60)
+    muddat_xulosa_berish = models.PositiveIntegerField(_("100% to'langach xulosani berish"), default=60)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    MUDDAT_MAYDONLARI = ["muddat_ariza_qabul", "muddat_narx_belgilash", "muddat_shartnoma_yuborish",
+                         "muddat_bux_korish", "muddat_tahlilga_yuborish", "muddat_topshiriq_qabul", "muddat_tahlil",
+                         "muddat_qaytarilgan", "muddat_xulosa_tasdiqlash", "muddat_xulosa_berish"]
+
+    class Meta:
+        verbose_name = _("Sozlamalar")
+        verbose_name_plural = _("Sozlamalar")
+
+    @classmethod
+    def ol(cls):
+        obj, created = cls.objects.get_or_create(pk=1)
+        return cls.objects.get(pk=1) if created else obj  # yangi bo'lsa vaqt maydonlari str bo'lib qolmasin
+
+    @property
+    def ish_kunlari_list(self):
+        return {int(x) for x in self.ish_kunlari.split(",") if x.strip().isdigit()}
+
+
+class Bayram(models.Model):
+    sana = models.DateField(_("Sana"), unique=True)
+    nomi = models.CharField(_("Nomi"), max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["sana"]
+        verbose_name = _("Bayram (dam olish) kuni")
+        verbose_name_plural = _("Bayram (dam olish) kunlari")
+
+    def __str__(self):
+        return f"{self.sana:%d.%m.%Y} {self.nomi}"

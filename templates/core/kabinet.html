@@ -6,7 +6,7 @@
     <thead><tr><th>N</th><th>{% trans "Ariza raqami" %}</th><th>{% trans "Namuna turi" %}</th><th>{% trans "Sana" %}</th><th>{% trans "Holati" %}</th></tr></thead>
     <tbody>
     {% for a in arizalar %}
-      <tr><td>{{ forloop.counter }}</td><td class="bold">{{ a.raqam }}</td><td>{{ a.namuna_turi }}</td><td>{{ a.created_at|dt }}</td><td>{{ a.get_holat_display }}</td></tr>
+      <tr><td>{{ forloop.counter }}</td><td class="bold">{{ a.raqam }}</td><td>{{ a.turlar_matni }}</td><td>{{ a.created_at|dt }}</td><td>{{ a.get_holat_display }}</td></tr>
     {% empty %}<tr><td class="empty" colspan="5">{% trans "Hozircha arizalar yo'q" %}</td></tr>{% endfor %}
     </tbody>
   </table>

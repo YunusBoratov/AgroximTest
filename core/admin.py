@@ -78,3 +78,26 @@ class XabarAdmin(admin.ModelAdmin):
 class ClickTranzaksiyaAdmin(admin.ModelAdmin):
     list_display = ("click_trans_id", "shartnoma", "summa", "holat", "created_at")
     list_filter = ("holat",)
+
+
+@admin.register(models.NazoratTarixi)
+class NazoratTarixiAdmin(admin.ModelAdmin):
+    """Faqat o'qish: tarixni admin paneldan ham o'zgartirib yoki o'chirib bo'lmaydi."""
+
+    list_display = ("vaqt", "turi", "user_nomi", "obyekt", "tafsilot")
+    list_filter = ("turi",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+from .models import Bayram, Sozlama  # noqa: E402
+
+admin.site.register(Sozlama)
+admin.site.register(Bayram)

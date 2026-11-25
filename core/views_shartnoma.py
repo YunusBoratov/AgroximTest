@@ -11,6 +11,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.translation import gettext as _
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_POST
 
 from accounts.models import Role
@@ -18,8 +19,8 @@ from accounts.models import Role
 from . import xabarnoma
 from .forms import RekvizitForm, TolovForm
 from .hujjatlar import docx_to_pdf, shartnoma_docx
-from .models import Ariza, Narxnoma, Shartnoma, ShartnomaBand, Tolov
-from .permissions import AD, BX, LAB, SA, role_required, user_role
+from .models import Ariza, Narxnoma, NazoratTarixi, Shartnoma, ShartnomaBand, Tolov
+from .permissions import AD, BX, LAB, SA, korinadigan_hujjatlar, role_required, user_role
 
 
 def _lab_kategoriya_tekshir(request, kategoriya):
@@ -105,7 +106,7 @@ def shartnoma_form(request, ariza_pk=None, pk=None):
     return render(request, "core/shartnoma_form.html", {
         "title": (_("Shartnoma №%(r)s — ko'rsatkichlar") % {"r": sh.raqam}) if sh else _("Yangi shartnoma"),
         "ariza": ariza, "sh": sh, "rows": rows, "namuna_soni": namuna_soni,
-        "hujjatlar": ariza.hujjatlar.all(),
+        "hujjatlar": korinadigan_hujjatlar(request.user, ariza.hujjatlar.all()),
     })
 
 
@@ -135,8 +136,9 @@ def shartnoma_detail(request, pk):
         "title": _("Shartnoma №%(r)s") % {"r": sh.raqam},
         "sh": sh, "ariza": sh.ariza, "bandlar": sh.bandlar.select_related("narxnoma"),
         "tolovlar": sh.tolovlar.select_related("kiritgan"), "namunalar": sh.namunalar.all(),
-        "hujjatlar": sh.ariza.hujjatlar.all(),
+        "hujjatlar": korinadigan_hujjatlar(request.user, sh.ariza.hujjatlar.all()),
         "is_lab": role in LAB or role in (AD, SA), "is_bux": is_bux,
+        "tolov_ochirish_mumkin": sh.tolov_ochirish_mumkin,
         "rek_form": rek_form, "tolov_form": tolov_form,
     })
 
@@ -215,10 +217,24 @@ def tolov_qoshish(request, pk):
 @role_required(BX)
 @require_POST
 def tolov_ochirish(request, pk, tolov_pk):
-    t = get_object_or_404(Tolov, pk=tolov_pk, shartnoma_id=pk)
+    t = get_object_or_404(Tolov.objects.select_related("shartnoma__ariza"), pk=tolov_pk, shartnoma_id=pk)
     sh = t.shartnoma
-    t.delete()
-    sh.qayta_hisobla()
+    sabab = (request.POST.get("sabab") or "").strip()
+    if not sh.tolov_ochirish_mumkin:
+        messages.error(request, _("Namuna tahlilga olingan. Bu shartnoma bo'yicha to'lovni o'chirib bo'lmaydi."))
+        return redirect("shartnoma_detail", pk=pk)
+    if len(sabab) < 3:
+        messages.error(request, _("To'lovni o'chirish sababini yozing"))
+        return redirect("shartnoma_detail", pk=pk)
+    with transaction.atomic():
+        NazoratTarixi.yoz(
+            request.user, NazoratTarixi.Turi.TOLOV_OCHIRISH, f"Shartnoma №{sh.raqam} — {sh.ariza.buyurtmachi}",
+            _("Summa: %(s)s so'm; usul: %(u)s; to'lov sanasi: %(d)s; izoh: %(i)s; sabab: %(r)s") % {
+                "s": f"{int(t.summa):,}".replace(",", " "), "u": t.get_usul_display(),
+                "d": timezone.localtime(t.sana).strftime("%d.%m.%Y"), "i": t.izoh or "—", "r": sabab},
+            sh.pk)
+        t.delete()
+        sh.qayta_hisobla()
     messages.success(request, _("To'lov o'chirildi"))
     return redirect("shartnoma_detail", pk=pk)
 
@@ -227,6 +243,7 @@ def tolov_ochirish(request, pk, tolov_pk):
 # Shartnoma hujjati (DOCX / PDF) — xodimlar va shartnoma egasi (mijoz)
 # ---------------------------------------------------------------------------
 @login_required
+@xframe_options_sameorigin
 def shartnoma_hujjat(request, pk, fmt):
     sh = get_object_or_404(Shartnoma.objects.select_related("ariza"), pk=pk, is_active=True)
     role = user_role(request.user)

@@ -7,9 +7,11 @@ class Role(models.TextChoices):
     SUPER_ADMIN = "super_admin", _("Super admin")
     ADMIN = "admin", _("Admin")
     BUXGALTERIYA = "buxgalteriya", _("Buxgalteriya")
-    LAB_MINERAL = "lab_mineral", _("Mineral o'g'it tahlil laboratoriyasi")
-    LAB_KIMYO = "lab_kimyo", _("Kimyoviy vositalar tahlil laboratoriyasi")
+    LAB_MINERAL = "lab_mineral", _("Mineral o'g'it tahlil laboratoriyasi (mudir)")
+    LAB_KIMYO = "lab_kimyo", _("Kimyoviy vositalar tahlil laboratoriyasi (mudir)")
     NAMUNA_QABUL = "namuna_qabul", _("Namuna qabul qilib oluvchi")
+    MASUL_MINERAL = "masul_mineral", _("Sinov o'tkazuvchi mas'ul (mineral o'g'it)")
+    MASUL_KIMYO = "masul_kimyo", _("Sinov o'tkazuvchi mas'ul (kimyoviy vosita)")
     MIJOZ = "mijoz", _("Buyurtmachi (mijoz)")
 
 
@@ -28,6 +30,7 @@ class User(AbstractUser):
     tashkilot_nomi = models.CharField(_("Tashkilot nomi"), max_length=255, blank=True)
     telegram_chat_id = models.CharField(_("Telegram chat ID"), max_length=30, blank=True)
     sms_xabar = models.BooleanField(_("SMS xabarnomalar"), default=True)
+    parol_almashtirish = models.BooleanField(_("Keyingi kirishda parolni almashtirishi shart"), default=False)
 
     class Meta:
         verbose_name = _("Foydalanuvchi")
@@ -52,6 +55,11 @@ class User(AbstractUser):
         return self.role in (Role.LAB_MINERAL, Role.LAB_KIMYO)
 
     @property
+    def is_masul(self):
+        return self.role in (Role.MASUL_MINERAL, Role.MASUL_KIMYO)
+
+    @property
     def lab_kategoriya(self):
-        """Laboratoriya xodimi qaysi kategoriya bilan ishlaydi."""
-        return {Role.LAB_MINERAL: "mineral", Role.LAB_KIMYO: "kimyoviy"}.get(self.role)
+        """Laboratoriya mudiri yoki mas'ul xodim qaysi kategoriya bilan ishlaydi."""
+        return {Role.LAB_MINERAL: "mineral", Role.LAB_KIMYO: "kimyoviy",
+                Role.MASUL_MINERAL: "mineral", Role.MASUL_KIMYO: "kimyoviy"}.get(self.role)

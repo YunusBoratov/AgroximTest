@@ -1,5 +1,6 @@
 {% extends "base.html" %}{% load i18n %}
 {% block content %}
+{% include "parts/dash_top.html" %}
 <h2 class="section-title">{% trans "Shartnoma tuzilishi va bajarilishi" %}</h2>
 <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
   {% for label, n, href in shartnoma_cards %}

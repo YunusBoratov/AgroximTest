@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<form method="post" class="card">{% csrf_token %}
+  <div class="page-head"><h1 class="page-title">{{ title }}</h1>
+    <a class="btn btn-light" href="{% url 'tahlil_holati' %}">← {% trans "Orqaga" %}</a></div>
+  <div class="info-grid">
+    <div><span>{% trans "Buyurtmachi" %}</span><b>{{ nam.ariza.buyurtmachi }}</b></div>
+    <div><span>{% trans "Namuna" %}</span><b>{{ nam.nomi }} ({{ nam.namuna_turi }})</b></div>
+    <div><span>{% trans "Shartnoma" %}</span><b>№ {{ nam.shartnoma.raqam }} · {{ nam.shartnoma.tolangan_foiz }}%</b></div>
+  </div>
+  {% if not masullar %}
+    <div class="notice">{% trans "Laboratoriyada mas'ul xodim yo'q. Super admin 'Xodimlar' bo'limida 'Sinov o'tkazuvchi mas'ul' rolida xodim qo'shishi kerak." %}</div>
+  {% else %}
+  <div class="page-head" style="margin-top:6px">
+    <h2 class="section-title" style="margin:0">{% trans "Ko'rsatkichlarni mas'ullarga taqsimlash" %}</h2>
+    <div class="fld"><label>{% trans "Hammasiga bir xil mas'ul" %}</label>
+      <select class="input" id="hammasi"><option value="">—</option>{% for u in masullar %}<option value="{{ u.pk }}">{{ u }}</option>{% endfor %}</select></div>
+  </div>
+  <table class="t">
+    <thead><tr><th>№</th><th>{% trans "Ko'rsatkich" %}</th><th>{% trans "Sinov usuli" %}</th><th style="width:30%">{% trans "Mas'ul xodim" %}</th></tr></thead>
+    <tbody>
+    {% for i, k, usul, tanlangan in rows %}
+      <tr><td>{{ forloop.counter }}</td><td>{{ k }}</td><td>{{ usul|default:"—" }}</td>
+        <td><select class="input masul" name="masul_{{ i }}" required><option value="">{% trans "Tanlang" %}</option>
+          {% for u in masullar %}<option value="{{ u.pk }}" {% if tanlangan == u.pk|stringformat:'s' %}selected{% endif %}>{{ u }}{% if u.lavozim %} — {{ u.lavozim }}{% endif %}</option>{% endfor %}</select></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="btn-row" style="margin-top:16px"><button class="btn btn-primary" type="submit">{% trans "Mas'ullarga yuborish" %}</button></div>
+  <script>document.getElementById("hammasi").addEventListener("change", e => {
+    if (e.target.value) document.querySelectorAll("select.masul").forEach(s => s.value = e.target.value); });</script>
+  {% endif %}
+</form>
+{% endblock %}

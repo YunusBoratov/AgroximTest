@@ -11,6 +11,7 @@
     {% if form.non_field_errors %}<ul class="messages"><li class="error">{% trans "Login yoki parol noto'g'ri" %}</li></ul>{% endif %}
     <div class="fld"><label for="id_username">{{ form.username.label }}</label>{{ form.username }}</div>
     <div class="fld"><label for="id_password">{{ form.password.label }}</label>{{ form.password }}</div>
+    <p class="sub" style="text-align:right;margin:-4px 0 10px"><a class="row-link" href="{% url 'parol_unutdim' %}">{% trans "Parolni unutdingizmi?" %}</a></p>
     <input type="hidden" name="next" value="{{ next }}">
     <button class="btn btn-primary" type="submit">{% trans "Kirish" %}</button>
     <a class="btn btn-oneid" href="{% url 'oneid_login' %}">ONE ID</a>

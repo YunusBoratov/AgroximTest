@@ -194,3 +194,30 @@ def xulosa_berildi(x, pdf_fn=None):
     mijozga(x.namuna.ariza, f"{MARKAZ_QISQA}: {x.raqam} raqamli sinov bayonnomasi tayyor. "
                             f"Kabinetingizdan yuklab olishingiz mumkin.",
             hujjat=(lambda: (f"{x.raqam}.pdf", pdf_fn())) if pdf_fn else None)
+
+
+
+# ---------------------------------------------------------------------------
+# Mas'ul xodimlarga (sinov o'tkazuvchilar)
+# ---------------------------------------------------------------------------
+def xodimga(user, matn):
+    tel, chat = user.telefon, user.telegram_chat_id
+
+    def yubor():
+        if tel:
+            sms_yubor(tel, matn, user=user)
+        if chat:
+            telegram_yubor(chat, matn, user=user)
+
+    transaction.on_commit(yubor)
+
+
+def masulga_topshiriq(t):
+    n = t.natijalar.count() if t.pk else 0
+    xodimga(t.masul, f"{MARKAZ_QISQA}: sizga yangi tahlil biriktirildi — namuna {t.namuna}, "
+                     f"{n} ta ko'rsatkich. Tizimga kirib qabul qiling.")
+
+
+def masulga_qaytarildi(t):
+    xodimga(t.masul, f"{MARKAZ_QISQA}: namuna {t.namuna} bo'yicha natijalaringiz tuzatish uchun qaytarildi. "
+                     f"Sabab: {t.izoh}")

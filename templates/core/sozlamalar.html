@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<section class="card">
+  <div class="page-head"><h1 class="page-title">{% trans "Ish vaqti va bajarish muddatlari" %}</h1></div>
+  <p class="help">{% trans "Muddatlar faqat ish vaqti bo'yicha hisoblanadi (daqiqada; 60 = 1 soat, 540 = 1 ish kuni). Muddat o'tsa, mas'ul xodim ro'yxatida qator qizil miltillaydi." %}</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="sozlama" value="1">
+    {% if form.non_field_errors %}<ul class="messages"><li class="error">{{ form.non_field_errors|join:" " }}</li></ul>{% endif %}
+    <div class="form-grid g4">
+      <div class="fld"><label>{{ form.ish_boshlanishi.label }} *</label>{{ form.ish_boshlanishi }}{{ form.ish_boshlanishi.errors }}</div>
+      <div class="fld"><label>{{ form.ish_tugashi.label }} *</label>{{ form.ish_tugashi }}{{ form.ish_tugashi.errors }}</div>
+      <div class="fld full"><label>{{ form.ish_kunlari_tanlov.label }} *</label><div class="hafta">{% for c in form.ish_kunlari_tanlov %}<label class="kun"><input type="checkbox" name="{{ c.data.name }}" value="{{ c.data.value }}" {% if c.data.selected %}checked{% endif %}><span>{{ c.choice_label }}</span></label>{% endfor %}</div>{{ form.ish_kunlari_tanlov.errors }}</div>
+    </div>
+    <h3 class="box-title" style="text-align:left;margin-top:18px">{% trans "Muddatlar (daqiqa)" %}</h3>
+    <div class="form-grid g2">
+      {% for f in form %}{% if f.name|slice:":7" == "muddat_" %}
+      <div class="fld"><label for="{{ f.id_for_label }}">{{ f.label }} *</label>{{ f }}{% if f.help_text %}<div class="help">{{ f.help_text }}</div>{% endif %}{{ f.errors }}</div>
+      {% endif %}{% endfor %}
+    </div>
+    <div class="btn-row" style="margin-top:18px"><button class="btn btn-primary" type="submit">{% trans "Saqlash" %}</button></div>
+  </form>
+</section>
+
+<section class="card">
+  <h2 class="section-title">{% trans "Bayram va dam olish kunlari" %}</h2>
+  <p class="help">{% trans "Bu kunlar ish vaqtiga qo'shilmaydi." %}</p>
+  <form method="post" class="form-grid g4" style="align-items:end">{% csrf_token %}<input type="hidden" name="bayram" value="1">
+    <div class="fld"><label>{{ bform.sana.label }} *</label>{{ bform.sana }}{{ bform.sana.errors }}</div>
+    <div class="fld"><label>{{ bform.nomi.label }}</label>{{ bform.nomi }}</div>
+    <div class="fld"><button class="btn btn-primary" type="submit">{% trans "Qo'shish" %}</button></div>
+  </form>
+  <table class="t" style="margin-top:14px">
+    <thead><tr><th>№</th><th>{% trans "Sana" %}</th><th>{% trans "Nomi" %}</th><th></th></tr></thead>
+    <tbody>{% for b in bayramlar %}<tr><td>{{ forloop.counter }}</td><td>{{ b.sana|date:"d.m.Y" }}</td><td>{{ b.nomi }}</td>
+      <td><form method="post" action="{% url 'bayram_ochirish' b.pk %}" onsubmit="return confirm('{% trans "O‘chirilsinmi?" %}')">{% csrf_token %}<button class="btn btn-light">✕</button></form></td></tr>
+    {% empty %}<tr><td colspan="4" class="help">{% trans "Hozircha yo'q" %}</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+{% endblock %}

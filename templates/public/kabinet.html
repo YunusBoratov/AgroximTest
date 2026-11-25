@@ -18,7 +18,7 @@
       <tr>
         <td>{{ forloop.counter }}</td>
         <td class="bold"><a class="row-link" href="{% url 'ariza_detail' a.pk %}">{{ a.raqam }}</a></td>
-        <td>{{ a.namuna_turi }}</td>
+        <td>{{ a.turlar_matni }}</td>
         <td>{{ a.namuna_soni }}</td>
         <td class="dt">{{ a.created_at|dt }}<br>{{ a.created_at|tm }}</td>
         <td>{% with sh=a.shartnomalar.all|first %}{% if sh and sh.is_active and sh.holat != "yuborilmagan" %}

@@ -5,7 +5,7 @@
   {% if ariza.buyurtmachi_nomi %}<div><span>{% trans "Buyurtmachi nomi" %}</span><b>{{ ariza.buyurtmachi_nomi }}</b></div>{% endif %}
   <div><span>{% trans "F.I.SH." %}</span><b>{{ ariza.fish }}</b></div>
   <div><span>{% trans "Telefon" %}</span><b>{{ ariza.telefon }}</b></div>
-  <div><span>{% trans "Namuna turi" %}</span><b>{{ ariza.namuna_turi }} ({{ ariza.get_kategoriya_display }})</b></div>
+  <div><span>{% trans "Namuna turi" %}</span><b>{{ ariza.get_kategoriya_display }}{% if ariza.turlar_matni != ariza.get_kategoriya_display %}: {{ ariza.turlar_matni }}{% endif %}</b></div>
   <div><span>{% trans "Namuna soni" %}</span><b>{{ ariza.namuna_soni }}</b></div>
   {% if ariza.namuna_nomi %}<div><span>{% trans "Namuna nomi" %}</span><b>{{ ariza.namuna_nomi }}</b></div>{% endif %}
   {% if ariza.partiya_raqami %}<div><span>{% trans "Partiya raqami (LOT)" %}</span><b>{{ ariza.partiya_raqami }}</b></div>{% endif %}

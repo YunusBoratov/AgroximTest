@@ -7,7 +7,7 @@
     <tbody>
     {% for a in arizalar %}
       <tr><td>{{ forloop.counter }}</td><td class="bold"><a class="row-link" href="{% url 'ariza_detail' a.pk %}">{{ a.raqam }}</a></td>
-        <td>{{ a.get_turi_display }}</td><td>{{ a.buyurtmachi }}</td><td>{{ a.namuna_turi }}</td><td>{{ a.namunalar.all|length }}</td>
+        <td>{{ a.get_turi_display }}</td><td>{{ a.buyurtmachi }}</td><td>{{ a.turlar_matni }}</td><td>{{ a.namunalar.all|length }}</td>
         <td class="dt">{{ a.qabul_vaqti|dt }}<br>{{ a.qabul_vaqti|tm }}</td>
         <td><a class="act btn" href="{% url 'shartnoma_yangi' a.pk %}">{% include "parts/icon.html" with name="plus" %}<span>{% trans "Shartnoma tuzish" %}</span></a></td></tr>
     {% empty %}<tr><td class="empty" colspan="8">{% trans "Shartnoma kutayotgan ariza yo'q" %}</td></tr>{% endfor %}

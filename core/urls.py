@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_ariza, views_lab as vl, views_shartnoma as vs, views_tolov as vt
+from . import views, views_ariza, views_lab as vl, views_nazorat as vn, views_sozlama as vsz, views_statistika as vst, views_shartnoma as vs, views_tolov as vt
 
 urlpatterns = [
     path("", views_ariza.bosh_sahifa, name="bosh"),
@@ -8,6 +8,10 @@ urlpatterns = [
     # mijoz
     path("ariza/yangi/", views_ariza.ariza_yangi, name="ariza_yangi"),
     path("kabinet/", views_ariza.kabinet, name="kabinet"),
+    path("nazorat-tarixi/", vn.nazorat_tarixi, name="nazorat_tarixi"),
+    path("statistika/", vst.statistika, name="statistika"),
+    path("sozlamalar/", vsz.sozlamalar, name="sozlamalar"),
+    path("sozlamalar/bayram/<int:pk>/ochirish/", vsz.bayram_ochirish, name="bayram_ochirish"),
     # ariza / namuna
     path("ariza/", views.ariza_list, name="ariza_list"),
     path("ariza/<int:pk>/", views_ariza.ariza_detail, name="ariza_detail"),
@@ -34,11 +38,13 @@ urlpatterns = [
     path("oferta/", views.oferta_list, name="oferta_list"),
     path("tahlil-holati/", views.tahlil_holati, name="tahlil_holati"),
     path("xulosa/", views.xulosa_list, name="xulosa_list"),
-    path("namuna/<int:pk>/tahlilga/", vl.tahlilga_olish, name="tahlilga_olish"),
-    path("namuna/<int:pk>/natija-tayyor/", vl.natija_tayyor, name="natija_tayyor"),
-    path("namuna/<int:pk>/natija/", vl.xulosa_kiritish, name="xulosa_kiritish"),
     path("xulosa/<int:pk>/", vl.xulosa_korish, name="xulosa_korish"),
+    path("namuna/<int:pk>/tahlilga-yuborish/", vl.tahlilga_yuborish, name="tahlilga_yuborish"),
+    path("topshiriqlar/", vl.masul_topshiriqlar, name="masul_topshiriqlar"),
+    path("topshiriq/<int:pk>/qabul/", vl.topshiriq_qabul, name="topshiriq_qabul"),
+    path("topshiriq/<int:pk>/", vl.topshiriq_natija, name="topshiriq_natija"),
     path("xulosa/<int:pk>/tasdiqlash/", vl.xulosa_tasdiqlash, name="xulosa_tasdiqlash"),
+    path("xulosa/<int:pk>/qaytarish/", vl.xulosa_qaytarish, name="xulosa_qaytarish"),
     path("xulosa/<int:pk>/berish/", vl.xulosa_berish, name="xulosa_berish"),
     path("xulosa/<int:pk>/hujjat.<str:fmt>", vl.xulosa_hujjat, name="xulosa_hujjat"),
     path("tekshirish/<uuid:token>/", vl.xulosa_tekshirish, name="xulosa_tekshirish"),

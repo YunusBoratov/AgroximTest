@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% load i18n ui %}
+{% block content %}
+<section class="card">
+  <div class="page-head"><h1 class="page-title">{{ title }} <span class="help">{{ oraliq }}</span></h1>
+    <a class="btn btn-grey" href="?{{ request.GET.urlencode }}&excel=1">Excel</a></div>
+  <div class="tabs davr">{% for v, l in guruhlar %}<a class="tab {% if guruh == v %}active{% endif %}" href="?guruh={{ v }}{% if kategoriya %}&kategoriya={{ kategoriya }}{% endif %}">{{ l }}</a>{% endfor %}</div>
+  <form method="get" class="form-grid g4" style="align-items:end">
+    <input type="hidden" name="guruh" value="{{ guruh }}">
+    <div class="fld"><label>{% trans "Sanadan" %}</label><input type="date" name="dan" value="{{ dan }}"></div>
+    <div class="fld"><label>{% trans "Sanagacha" %}</label><input type="date" name="gacha" value="{{ gacha }}"></div>
+    <div class="fld"><label>{% trans "Namuna turi" %}</label><select name="kategoriya"><option value="">{% trans "Barchasi" %}</option>{% for v, l in kategoriyalar %}<option value="{{ v }}" {% if v == kategoriya %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="fld"><button class="btn btn-primary" type="submit">{% trans "Ko'rsatish" %}</button></div>
+  </form>
+  <div class="stats-row" style="margin-top:16px">
+    <div class="stat-box"><span>{% trans "Arizalar" %}</span><b>{{ jami.ariza|default:0 }}</b></div>
+    <div class="stat-box"><span>{% trans "Qabul qilingan namunalar" %}</span><b>{{ jami.namuna|default:0 }}</b></div>
+    <div class="stat-box"><span>{% trans "Shartnomalar" %}</span><b>{{ jami.shartnoma|default:0 }} · {{ jami.shartnoma_summa|default:0|money }}</b></div>
+    <div class="stat-box green"><span>{% trans "Tushgan to'lovlar" %}</span><b>{{ jami.tolov|default:0|money }}</b></div>
+    <div class="stat-box"><span>{% trans "Berilgan xulosalar" %}</span><b>{{ jami.xulosa|default:0 }}</b></div>
+  </div>
+  <div class="table-wrap"><table class="t">
+    <thead><tr>{% for k, t in ustunlar %}<th>{{ t }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><b>{{ r.davr }}</b></td><td>{{ r.ariza }}</td><td>{{ r.rad }}</td><td>{{ r.namuna }}</td><td>{{ r.shartnoma }}</td>
+      <td>{{ r.shartnoma_summa|money }}</td><td>{{ r.tolov_soni }}</td><td><b>{{ r.tolov|money }}</b></td><td>{{ r.xulosa }}</td></tr>
+    {% empty %}<tr><td colspan="9" class="help">{% trans "Ma'lumot yo'q" %}</td></tr>{% endfor %}</tbody>
+    {% if rows %}<tfoot><tr><th>{% trans "Jami" %}</th><th>{{ jami.ariza }}</th><th>{{ jami.rad }}</th><th>{{ jami.namuna }}</th><th>{{ jami.shartnoma }}</th><th>{{ jami.shartnoma_summa|money }}</th><th>{{ jami.tolov_soni }}</th><th>{{ jami.tolov|money }}</th><th>{{ jami.xulosa }}</th></tr></tfoot>{% endif %}
+  </table></div>
+</section>
+{% endblock %}

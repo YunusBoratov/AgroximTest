@@ -146,6 +146,9 @@ class Command(BaseCommand):
             ("lab_mineral", Role.LAB_MINERAL, "N. Baysunova"),
             ("lab_kimyo", Role.LAB_KIMYO, "X. Sottiyev"),
             ("namuna", Role.NAMUNA_QABUL, "F. Egamova"),
+            ("masul1", Role.MASUL_MINERAL, "Sh. Rahimova"),
+            ("masul2", Role.MASUL_MINERAL, "D. Tursunov"),
+            ("masul_k", Role.MASUL_KIMYO, "B. Aliyev"),
         ]
         for username, role, fish in users:
             u, created = User.objects.get_or_create(username=username, defaults={"role": role, "fish": fish})
