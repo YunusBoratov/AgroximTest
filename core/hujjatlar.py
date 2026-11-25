@@ -253,6 +253,32 @@ def _uniq_cells(row):
     return cells
 
 
+def _ramkasiz(txbx):
+    """Shablondagi "QR KOD" ramkasi faqat joy ko'rsatkichi: chegara chizig'i olib tashlanadi (QR ramkasiz)."""
+    A = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    WPS = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    V = "urn:schemas-microsoft-com:vml"
+    el = txbx
+    while el is not None and el.tag not in (f"{{{WPS}}}wsp", f"{{{V}}}rect", f"{{{V}}}shape"):
+        el = el.getparent()
+    if el is None:
+        return
+    if el.tag == f"{{{WPS}}}wsp":
+        sppr = el.find(f"{{{WPS}}}spPr")
+        if sppr is not None:
+            for ln in sppr.findall(f"{{{A}}}ln"):
+                for ch in list(ln):
+                    ln.remove(ch)
+                ln.append(ln.makeelement(f"{{{A}}}noFill", {}))
+        style = el.find(f"{{{WPS}}}style")
+        if style is not None:  # mavzu bo'yicha chiziq ham chizilmasin
+            el.remove(style)
+    else:
+        el.set("stroked", "f")
+        for st in el.findall(f"{{{V}}}stroke"):
+            el.remove(st)
+
+
 def _qr_matn_qutisiga(doc, cell, verify_url):
     """Imzo jadvalidagi "QR KOD" yozuvli ramka ichiga QR rasmini joylaydi. Topilmasa False."""
     from docx.oxml import OxmlElement
@@ -266,6 +292,7 @@ def _qr_matn_qutisiga(doc, cell, verify_url):
         for p in txbx.iter(f"{{{W}}}p"):
             if "QR" not in "".join(t.text or "" for t in p.iter(f"{{{W}}}t")):
                 continue
+            _ramkasiz(txbx)
             # ramka o'lchami (wp:extent) bo'yicha QR kattaligi
             anchor = txbx
             while anchor is not None and anchor.tag != f"{{{WP}}}anchor":
