@@ -4,7 +4,7 @@
   <div class="box-head">
     <div class="fld"><label>{% trans "Buyurtmachi" %}</label>
       <select name="turi" id="id_turi" class="input">
-        {% for val, label in turi_choices %}<option value="{{ val }}" {% if form.turi == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        {% for val, label in turi_choices %}<option value="{{ val }}" {% if tanlangan_turi == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select>
     </div>
     {% if show_kabinet %}<a class="pill" href="{% url 'kabinet' %}">{% trans "Kabinet" %}</a>{% endif %}
@@ -64,6 +64,12 @@
       el.querySelector(".req").hidden = !c.hujjat_shart.includes(n);
     });
     document.querySelectorAll("[data-rekvizit]").forEach(el => { el.hidden = !c.rekvizit.includes(el.dataset.rekvizit); });
+    // profildan: ixtiyoriy (jismoniy shaxs) — JSHSHIR, qolganlari — tashkilot INN'i
+    const inn = document.getElementById("id_inn");
+    if (inn && inn.dataset.inn !== undefined) {
+      const kerak = sel.value === "ixtiyoriy" ? inn.dataset.pinfl : inn.dataset.inn;
+      if (!inn.value || inn.value === inn.dataset.inn || inn.value === inn.dataset.pinfl) inn.value = kerak || "";
+    }
   }
   function faylTinglash(root) {
     root.querySelectorAll(".upload input[type=file]").forEach(inp => inp.addEventListener("change", () => {

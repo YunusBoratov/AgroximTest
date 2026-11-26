@@ -44,7 +44,8 @@ def _forma_config():
 
 
 def _ariza_ctx(toplam, **extra):
-    ctx = {"form": toplam.form, "toplam": toplam, "config": _forma_config(), "turi_choices": ArizaTuri.choices}
+    ctx = {"form": toplam.form, "toplam": toplam, "config": _forma_config(), "turi_choices": ArizaTuri.choices,
+           "tanlangan_turi": str(toplam.form.turi())}
     ctx.update(extra)
     return ctx
 

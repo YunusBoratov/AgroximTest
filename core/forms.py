@@ -67,11 +67,16 @@ class ArizaForm(StyledMixin, forms.ModelForm):
             if name != "turi":
                 self.fields[name].required = False  # turiga qarab clean() da tekshiriladi
         # mijozning profilidan oldindan to'ldirish
+        if user is not None and not self.instance.pk:
+            # profildagi INN (tashkilot) yoki JSHSHIR (jismoniy shaxs): JS ariza turiga mosini qo'yadi
+            self.fields["inn"].widget.attrs.update({"data-inn": user.inn or "", "data-pinfl": user.pinfl or ""})
         if user is not None and not self.is_bound and not self.instance.pk:
             self.initial.setdefault("fish", user.fish)
             self.initial.setdefault("telefon", user.telefon)
             self.initial.setdefault("inn", user.inn or user.pinfl)
             self.initial.setdefault("buyurtmachi_nomi", user.tashkilot_nomi)
+            if user.pinfl and not user.inn:  # jismoniy shaxs — JSHSHIR bilan ishlaydigan tur
+                self.initial.setdefault("turi", ArizaTuri.IXTIYORIY)
 
     def turi(self):
         return self.data.get("turi") or self.initial.get("turi") or self.instance.turi or ArizaTuri.IMPORTYOR

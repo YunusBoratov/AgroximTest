@@ -1237,3 +1237,14 @@ class HujjatLabTests(BaseTest):
         rows = {obj.pk: cells for obj, cells, _c in r.context["rows"]}
         fayllar = [c[1] for c in rows[n1.pk] if c[0].kind == "file"][0]
         self.assertEqual([h.pk for h in fayllar], [h1.pk])
+
+
+class ArizaJshshirTests(BaseTest):
+    def test_jismoniy_shaxsga_ixtiyoriy_va_jshshir(self):
+        u = User.objects.create_user("+998901239911", password="parol123", role=Role.MIJOZ, fish="Ali",
+                                     pinfl="36936936936936")
+        self.client.login(username="+998901239911", password="parol123")
+        r = self.client.get(reverse("ariza_yangi"))
+        self.assertEqual(r.context["form"].turi(), "ixtiyoriy")
+        self.assertContains(r, 'data-pinfl="36936936936936"')
+        self.assertContains(r, '<option value="ixtiyoriy" selected')
