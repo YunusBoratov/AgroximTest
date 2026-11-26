@@ -1248,3 +1248,16 @@ class ArizaJshshirTests(BaseTest):
         self.assertEqual(r.context["form"].turi(), "ixtiyoriy")
         self.assertContains(r, 'data-pinfl="36936936936936"')
         self.assertContains(r, '<option value="ixtiyoriy" selected')
+
+
+class IxtiyoriyHujjatsizTests(BaseTest):
+    def test_ixtiyoriy_hujjatsiz_yuboriladi(self):
+        u = User.objects.create_user("+998901239922", password="parol123", role=Role.MIJOZ)
+        self.client.login(username="+998901239922", password="parol123")
+        r = self.client.post(reverse("ariza_yangi"), {
+            "turi": "ixtiyoriy", "inn": "12345678901234", "fish": "Sitora", "telefon": "+998770199975",
+            "namuna_soni": 2, "kategoriya": "mineral", "namuna_nomi": "tuproq"})
+        self.assertRedirects(r, reverse("kabinet"))
+        a = Ariza.objects.get(mijoz=u)
+        self.assertEqual(a.hujjatlar.count(), 0)
+        self.assertEqual(a.arizanamunalar.count(), 2)

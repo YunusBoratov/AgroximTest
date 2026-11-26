@@ -312,7 +312,7 @@ class ArizaHujjat(models.Model):
 ZARUR_HUJJATLAR = {
     ArizaTuri.IMPORTYOR: [ArizaHujjat.Turi.INVOYS, ArizaHujjat.Turi.ANALIZ, ArizaHujjat.Turi.GUVOHNOMA],
     ArizaTuri.DAVLAT: [ArizaHujjat.Turi.GUVOHNOMA, ArizaHujjat.Turi.ANALIZ],
-    ArizaTuri.IXTIYORIY: [ArizaHujjat.Turi.GUVOHNOMA],
+    ArizaTuri.IXTIYORIY: [],  # o'zi uchun tekshirtiradiganlarda hujjat majburiy emas
 }
 
 # Har bir ariza turi formada qaysi maydonlarni ko'rsatadi (dizayn bo'yicha)
