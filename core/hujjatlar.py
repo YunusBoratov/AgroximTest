@@ -237,6 +237,15 @@ def qr_png(url, box=6):
     return buf
 
 
+def _vaqt(dt):
+    """Sinov vaqti (soat:daqiqa) — sana yonida."""
+    from django.utils import timezone as _tz
+
+    if not dt or getattr(dt, "hour", None) is None:
+        return ""
+    return " " + _tz.localtime(dt).strftime("%H:%M")
+
+
 def _sana(dt):
     if not dt:
         return "____.____.____"
@@ -411,6 +420,37 @@ def _qr_matn_qutisiga(doc, cell, verify_url):
     return joylandi
 
 
+def _ustunni_olib_tashla(table, idx):
+    """Jadvaldan idx-ustunni olib tashlaydi; uning kengligi qolgan ustunlarga (№ dan tashqari) teng bo'linadi."""
+    from docx.oxml.ns import qn
+
+    tbl = table._tbl
+    cols = tbl.tblGrid.findall(qn("w:gridCol"))
+    if len(cols) <= idx:
+        return
+    w = int(cols[idx].get(qn("w:w")))
+    tbl.tblGrid.remove(cols[idx])
+    cols = tbl.tblGrid.findall(qn("w:gridCol"))
+    oluvchi = list(range(1, len(cols)))
+    qosh = w // len(oluvchi)
+    for k in oluvchi:
+        cols[k].set(qn("w:w"), str(int(cols[k].get(qn("w:w"))) + qosh))
+    for tr in tbl.tr_lst:
+        tcs = tr.findall(qn("w:tc"))
+        if len(tcs) <= idx:
+            continue
+        tr.remove(tcs[idx])
+        for k in oluvchi:
+            tcw = tcs[k].tcPr.find(qn("w:tcW")) if tcs[k].tcPr is not None else None
+            if tcw is not None and tcw.get(qn("w:type")) in (None, "dxa"):
+                tcw.set(qn("w:w"), str(int(tcw.get(qn("w:w"))) + qosh))
+
+
+# "Muvofiqlik haqida qaror" ustuni vaqtincha chiqarilmaydi (markaz faqat natijani beradi).
+# Qaytarish kerak bo'lsa: True qiling — ma'lumot bazada saqlanadi.
+MUVOFIQLIK_USTUNI = False
+
+
 def xulosa_docx(x, verify_url=""):
     """Sinov bayonnomasi DOCX (bytes) — docs/shablonlar/xulosa_shakli.docx asosida."""
     import docx
@@ -447,7 +487,7 @@ def xulosa_docx(x, verify_url=""):
         f"LOT (partiya raqami): {(b.partiya_raqami if b else a.partiya_raqami) or '—'}   |   "
         f"INVOICE: {(b.invoys_raqami if b else a.invoys_raqami) or '—'}",
         f"{_sana(n.qabul_vaqti)} y.   |   Oğirligi/hajmi: {n.ogirligi or '—'}",
-        f"{_sana(x.sinov_sanasi)} y.   |   Dalolatnoma №: {x.dalolatnoma or '—'}",
+        f"{_sana(x.sinov_sanasi)} y.{_vaqt(x.sinov_sanasi)}   |   Dalolatnoma №: {x.dalolatnoma or '—'}",
         f"{x.sinov_joyi}   |   {x.harorat}, {x.namlik}",
     ]
     for r, v in zip(rows, vals):
@@ -464,6 +504,8 @@ def xulosa_docx(x, verify_url=""):
         cells = _uniq_cells(row)
         for cell, v in zip(cells, [i, nt.korsatkich, nt.meyor, nt.natija, nt.sinov_usuli, nt.muvofiqlik]):
             _cell(cell, v or "", size=10)
+    if not MUVOFIQLIK_USTUNI:
+        _ustunni_olib_tashla(t_res, 5)
 
     # Bayonnoma bitta sahifaga sig'ishi uchun imzo va "Rasmiy eslatma" orasidagi bo'sh qatorlardan olib tashlash
     import math
@@ -581,8 +623,13 @@ def pdf_himoyala(pdf_bytes: bytes) -> bytes:
         page.merge_page(_suv_belgisi_sahifa(w, h), over=False)  # matn ostida
         writer.add_page(page)
     writer.add_metadata({"/Title": "Sinov bayonnomasi", "/Author": SUV_BELGISI, "/Producer": SUV_BELGISI})
-    writer.encrypt(user_password="", owner_password=secrets.token_hex(16), algorithm="AES-128",
-                   permissions_flag=P.PRINT | P.PRINT_TO_REPRESENTATION)
+    try:
+        writer.encrypt(user_password="", owner_password=secrets.token_hex(16), algorithm="AES-128",
+                       permissions_flag=P.PRINT | P.PRINT_TO_REPRESENTATION)
+    except Exception:  # shifrlash kutubxonasi bo'lmasa ham bayonnoma (suv belgisi bilan) beriladi
+        import logging
+
+        logging.getLogger("core.hujjat").exception("PDF himoyasi qo'yilmadi (cryptography o'rnatilganmi?)")
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()

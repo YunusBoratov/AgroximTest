@@ -10,6 +10,8 @@ Namuna holatlari:
 - Mudir: xulosani tekshiradi, tasdiqlaydi yoki izoh bilan mas'ulga qaytaradi.
 - Berish: faqat 100% to'lovdan keyin xulosa mijoz kabinetiga chiqadi.
 """
+import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -27,9 +29,9 @@ from django.views.decorators.http import require_POST
 from accounts.models import Role, User
 
 from . import xabarnoma
-from .forms import NatijaFormSet, QaytarishForm, XulosaForm, masul_xodimlar
+from .forms import MeyorFormSet, NatijaFormSet, QaytarishForm, XulosaForm, masul_xodimlar
 from .hujjatlar import docx_to_pdf, xulosa_docx
-from .models import Namuna, NazoratTarixi, Topshiriq, Xulosa, XulosaNatija
+from .models import BosqichTarixi, Namuna, NazoratTarixi, Topshiriq, Xulosa, XulosaNatija
 from .permissions import AD, LAB, MASUL, SA, korinadigan_hujjatlar, role_required, user_role
 
 H = Namuna.LabHolat
@@ -37,6 +39,8 @@ T = Topshiriq.Holat
 # Namuna olish / tayyorlash xizmatlari xulosa jadvaliga tushmaydi
 XIZMAT_SOZLARI = ("namuna olish", "namuna tayyorlash")
 TASHQI = "Tashqi ko‘rinishi, rangi"
+
+log = logging.getLogger("core.hujjat")
 
 
 def _namuna(request, pk):
@@ -130,6 +134,8 @@ def tahlilga_yuborish(request, pk):
                 nam.tahlilga_vaqti = timezone.now()
                 nam.tahlil_qabul_qilgan = request.user
                 nam.save(update_fields=["lab_holat", "tahlilga_vaqti", "tahlil_qabul_qilgan"])
+                BosqichTarixi.yoz(nam.ariza, _("Mas'ullarga tahlilga yuborildi"), user=request.user, namuna=nam,
+                                  izoh=", ".join(str(t.masul) for t in topshiriqlar.values()))
                 for t in topshiriqlar.values():
                     xabarnoma.masulga_topshiriq(t)
             messages.success(request, _("Namuna %(n)s mas'ullarga tahlil uchun yuborildi") % {"n": nam})
@@ -197,6 +203,7 @@ def topshiriq_qabul(request, pk):
         t.holat = T.QABUL
         t.qabul_at = timezone.now()
         t.save(update_fields=["holat", "qabul_at"])
+        BosqichTarixi.yoz(t.namuna.ariza, _("Mas'ul topshiriqni qabul qildi"), user=request.user, namuna=t.namuna)
         namuna_holatini_yangila(t.namuna)
         messages.success(request, _("Topshiriq qabul qilindi. Natijalarni kiriting."))
         return redirect("topshiriq_natija", pk=pk)
@@ -217,6 +224,7 @@ def topshiriq_natija(request, pk):
                 t.holat = T.TAYYOR
                 t.tayyor_at = timezone.now()
                 t.save(update_fields=["holat", "tayyor_at"])
+                BosqichTarixi.yoz(t.namuna.ariza, _("Mas'ul natijani yubordi"), user=request.user, namuna=t.namuna)
                 namuna_holatini_yangila(t.namuna)
             messages.success(request, _("Natijalar yuborildi"))
             return redirect("masul_topshiriqlar")
@@ -225,31 +233,38 @@ def topshiriq_natija(request, pk):
     return render(request, "core/topshiriq_natija.html", {
         "title": _("Natijalarni kiritish — %(n)s") % {"n": nam}, "t": t, "nam": nam, "fs": fs,
         "tahrir": t.tahrirlash_mumkin,
-        "hujjatlar": korinadigan_hujjatlar(request.user, nam.ariza.hujjatlar.filter(
-            Q(ariza_namuna__isnull=True) | Q(ariza_namuna_id=nam.ariza_namuna_id))),
     })
 
 
 # ---------------------------------------------------------------------------
 # Mudir: tekshirish, tasdiqlash yoki qaytarish
 # ---------------------------------------------------------------------------
+def _xulosa_ctx(request, x, nam, form=None, meyor_fs=None):
+    sh = nam.shartnoma
+    mudir = user_role(request.user) in LAB or user_role(request.user) == SA
+    tekshiruv = mudir and not x.tasdiqlangan and nam.lab_holat == H.NATIJA
+    natijalar = x.natijalar.select_related("topshiriq__masul").order_by("tartib", "id")
+    if tekshiruv:
+        form = form or XulosaForm(instance=x)
+        meyor_fs = meyor_fs or MeyorFormSet(queryset=natijalar, prefix="my")
+    return {
+        "title": _("Sinov bayonnomasi %(r)s") % {"r": x.raqam}, "x": x, "nam": nam, "sh": sh,
+        "natijalar": natijalar, "meyor_fs": meyor_fs,
+        "topshiriqlar": nam.topshiriqlar.select_related("masul"),
+        "tekshiruv": tekshiruv, "form": form,
+        "qaytarish_form": QaytarishForm(namuna=nam) if tekshiruv else None,
+        "word_mumkin": user_role(request.user) in LAB,
+        "berish_mumkin": mudir and x.tasdiqlangan and sh and sh.xulosa_yuborish_mumkin and nam.lab_holat != H.BERILDI,
+        "bosqichlar": BosqichTarixi.objects.filter(ariza=nam.ariza).filter(
+            Q(namuna__isnull=True) | Q(namuna=nam)),
+    }
+
+
 @role_required(AD, *LAB)
 def xulosa_korish(request, pk):
     x = get_object_or_404(Xulosa.objects.select_related("namuna__ariza", "namuna__shartnoma"), pk=pk)
     nam = _namuna(request, x.namuna_id)
-    sh = nam.shartnoma
-    mudir = user_role(request.user) in LAB or user_role(request.user) == SA
-    tekshiruv = mudir and not x.tasdiqlangan and nam.lab_holat == H.NATIJA
-    return render(request, "core/xulosa_korish.html", {
-        "title": _("Sinov bayonnomasi %(r)s") % {"r": x.raqam}, "x": x, "nam": nam, "sh": sh,
-        "natijalar": x.natijalar.select_related("topshiriq__masul"),
-        "topshiriqlar": nam.topshiriqlar.select_related("masul"),
-        "tekshiruv": tekshiruv,
-        "form": XulosaForm(instance=x) if tekshiruv else None,
-        "qaytarish_form": QaytarishForm(namuna=nam) if tekshiruv else None,
-        "word_mumkin": user_role(request.user) in LAB,
-        "berish_mumkin": mudir and x.tasdiqlangan and sh and sh.xulosa_yuborish_mumkin and nam.lab_holat != H.BERILDI,
-    })
+    return render(request, "core/xulosa_korish.html", _xulosa_ctx(request, x, nam))
 
 
 @role_required(*LAB)
@@ -261,15 +276,14 @@ def xulosa_tasdiqlash(request, pk):
         messages.error(request, _("Xulosani hozir tasdiqlab bo'lmaydi: barcha mas'ullar natijani yuborishi kerak"))
         return redirect("xulosa_korish", pk=pk)
     form = XulosaForm(request.POST, instance=x)
-    if not form.is_valid():
+    meyor_fs = MeyorFormSet(request.POST, queryset=x.natijalar.order_by("tartib", "id"), prefix="my")
+    if not (form.is_valid() and meyor_fs.is_valid()):
         messages.error(request, _("Formada xatolar bor, tekshiring"))
-        return render(request, "core/xulosa_korish.html", {
-            "title": _("Sinov bayonnomasi %(r)s") % {"r": x.raqam}, "x": x, "nam": nam, "sh": nam.shartnoma,
-            "natijalar": x.natijalar.select_related("topshiriq__masul"),
-            "topshiriqlar": nam.topshiriqlar.select_related("masul"), "tekshiruv": True, "form": form,
-            "qaytarish_form": QaytarishForm(namuna=nam), "word_mumkin": True})
+        return render(request, "core/xulosa_korish.html", _xulosa_ctx(request, x, nam, form, meyor_fs))
     with transaction.atomic():
+        meyor_fs.save()
         x = form.save(commit=False)
+        x.sinov_sanasi = timezone.now()  # xulosa kiritilgan (tasdiqlangan) aniq vaqt
         x.tasdiqlagan = request.user.fish or request.user.username
         x.tayyor_at = x.tayyor_at or timezone.now()
         x.tasdiqlangan_at = timezone.now()
@@ -278,6 +292,7 @@ def xulosa_tasdiqlash(request, pk):
         nam.ogirligi, nam.tavsifi = form.cleaned_data["ogirligi"], form.cleaned_data.get("tavsifi", "")
         nam.lab_holat = H.XULOSA
         nam.save(update_fields=["ogirligi", "tavsifi", "lab_holat"])
+        BosqichTarixi.yoz(nam.ariza, _("Xulosa tasdiqlandi"), user=request.user, namuna=nam, izoh=x.raqam)
     messages.success(request, _("Xulosa tasdiqlandi"))
     return redirect("xulosa_korish", pk=pk)
 
@@ -297,6 +312,8 @@ def xulosa_qaytarish(request, pk):
         t.izoh = form.cleaned_data["izoh"]
         t.qaytarilgan_at = timezone.now()
         t.save(update_fields=["holat", "izoh", "qaytarilgan_at"])
+        BosqichTarixi.yoz(nam.ariza, _("Natija mas'ulga qaytarildi"), user=request.user, namuna=nam,
+                          izoh=f"{t.masul}: {t.izoh}")
         namuna_holatini_yangila(nam)
         NazoratTarixi.yoz(request.user, NazoratTarixi.Turi.XULOSA_QAYTARISH, f"{x.raqam} ({nam})",
                           _("Mas'ul: %(m)s; sabab: %(s)s") % {"m": t.masul, "s": t.izoh}, x.pk)
@@ -320,6 +337,8 @@ def xulosa_berish(request, pk):
         nam.lab_holat = H.BERILDI
         nam.berilgan_vaqti = timezone.now()
         nam.save(update_fields=["lab_holat", "berilgan_vaqti"])
+        BosqichTarixi.yoz(nam.ariza, _("Bayonnoma buyurtmachiga berildi"), user=request.user, namuna=nam,
+                          izoh=x.raqam)
         url = _verify_url(request, x)
         xabarnoma.xulosa_berildi(x, pdf_fn=lambda: _himoyalangan_pdf(x, url))
         messages.success(request, _("Xulosa buyurtmachi kabinetiga yuborildi"))
@@ -368,8 +387,10 @@ def _hujjat_javob(request, x, fmt):
     if fmt == "pdf":
         try:
             data, ctype = _himoyalangan_pdf(x, _verify_url(request, x)), "application/pdf"
-        except Exception:
-            raise Http404(_("PDF yaratib bo'lmadi"))
+        except Exception:  # xato yashirilmaydi: jurnalga yoziladi, foydalanuvchiga tushunarli javob
+            log.exception("Bayonnoma PDF yaratilmadi: %s", x.raqam)
+            return HttpResponse(_("Bayonnoma PDF'ini yaratib bo'lmadi. Administratorga murojaat qiling."),
+                                status=500, content_type="text/plain; charset=utf-8")
         disp = "inline"
     else:
         data = xulosa_docx(x, _verify_url(request, x))

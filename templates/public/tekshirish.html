@@ -11,8 +11,8 @@
     <div><span>{% trans "Tasdiqlangan" %}</span><b>{{ x.tasdiqlangan_at|dt }}</b></div>
   </div>
   <table class="t">
-    <thead><tr><th>№</th><th>{% trans "Ko'rsatkich" %}</th><th>{% trans "Me'yor" %}</th><th>{% trans "Natija" %}</th><th>{% trans "Muvofiqlik" %}</th></tr></thead>
-    <tbody>{% for n in natijalar %}<tr><td>{{ forloop.counter }}</td><td>{{ n.korsatkich }}</td><td>{{ n.meyor|default:"—" }}</td><td>{{ n.natija }}</td><td>{{ n.muvofiqlik|default:"—" }}</td></tr>{% endfor %}</tbody>
+    <thead><tr><th>№</th><th>{% trans "Ko'rsatkich" %}</th><th>{% trans "Me'yor" %}</th><th>{% trans "Natija" %}</th><th>{% trans "Sinov usuli" %}</th></tr></thead>
+    <tbody>{% for n in natijalar %}<tr><td>{{ forloop.counter }}</td><td>{{ n.korsatkich }}</td><td>{{ n.meyor|default:"—" }}</td><td>{{ n.natija }}</td><td>{{ n.sinov_usuli|default:"—" }}</td></tr>{% endfor %}</tbody>
   </table>
   <div class="center" style="margin-top:16px"><a class="btn btn-primary" href="?pdf=1" target="_blank">{% trans "Bayonnomani ko'rish (PDF)" %}</a></div>
 </section>

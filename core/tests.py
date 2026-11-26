@@ -410,9 +410,16 @@ class LabJarayonTests(ShartnomaTests):
         data = {"nt-TOTAL_FORMS": len(rows), "nt-INITIAL_FORMS": len(rows), "nt-MIN_NUM_FORMS": 0,
                 "nt-MAX_NUM_FORMS": 1000}
         for i, r in enumerate(rows):
-            data.update({f"nt-{i}-id": r.pk, f"nt-{i}-meyor": "12±1", f"nt-{i}-natija": "12.4",
-                         f"nt-{i}-sinov_usuli": r.sinov_usuli or "Vizual",
-                         f"nt-{i}-muvofiqlik": "Muvofiq" if toliq else ""})
+            data.update({f"nt-{i}-id": r.pk, f"nt-{i}-natija": "12.4" if toliq else "",
+                         f"nt-{i}-sinov_usuli": r.sinov_usuli or "Vizual"})
+        return data
+
+    def _meyor_post(self, x, toliq=True):
+        rows = list(x.natijalar.order_by("tartib", "id"))
+        data = {"my-TOTAL_FORMS": len(rows), "my-INITIAL_FORMS": len(rows), "my-MIN_NUM_FORMS": 0,
+                "my-MAX_NUM_FORMS": 1000}
+        for i, r in enumerate(rows):
+            data.update({f"my-{i}-id": r.pk, f"my-{i}-meyor": "12±1" if toliq else ""})
         return data
 
     def test_30_foizsiz_tahlilga_yuborilmaydi(self):
@@ -484,11 +491,22 @@ class LabJarayonTests(ShartnomaTests):
         self.client.post(reverse("xulosa_tasdiqlash", args=[x.pk]), {})
         x.refresh_from_db()
         self.assertFalse(x.tasdiqlangan)
-        self.client.post(reverse("xulosa_tasdiqlash", args=[x.pk]), {
-            "sinov_sanasi": timezone.localdate().isoformat(), "dalolatnoma": "5", "sinov_joyi": "Laboratoriya",
-            "harorat": "T=(23±1)°C", "namlik": "W=(45±1)%", "bosh_agrokimyogar": "Sh. Rahimova",
-            "yetakchi_agrokimyogar": "D. Tursunov", "ogirligi": "0.5 kg"})
+        asosiy = {"dalolatnoma": "5", "sinov_joyi": "Laboratoriya",
+                  "harorat": "T=(23±1)°C", "namlik": "W=(45±1)%", "bosh_agrokimyogar": "Sh. Rahimova",
+                  "yetakchi_agrokimyogar": "D. Tursunov", "ogirligi": "0.5 kg"}
+        # me'yoriy qiymatlarsiz tasdiqlanmaydi
+        self.client.post(reverse("xulosa_tasdiqlash", args=[x.pk]), dict(asosiy, **self._meyor_post(x, False)))
         x.refresh_from_db()
+        self.assertFalse(x.tasdiqlangan)
+        oldin = timezone.now()
+        self.client.post(reverse("xulosa_tasdiqlash", args=[x.pk]), dict(asosiy, **self._meyor_post(x)))
+        x.refresh_from_db()
+        self.assertGreaterEqual(x.sinov_sanasi, oldin)  # sinov sanasi — tasdiqlash vaqti (avtomatik)
+        self.assertEqual(set(x.natijalar.values_list("meyor", flat=True)), {"12±1"})
+        nomlar = list(nam.ariza.bosqichlar.values_list("nomi", flat=True))
+        for kerak in ("Mas'ullarga tahlilga yuborildi", "Mas'ul topshiriqni qabul qildi", "Mas'ul natijani yubordi",
+                      "Natija mas'ulga qaytarildi", "Xulosa tasdiqlandi"):
+            self.assertIn(kerak, nomlar)
         nam.refresh_from_db()
         self.assertTrue(x.tasdiqlangan)
         self.assertEqual(nam.lab_holat, Namuna.LabHolat.XULOSA)
@@ -504,6 +522,8 @@ class LabJarayonTests(ShartnomaTests):
         self.assertIn("Sh. Rahimova", imzo)
         self.assertIn("D. Tursunov", imzo)
         self.assertNotIn("QR KOD", d.tables[4]._tbl.xml)  # QR rasm qo'yilgan
+        self.assertEqual(len(d.tables[3].columns), 5)  # muvofiqlik ustuni yo'q
+        self.assertNotIn("Muvofiqlik", d.tables[3].rows[0].cells[-1].text)
         self.assertEqual(self.client.get(reverse("xulosa_tekshirish", args=[x.verify_token])).status_code, 200)
         # 40% to'lovda mijozga berilmaydi, 100% da beriladi
         self.client.post(reverse("xulosa_berish", args=[x.pk]))
@@ -1261,3 +1281,48 @@ class IxtiyoriyHujjatsizTests(BaseTest):
         a = Ariza.objects.get(mijoz=u)
         self.assertEqual(a.hujjatlar.count(), 0)
         self.assertEqual(a.arizanamunalar.count(), 2)
+
+
+class MasulVaPdfTests(LabJarayonTests):
+    def _tayyor_topshiriq(self):
+        from core.models import Topshiriq
+        sh = self._yuborilgan_shartnoma(40)
+        nam = sh.namunalar.order_by("tartib").first()
+        r = self.client.get(reverse("tahlilga_yuborish", args=[nam.pk]))
+        self.client.post(reverse("tahlilga_yuborish", args=[nam.pk]), {f"masul_{i}": self.m1.pk for i, *_r in r.context["rows"]})
+        return nam, Topshiriq.objects.get(namuna=nam, masul=self.m1)
+
+    def test_masul_hujjat_va_ortiqcha_ustun_kormaydi(self):
+        nam, t = self._tayyor_topshiriq()
+        h = ArizaHujjat.objects.create(ariza=nam.ariza, turi="guvohnoma", fayl=pdf("g.pdf"))
+        self.client.logout()
+        self.client.login(username="masul1", password="demo12345")
+        self.client.post(reverse("topshiriq_qabul", args=[t.pk]))
+        r = self.client.get(reverse("topshiriq_natija", args=[t.pk]))
+        self.assertNotContains(r, reverse("ariza_hujjat", args=[h.pk]))
+        self.assertNotContains(r, "-meyor")
+        self.assertNotContains(r, "Muvofiqlik")
+        self.assertContains(r, "nt-0-natija")
+        self.assertEqual(self.client.get(reverse("ariza_hujjat", args=[h.pk])).status_code, 403)
+
+    def test_pdf_shifrsiz_ham_beriladi_xato_yashirilmaydi(self):
+        from unittest import mock
+
+        from core.models import Xulosa
+        nam, _t = self._tayyor_topshiriq()
+        x = Xulosa.objects.get(namuna=nam)
+        from reportlab.pdfgen import canvas
+        buf = io.BytesIO()
+        c = canvas.Canvas(buf)
+        c.drawString(100, 750, "test")
+        c.save()
+        fake = buf.getvalue()
+        with mock.patch("core.views_lab.docx_to_pdf", return_value=fake), \
+                mock.patch("pypdf.PdfWriter.encrypt", side_effect=ImportError("cryptography yo'q")):
+            r = self.client.get(reverse("xulosa_hujjat", args=[x.pk, "pdf"]))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        with mock.patch("core.views_lab.docx_to_pdf", side_effect=RuntimeError("soffice")):
+            r = self.client.get(reverse("xulosa_hujjat", args=[x.pk, "pdf"]))
+        self.assertEqual(r.status_code, 500)
+        self.assertContains(r, "yaratib bo", status_code=500)

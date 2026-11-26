@@ -20,7 +20,7 @@
   <div class="info-grid">
     <div><span>{% trans "Buyurtmachi" %}</span><b>{{ nam.ariza.buyurtmachi }}</b></div>
     <div><span>{% trans "Namuna" %}</span><b>{{ nam }} · {{ nam.nomi }}</b></div>
-    {% if x.sinov_sanasi %}<div><span>{% trans "Sinov sanasi" %}</span><b>{{ x.sinov_sanasi|dt }}</b></div>{% endif %}
+    <div><span>{% trans "Sinov o'tkazilgan sana" %}</span><b>{% if x.sinov_sanasi %}{{ x.sinov_sanasi|dt }} {{ x.sinov_sanasi|tm }}{% else %}{% trans "Tasdiqlanganda avtomatik qo'yiladi" %}{% endif %}</b></div>
     {% if x.tasdiqlangan %}<div><span>{% trans "Tasdiqlagan" %}</span><b>{{ x.tasdiqlagan_user }} · {{ x.tasdiqlangan_at|dt }}</b></div>{% endif %}
     {% if nam.berilgan_vaqti %}<div><span>{% trans "Buyurtmachiga berilgan" %}</span><b>{{ nam.berilgan_vaqti|dt }} {{ nam.berilgan_vaqti|tm }}</b></div>{% endif %}
   </div>
@@ -31,8 +31,8 @@
 <section class="card">
   <h2 class="section-title">{% trans "Sinov natijalari" %}</h2>
   <table class="t">
-    <thead><tr><th>№</th><th>{% trans "Ko'rsatkich" %}</th><th>{% trans "Me'yor" %}</th><th>{% trans "Natija" %}</th><th>{% trans "Sinov usuli" %}</th><th>{% trans "Muvofiqlik" %}</th><th>{% trans "Mas'ul" %}</th></tr></thead>
-    <tbody>{% for n in natijalar %}<tr><td>{{ forloop.counter }}</td><td>{{ n.korsatkich }}</td><td>{{ n.meyor|default:"—" }}</td><td><b>{{ n.natija|default:"—" }}</b></td><td>{{ n.sinov_usuli|default:"—" }}</td><td>{{ n.muvofiqlik|default:"—" }}</td><td>{{ n.topshiriq.masul|default:"—" }}</td></tr>{% endfor %}</tbody>
+    <thead><tr><th>№</th><th>{% trans "Ko'rsatkich" %}</th><th>{% trans "Me'yor" %}</th><th>{% trans "Natija" %}</th><th>{% trans "Sinov usuli" %}</th><th>{% trans "Mas'ul" %}</th></tr></thead>
+    <tbody>{% for n in natijalar %}<tr><td>{{ forloop.counter }}</td><td>{{ n.korsatkich }}</td><td>{{ n.meyor|default:"—" }}</td><td><b>{{ n.natija|default:"—" }}</b></td><td>{{ n.sinov_usuli|default:"—" }}</td><td>{{ n.topshiriq.masul|default:"—" }}</td></tr>{% endfor %}</tbody>
   </table>
 </section>
 
@@ -41,7 +41,15 @@
   <h2 class="section-title">{% trans "Tasdiqlash" %}</h2>
   <p class="help">{% trans "Barcha mas'ullar natijani yubordi. Bayonnomani PDF ko'rinishida tekshirib, ma'lumotlarni to'ldiring va tasdiqlang yoki xatoni mas'ulga qaytaring." %}</p>
   <form method="post" action="{% url 'xulosa_tasdiqlash' x.pk %}" onsubmit="return confirm('{% trans "Tasdiqlangan xulosani o‘zgartirib bo‘lmaydi. Tasdiqlaysizmi?" %}')">{% csrf_token %}
-    {% if form.errors %}<ul class="messages"><li class="error">{% trans "Formada xatolar bor, tekshiring" %}</li></ul>{% endif %}
+    {% if form.errors or meyor_fs.total_error_count %}<ul class="messages"><li class="error">{% trans "Formada xatolar bor, tekshiring" %}</li></ul>{% endif %}
+    {{ meyor_fs.management_form }}
+    <h3 class="box-title" style="text-align:left">{% trans "Me'yoriy qiymatlar" %}</h3>
+    <div class="table-wrap"><table class="t res">
+      <thead><tr><th>№</th><th style="width:40%">{% trans "Ko'rsatkich" %}</th><th>{% trans "Sinov natijasi" %}</th><th>{% trans "Me'yoriy qiymat" %} *</th></tr></thead>
+      <tbody>{% for f in meyor_fs %}<tr>{% for h in f.hidden_fields %}{{ h }}{% endfor %}
+        <td>{{ forloop.counter }}</td><td>{{ f.instance.korsatkich }}</td><td><b>{{ f.instance.natija }}</b></td><td>{{ f.meyor }}{{ f.meyor.errors }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="help" style="margin:10px 0 16px">{% trans "Sinov o'tkazilgan sana — tasdiqlash tugmasi bosilgan paytdagi sana va vaqt avtomatik yoziladi." %}</p>
     <div class="form-grid g4">{% for f in form %}<div class="fld"><label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required %} *{% endif %}</label>{{ f }}{{ f.errors }}</div>{% endfor %}</div>
     <div class="btn-row" style="margin-top:16px"><button class="btn btn-green" type="submit">{% trans "Tasdiqlash" %}</button></div>
   </form>
@@ -52,6 +60,8 @@
   </details>
 </section>
 {% endif %}
+
+{% include "parts/bosqichlar.html" %}
 
 <section class="card">
   <h2 class="section-title">{% trans "Bayonnoma ko'rinishi" %}</h2>

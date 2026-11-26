@@ -324,16 +324,11 @@ class XulosaForm(StyledMixin, forms.ModelForm):
 
     class Meta:
         model = Xulosa
-        fields = ["sinov_sanasi", "dalolatnoma", "sinov_joyi", "harorat", "namlik", "bosh_agrokimyogar",
-                  "yetakchi_agrokimyogar"]
+        # sinov sanasi qo'lda kiritilmaydi: tasdiqlangan paytdagi sana va vaqt avtomatik yoziladi
+        fields = ["dalolatnoma", "sinov_joyi", "harorat", "namlik", "bosh_agrokimyogar", "yetakchi_agrokimyogar"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["sinov_sanasi"] = forms.DateField(
-            label=_("Sinov o'tkazilgan sana"),
-            widget=forms.DateInput(attrs={"type": "date", "class": "input"}, format="%Y-%m-%d"))
-        if self.instance.pk and self.instance.sinov_sanasi:
-            self.initial["sinov_sanasi"] = timezone.localtime(self.instance.sinov_sanasi).date()
         nam = self.instance.namuna
         self.initial.setdefault("ogirligi", nam.ogirligi)
         self.initial.setdefault("tavsifi", nam.tavsifi)
@@ -346,10 +341,7 @@ class XulosaForm(StyledMixin, forms.ModelForm):
             self.fields[name].required = True
 
     def save(self, commit=True):
-        from datetime import datetime, time
-
         x = super().save(commit=False)
-        x.sinov_sanasi = timezone.make_aware(datetime.combine(self.cleaned_data["sinov_sanasi"], time(12, 0)))
         nam = x.namuna
         nam.ogirligi = self.cleaned_data.get("ogirligi", "")
         nam.tavsifi = self.cleaned_data.get("tavsifi", "")
@@ -360,16 +352,15 @@ class XulosaForm(StyledMixin, forms.ModelForm):
 
 
 class NatijaForm(forms.ModelForm):
-    """Mas'ul xodim o'z ko'rsatkichi natijasini kiritadi: barcha maydonlar majburiy."""
+    """Mas'ul xodim faqat sinov natijasi va sinov usulini kiritadi (ikkalasi majburiy).
+    Me'yoriy qiymatni mudir tasdiqlashda kiritadi; muvofiqlik qarori vaqtincha ishlatilmaydi."""
 
     class Meta:
         model = XulosaNatija
-        fields = ["meyor", "natija", "sinov_usuli", "muvofiqlik"]
+        fields = ["natija", "sinov_usuli"]
         widgets = {
-            "meyor": forms.TextInput(attrs={"class": "input"}),
             "natija": forms.TextInput(attrs={"class": "input"}),
             "sinov_usuli": forms.TextInput(attrs={"class": "input"}),
-            "muvofiqlik": forms.TextInput(attrs={"class": "input", "list": "muvofiqlik-list"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -380,6 +371,23 @@ class NatijaForm(forms.ModelForm):
 
 
 NatijaFormSet = forms.modelformset_factory(XulosaNatija, form=NatijaForm, extra=0, can_delete=False)
+
+
+class MeyorForm(forms.ModelForm):
+    """Mudir tasdiqlashda har bir ko'rsatkichning me'yoriy qiymatini kiritadi (majburiy)."""
+
+    class Meta:
+        model = XulosaNatija
+        fields = ["meyor"]
+        widgets = {"meyor": forms.TextInput(attrs={"class": "input"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["meyor"].required = True
+        self.fields["meyor"].error_messages["required"] = _("To'ldirilishi shart")
+
+
+MeyorFormSet = forms.modelformset_factory(XulosaNatija, form=MeyorForm, extra=0, can_delete=False)
 
 
 class QaytarishForm(forms.Form):

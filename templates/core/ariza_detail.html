@@ -22,4 +22,5 @@
   <table class="t"><thead><tr><th>N</th><th>{% trans "Nomi" %}</th><th>{% trans "Namuna olgan" %}</th><th>{% trans "Og'irligi / hajmi" %}</th><th>{% trans "Qabul qilingan" %}</th><th>{% trans "Holati" %}</th></tr></thead>
   <tbody>{% for n in namunalar %}<tr><td>{{ n }}</td><td>{{ n.nomi }}</td><td>{{ n.namuna_olgan }}</td><td>{{ n.ogirligi|default:"—" }}</td><td class="dt">{{ n.qabul_vaqti|dt }}<br>{{ n.qabul_vaqti|tm }}</td><td>{{ n.get_lab_holat_display }}</td></tr>{% endfor %}</tbody></table>
 </section>{% endif %}
+{% include "parts/bosqichlar.html" %}
 {% endblock %}

@@ -12,7 +12,6 @@
     <div><span>{% trans "Partiya raqami (LOT)" %}</span><b>{% if nam.ariza_namuna %}{{ nam.ariza_namuna.partiya_raqami|default:"—" }}{% else %}{{ nam.ariza.partiya_raqami|default:"—" }}{% endif %}</b></div>
     <div><span>{% trans "Yuborilgan vaqt" %}</span><b>{{ t.yuborilgan_at|dt }} {{ t.yuborilgan_at|tm }}</b></div>
   </div>
-  <div class="docs">{% for h in hujjatlar %}<a class="doc" href="{{ h.url }}" target="_blank">{% include "parts/icon.html" with name="file" %} {{ h.nomi }}</a>{% endfor %}</div>
 </section>
 {% if t.holat == "yuborildi" %}
 <section class="card"><form method="post" action="{% url 'topshiriq_qabul' t.pk %}">{% csrf_token %}
@@ -24,19 +23,18 @@
   {{ fs.management_form }}
   <div class="table-wrap">
   <table class="t res">
-    <thead><tr><th>№</th><th style="width:28%">{% trans "Ko'rsatkich nomi, o'lchov birligi" %}</th><th>{% trans "Me'yoriy qiymat" %} *</th><th>{% trans "Sinov natijasi (Xcp ± Upac)" %} *</th><th>{% trans "Sinov usuli (ND hujjati)" %} *</th><th>{% trans "Muvofiqlik haqida qaror" %} *</th></tr></thead>
+    <thead><tr><th>№</th><th style="width:40%">{% trans "Ko'rsatkich nomi, o'lchov birligi" %}</th><th>{% trans "Sinov natijasi (Xcp ± Upac)" %} *</th><th>{% trans "Sinov usuli (ND hujjati)" %} *</th></tr></thead>
     <tbody>
     {% for f in fs %}
       <tr>{% for h in f.hidden_fields %}{{ h }}{% endfor %}
         <td>{{ forloop.counter }}</td><td><b>{{ f.instance.korsatkich }}</b></td>
-        {% for name in "meyor natija sinov_usuli muvofiqlik"|make_list_words %}{% with fld=f|field:name %}
+        {% for name in "natija sinov_usuli"|make_list_words %}{% with fld=f|field:name %}
         <td>{% if tahrir %}{{ fld }}{{ fld.errors }}{% else %}{{ fld.value|default:"—" }}{% endif %}</td>{% endwith %}{% endfor %}
       </tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
-  <datalist id="muvofiqlik-list"><option value="Muvofiq"><option value="Muvofiq emas"><option value="—"></datalist>
   {% if tahrir %}<div class="btn-row" style="margin-top:16px"><button class="btn btn-primary" type="submit">{% trans "Natijalarni yuborish" %}</button></div>
   <p class="help">{% trans "Barcha maydonlar to'ldirilishi shart. Yuborilgach, natijalarni mudir tekshiradi." %}</p>{% endif %}
 </form>

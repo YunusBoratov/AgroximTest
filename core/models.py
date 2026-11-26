@@ -437,10 +437,14 @@ class Shartnoma(models.Model):
         # muddatlarni hisoblash uchun: 30% va 100% chegarasi qachon o'tilgan
         now = timezone.now()
         if self.tahlil_boshlash_mumkin:
+            if not self.tahlilga_ruxsat_at:
+                BosqichTarixi.yoz(self.ariza, _("30% to'landi — tahlilga ruxsat"), izoh=f"№{self.raqam}")
             self.tahlilga_ruxsat_at = self.tahlilga_ruxsat_at or now
         else:
             self.tahlilga_ruxsat_at = None
         if self.xulosa_yuborish_mumkin:
+            if not self.toliq_tolangan_at:
+                BosqichTarixi.yoz(self.ariza, _("100% to'landi"), izoh=f"№{self.raqam}")
             self.toliq_tolangan_at = self.toliq_tolangan_at or now
         else:
             self.toliq_tolangan_at = None
@@ -794,3 +798,33 @@ class Bayram(models.Model):
 
     def __str__(self):
         return f"{self.sana:%d.%m.%Y} {self.nomi}"
+
+
+# ---------------------------------------------------------------------------
+# Bosqichlar tarixi: ariza va namunaning har bir bosqichi qachon va kim tomonidan bajarilgani
+# ---------------------------------------------------------------------------
+class BosqichTarixi(models.Model):
+    ariza = models.ForeignKey(Ariza, on_delete=models.CASCADE, related_name="bosqichlar")
+    namuna = models.ForeignKey("Namuna", on_delete=models.CASCADE, null=True, blank=True, related_name="bosqichlar")
+    nomi = models.CharField(_("Bosqich"), max_length=255)
+    izoh = models.CharField(_("Izoh"), max_length=500, blank=True)
+    vaqt = models.DateTimeField(_("Vaqt"), default=timezone.now, db_index=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name="+")
+    user_nomi = models.CharField(_("Xodim"), max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["vaqt", "id"]
+        verbose_name = _("Bosqich")
+        verbose_name_plural = _("Bosqichlar tarixi")
+
+    def __str__(self):
+        return f"{self.ariza} — {self.nomi}"
+
+    @classmethod
+    def yoz(cls, ariza, nomi, user=None, namuna=None, izoh=""):
+        nom = ""
+        if user is not None and getattr(user, "is_authenticated", False):
+            nom = f"{user.fish or user.username} ({user.get_role_display()})"
+        return cls.objects.create(ariza=ariza, namuna=namuna, nomi=str(nomi)[:255], izoh=str(izoh)[:500],
+                                  user=user if nom else None, user_nomi=nom)

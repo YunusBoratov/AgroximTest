@@ -19,7 +19,7 @@ from accounts.models import Role
 from . import xabarnoma
 from .forms import RekvizitForm, TolovForm
 from .hujjatlar import docx_to_pdf, shartnoma_docx
-from .models import Ariza, Kategoriya, Narxnoma, NazoratTarixi, Shartnoma, ShartnomaBand, Tolov
+from .models import Ariza, BosqichTarixi, Kategoriya, Narxnoma, NazoratTarixi, Shartnoma, ShartnomaBand, Tolov
 from .permissions import AD, BX, LAB, SA, korinadigan_hujjatlar, role_required, user_role
 
 
@@ -123,12 +123,16 @@ def shartnoma_form(request, ariza_pk=None, pk=None):
                 if sh is None:
                     sh = Shartnoma.objects.create(ariza=ariza, yaratgan=request.user)
                     ariza.namunalar.update(shartnoma=sh)
-                else:
-                    sh.bandlar.filter(kategoriya=kat).delete()
+                yangi_narx = not sh.bandlar.filter(kategoriya=kat).exists()
+                sh.bandlar.filter(kategoriya=kat).delete()
                 for nx, soni in tanlangan:
                     ShartnomaBand.objects.create(shartnoma=sh, narxnoma=nx, narx=nx.narx, namuna_soni=soni,
                                                  kategoriya=kat)
                 sh.qayta_hisobla()
+                BosqichTarixi.yoz(ariza, _("Narx belgilandi, shartnoma tuzildi") if yangi_narx
+                                  else _("Shartnoma ko'rsatkichlari o'zgartirildi"), user=request.user,
+                                  izoh=f"№{sh.raqam} · {dict(Kategoriya.choices).get(kat, '')} · "
+                                       f"{int(sh.jami_summa):,} so'm".replace(",", " "))
             messages.success(request, _("Shartnoma №%(r)s saqlandi") % {"r": sh.raqam})
             return redirect("shartnoma_detail", pk=sh.pk)
         oldingi = {nx.pk: soni for nx, soni in _bandlar_postdan(request, qatorlar)}
@@ -160,6 +164,7 @@ def shartnoma_detail(request, pk):
         sh.holat = Shartnoma.Holat.QABUL
         sh.qabul_at = timezone.now()
         sh.save(update_fields=["holat", "qabul_at"])
+        BosqichTarixi.yoz(sh.ariza, _("Buxgalter shartnomani ko'rdi"), user=request.user, izoh=f"№{sh.raqam}")
 
     is_bux = role in (BX, SA)
     rek_form = RekvizitForm(instance=sh.ariza) if is_bux else None
@@ -191,6 +196,7 @@ def shartnoma_yuborish(request, pk):
         sh.holat = Shartnoma.Holat.YUBORILGAN
         sh.yuborilgan_at = timezone.now()
         sh.save(update_fields=["holat", "yuborilgan_at"])
+        BosqichTarixi.yoz(sh.ariza, _("Shartnoma buxgalteriyaga yuborildi"), user=request.user, izoh=f"№{sh.raqam}")
         xabarnoma.shartnoma_tayyor(sh)
         messages.success(request, _("Shartnoma buxgalteriyaga yuborildi"))
     return redirect("shartnoma_detail", pk=pk)
@@ -248,6 +254,8 @@ def tolov_qoshish(request, pk):
         with transaction.atomic():
             Tolov.objects.create(shartnoma=sh, summa=d["summa"], usul=d["usul"], sana=sana, izoh=d["izoh"],
                                  kiritgan=request.user)
+            BosqichTarixi.yoz(sh.ariza, _("To'lov qabul qilindi"), user=request.user,
+                              izoh=f"{int(d['summa']):,} so'm · №{sh.raqam}".replace(",", " "))
             oldin_mumkin = sh.tahlil_boshlash_mumkin
             sh.qayta_hisobla()
             xabarnoma.tolov_qabul(sh, d["summa"])
@@ -279,6 +287,8 @@ def tolov_ochirish(request, pk, tolov_pk):
                 "s": f"{int(t.summa):,}".replace(",", " "), "u": t.get_usul_display(),
                 "d": timezone.localtime(t.sana).strftime("%d.%m.%Y"), "i": t.izoh or "—", "r": sabab},
             sh.pk)
+        BosqichTarixi.yoz(sh.ariza, _("To'lov o'chirildi"), user=request.user,
+                          izoh=f"{int(t.summa):,} so'm · ".replace(",", " ") + request.POST.get("sabab", "")[:200])
         t.delete()
         sh.qayta_hisobla()
     messages.success(request, _("To'lov o'chirildi"))

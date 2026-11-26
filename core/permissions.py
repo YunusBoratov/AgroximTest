@@ -74,7 +74,10 @@ def hujjat_korinadimi(user, hujjat):
     """Invoysni faqat ruxsat etilgan rollar (sozlamada) va arizaning egasi (mijoz) ko'radi."""
     from django.conf import settings
 
-    # laboratoriya xodimi (mudir yoki mas'ul) faqat o'z guruhidagi namunaning hujjatlarini ko'radi
+    # sinov o'tkazuvchi mas'ul hujjatlarni ko'rmaydi — faqat natija kiritadi
+    if user_role(user) in MASUL:
+        return False
+    # laboratoriya mudiri faqat o'z guruhidagi namunaning hujjatlarini ko'radi
     kat = getattr(user, "lab_kategoriya", None) if user_role(user) != Role.SUPER_ADMIN else None
     if kat and hujjat.ariza_namuna_id and hujjat.ariza_namuna.kategoriya != kat:
         return False

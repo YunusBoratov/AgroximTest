@@ -18,7 +18,7 @@ from accounts.models import Role
 
 from . import fayl_saqlash, xabarnoma
 from .forms import ArizaToplam, NamunaQabulForm, RadForm
-from .models import (ARIZA_MAYDONLARI, NAMUNA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna,
+from .models import (ARIZA_MAYDONLARI, BosqichTarixi, NAMUNA_MAYDONLARI, REKVIZIT_MAYDONLARI, ZARUR_HUJJATLAR, Ariza, ArizaTuri, Namuna,
                      NazoratTarixi, Shartnoma)
 from .permissions import AD, ADMINS, BX, LAB, NQ, hujjat_korinadimi, korinadigan_hujjatlar, role_required, user_role
 
@@ -85,7 +85,9 @@ def _ariza_forma(request, nom, instance=None, user=None):
     if not valid:
         return toplam, None
     with transaction.atomic():
+        yangi = instance is None
         ariza = toplam.save(user=user)
+        BosqichTarixi.yoz(ariza, _("Ariza yuborildi") if yangi else _("Ariza tahrirlandi"), user=request.user)
     request.session.pop(f"ariza_fayllar_{nom}", None)
     return toplam, ariza
 
@@ -125,6 +127,7 @@ def ariza_tahrirlash(request, pk):
             saqlandi.qabul_vaqti = None
             saqlandi.yuborilgan_at = timezone.now()
             saqlandi.save(update_fields=["holat", "rad_sababi", "qabul_qilgan", "qabul_vaqti", "yuborilgan_at"])
+            BosqichTarixi.yoz(saqlandi, _("Ariza qayta yuborildi"), user=request.user)
             messages.success(request, _("Ariza %(r)s qayta yuborildi") % {"r": saqlandi.raqam})
         else:
             messages.success(request, _("Ariza saqlandi"))
@@ -184,7 +187,17 @@ def ariza_detail(request, pk):
         and not ariza.shartnomalar.filter(is_active=True).exists(),
         "rad_form": RadForm(),
         "lab": _lab_korinishi(ariza, request.user.lab_kategoriya) if role in LAB else None,
+        "bosqichlar": _bosqichlar(ariza, request.user, role) if role != Role.MIJOZ else None,
     })
+
+
+def _bosqichlar(ariza, user, role):
+    from django.db.models import Q
+
+    qs = ariza.bosqichlar.select_related("namuna")
+    if role in LAB:
+        qs = qs.filter(Q(namuna__isnull=True) | Q(namuna__namuna_turi__kategoriya=user.lab_kategoriya))
+    return qs
 
 
 def _lab_korinishi(ariza, kat):
@@ -231,10 +244,12 @@ def ariza_qabul(request, pk):
                 nam.tartib = i
                 nam.qabul_qilgan = request.user
                 nam.save()
+                BosqichTarixi.yoz(ariza, _("Namuna qabul qilindi"), user=request.user, namuna=nam)
             ariza.holat = Ariza.Holat.QABUL
             ariza.qabul_qilgan = request.user
             ariza.qabul_vaqti = timezone.now()
             ariza.save(update_fields=["holat", "qabul_qilgan", "qabul_vaqti"])
+            BosqichTarixi.yoz(ariza, _("Ariza qabul qilindi"), user=request.user)
             xabarnoma.ariza_qabul(ariza)
         messages.success(request, _("Namunalar qabul qilindi va laboratoriyaga yuborildi"))
         return redirect("namuna_list")
@@ -255,6 +270,7 @@ def ariza_rad(request, pk):
         ariza.qabul_qilgan = request.user
         ariza.qabul_vaqti = timezone.now()
         ariza.save(update_fields=["holat", "rad_sababi", "qabul_qilgan", "qabul_vaqti"])
+        BosqichTarixi.yoz(ariza, _("Ariza rad etildi"), user=request.user, izoh=ariza.rad_sababi)
         NazoratTarixi.yoz(request.user, NazoratTarixi.Turi.ARIZA_RAD, f"{ariza.raqam} — {ariza.buyurtmachi}",
                           _("Sabab: %(s)s") % {"s": ariza.rad_sababi}, ariza.pk)
         xabarnoma.ariza_rad(ariza)

@@ -145,6 +145,10 @@ def click_complete(request):
         tr.holat = ClickTranzaksiya.Holat.COMPLETED
         tr.tolov = tolov
         tr.save(update_fields=["holat", "tolov", "updated_at"])
+        from .models import BosqichTarixi
+
+        BosqichTarixi.yoz(sh.ariza, "To'lov qabul qilindi (Click)",
+                          izoh=f"{int(summa):,} so'm · №{sh.raqam}".replace(",", " "))
         sh.qayta_hisobla()
         xabarnoma.tolov_qabul(sh, summa)
     return _javob(p, OK, "Success", merchant_confirm_id=tr.pk)

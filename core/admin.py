@@ -101,3 +101,21 @@ from .models import Bayram, Sozlama  # noqa: E402
 
 admin.site.register(Sozlama)
 admin.site.register(Bayram)
+
+from .models import BosqichTarixi  # noqa: E402
+
+
+@admin.register(BosqichTarixi)
+class BosqichTarixiAdmin(admin.ModelAdmin):
+    list_display = ("vaqt", "ariza", "namuna", "nomi", "user_nomi", "izoh")
+    search_fields = ("ariza__raqam", "nomi", "user_nomi")
+    readonly_fields = [f.name for f in BosqichTarixi._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

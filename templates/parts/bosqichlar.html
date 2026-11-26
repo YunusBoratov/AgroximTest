@@ -1,0 +1,10 @@
+{% load i18n ui %}
+{% if bosqichlar %}
+<section class="card">
+  <h2 class="section-title">{% trans "Bosqichlar tarixi" %}</h2>
+  <div class="table-wrap"><table class="t">
+    <thead><tr><th>№</th><th>{% trans "Vaqt" %}</th><th>{% trans "Bosqich" %}</th><th>{% trans "Namuna" %}</th><th>{% trans "Xodim" %}</th><th>{% trans "Izoh" %}</th></tr></thead>
+    <tbody>{% for b in bosqichlar %}<tr><td>{{ forloop.counter }}</td><td class="dt">{{ b.vaqt|dt }} {{ b.vaqt|tm }}</td><td><b>{{ b.nomi }}</b></td><td>{{ b.namuna|default:"—" }}</td><td>{{ b.user_nomi|default:"—" }}</td><td>{{ b.izoh|default:"" }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
