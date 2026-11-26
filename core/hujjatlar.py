@@ -487,7 +487,7 @@ def xulosa_docx(x, verify_url=""):
         f"LOT (partiya raqami): {(b.partiya_raqami if b else a.partiya_raqami) or '—'}   |   "
         f"INVOICE: {(b.invoys_raqami if b else a.invoys_raqami) or '—'}",
         f"{_sana(n.qabul_vaqti)} y.   |   Oğirligi/hajmi: {n.ogirligi or '—'}",
-        f"{_sana(x.sinov_sanasi)} y.{_vaqt(x.sinov_sanasi)}   |   Dalolatnoma №: {x.dalolatnoma or '—'}",
+        f"{_sana(x.sinov_sanasi)} y.{_vaqt(x.sinov_sanasi)}",
         f"{x.sinov_joyi}   |   {x.harorat}, {x.namlik}",
     ]
     for r, v in zip(rows, vals):

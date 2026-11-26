@@ -325,7 +325,7 @@ class XulosaForm(StyledMixin, forms.ModelForm):
     class Meta:
         model = Xulosa
         # sinov sanasi qo'lda kiritilmaydi: tasdiqlangan paytdagi sana va vaqt avtomatik yoziladi
-        fields = ["dalolatnoma", "sinov_joyi", "harorat", "namlik", "bosh_agrokimyogar", "yetakchi_agrokimyogar"]
+        fields = ["sinov_joyi", "harorat", "namlik", "bosh_agrokimyogar", "yetakchi_agrokimyogar"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -337,7 +337,7 @@ class XulosaForm(StyledMixin, forms.ModelForm):
         for name in ("bosh_agrokimyogar", "yetakchi_agrokimyogar"):
             self.fields[name].choices = ismlar
             self.fields[name].widget.attrs["class"] = "input"
-        for name in ("dalolatnoma", "sinov_joyi", "harorat", "namlik"):
+        for name in ("sinov_joyi", "harorat", "namlik"):
             self.fields[name].required = True
 
     def save(self, commit=True):

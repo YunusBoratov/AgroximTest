@@ -1326,3 +1326,10 @@ class MasulVaPdfTests(LabJarayonTests):
             r = self.client.get(reverse("xulosa_hujjat", args=[x.pk, "pdf"]))
         self.assertEqual(r.status_code, 500)
         self.assertContains(r, "yaratib bo", status_code=500)
+
+
+class DalolatnomaYoqTests(LabJarayonTests):
+    def test_dalolatnoma_formada_va_bayonnomada_yoq(self):
+        from core.forms import XulosaForm
+        self.assertNotIn("dalolatnoma", XulosaForm.base_fields)
+        self.assertNotIn("dalolatnoma", XulosaForm.Meta.fields)
