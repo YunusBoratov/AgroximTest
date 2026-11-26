@@ -171,7 +171,9 @@ def ariza_detail(request, pk):
         "title": _("Ariza") + f" {ariza.raqam}",
         "ariza": ariza,
         "hujjatlar": korinadigan_hujjatlar(request.user, ariza.hujjatlar.all()),
-        "namunalar": ariza.namunalar.select_related("namuna_turi"),
+        "namunalar": (ariza.namunalar.select_related("namuna_turi").filter(
+            namuna_turi__kategoriya=request.user.lab_kategoriya) if role in LAB
+            else ariza.namunalar.select_related("namuna_turi")),
         "shartnomalar": ariza.shartnomalar.filter(is_active=True),
         "can_accept": role in (NQ, Role.SUPER_ADMIN) and ariza.holat == Ariza.Holat.YANGI,
         "can_edit": ariza.holat != Ariza.Holat.QABUL and (

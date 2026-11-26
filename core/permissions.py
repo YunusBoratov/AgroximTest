@@ -74,6 +74,10 @@ def hujjat_korinadimi(user, hujjat):
     """Invoysni faqat ruxsat etilgan rollar (sozlamada) va arizaning egasi (mijoz) ko'radi."""
     from django.conf import settings
 
+    # laboratoriya xodimi (mudir yoki mas'ul) faqat o'z guruhidagi namunaning hujjatlarini ko'radi
+    kat = getattr(user, "lab_kategoriya", None) if user_role(user) != Role.SUPER_ADMIN else None
+    if kat and hujjat.ariza_namuna_id and hujjat.ariza_namuna.kategoriya != kat:
+        return False
     if hujjat.turi != "invoys":
         return True
     role = user_role(user)
@@ -82,5 +86,8 @@ def hujjat_korinadimi(user, hujjat):
     return role == Role.MIJOZ and hujjat.ariza.mijoz_id == user.id
 
 
-def korinadigan_hujjatlar(user, hujjatlar):
+def korinadigan_hujjatlar(user, hujjatlar, namuna=None):
+    """namuna berilsa — faqat shu namunaning (va arizaning umumiy) hujjatlari."""
+    if namuna is not None:
+        hujjatlar = [h for h in hujjatlar if h.ariza_namuna_id in (None, namuna.ariza_namuna_id)]
     return [h for h in hujjatlar if hujjat_korinadimi(user, h)]

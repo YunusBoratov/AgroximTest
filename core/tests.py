@@ -1201,3 +1201,37 @@ class NqTahrirTests(BaseTest):
         self.assertEqual(self.client.post(reverse("ariza_tahrirlash", args=[a.pk]), {}).status_code, 403)
         # xodimning o'zi yaratgan arizani tahrirlay oladi
         self.assertEqual(self.client.get(reverse("ariza_tahrirlash", args=[xodim_a.pk])).status_code, 200)
+
+
+class HujjatLabTests(BaseTest):
+    def test_lab_faqat_oz_namunasi_hujjatlarini_koradi(self):
+        from .models import ArizaNamuna
+        mijoz = User.objects.create_user("+998901230088", password="parol123", role=Role.MIJOZ)
+        a = Ariza.objects.create(mijoz=mijoz, turi="davlat", inn="123456789", buyurtmachi_nomi="X", fish="Y",
+                                 telefon="+998", kategoriya="mineral", kategoriyalar="mineral,kimyoviy",
+                                 holat=Ariza.Holat.QABUL)
+        b1 = ArizaNamuna.objects.create(ariza=a, tartib=1, kategoriya="mineral", nomi="M")
+        b2 = ArizaNamuna.objects.create(ariza=a, tartib=2, kategoriya="kimyoviy", nomi="K")
+        h1 = ArizaHujjat.objects.create(ariza=a, ariza_namuna=b1, turi="guvohnoma", fayl=pdf("m.pdf"))
+        h2 = ArizaHujjat.objects.create(ariza=a, ariza_namuna=b2, turi="guvohnoma", fayl=pdf("k.pdf"))
+        n1 = Namuna.objects.create(ariza=a, ariza_namuna=b1, namuna_turi=NamunaTuri.objects.get(nomi="Azotli o'g'itlar"),
+                                   nomi="M", tartib=1)
+        Namuna.objects.create(ariza=a, ariza_namuna=b2, namuna_turi=NamunaTuri.objects.get(nomi="Fungitsidlar"),
+                              nomi="K", tartib=2)
+        u1, u2 = reverse("ariza_hujjat", args=[h1.pk]), reverse("ariza_hujjat", args=[h2.pk])
+        self.login("lab_mineral")
+        r = self.client.get(reverse("ariza_detail", args=[a.pk]))
+        self.assertContains(r, u1)
+        self.assertNotContains(r, u2)
+        self.assertEqual(self.client.get(u2).status_code, 403)
+        self.assertEqual(self.client.get(u1).status_code, 200)
+        self.client.logout()
+        self.login("lab_kimyo")
+        self.assertEqual(self.client.get(u1).status_code, 403)
+        # namuna qabul qiluvchi ro'yxatida har bir namuna faqat o'z hujjatlari bilan
+        self.client.logout()
+        self.login("namuna")
+        r = self.client.get(reverse("namuna_list") + "?q=" + a.raqam)
+        rows = {obj.pk: cells for obj, cells, _c in r.context["rows"]}
+        fayllar = [c[1] for c in rows[n1.pk] if c[0].kind == "file"][0]
+        self.assertEqual([h.pk for h in fayllar], [h1.pk])

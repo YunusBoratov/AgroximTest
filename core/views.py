@@ -200,7 +200,7 @@ def dashboard(request):
 # ---------------------------------------------------------------------------
 @role_required(AD, NQ)
 def ariza_list(request):
-    qs = Ariza.objects.select_related("namuna_turi").prefetch_related("hujjatlar", "namunalar__namuna_turi")
+    qs = Ariza.objects.select_related("namuna_turi").prefetch_related("hujjatlar__ariza_namuna", "namunalar__namuna_turi")
     cols = [
         Column(_("Ariza raqami"), "raqam", "bold", url=lambda o: reverse("ariza_detail", args=[o.pk])),
         Column(_("Ariza turi"), "get_turi_display"),
@@ -231,7 +231,7 @@ def ariza_list(request):
 
 @role_required(AD, NQ)
 def namuna_list(request):
-    qs = tur_filtr(request, Namuna.objects.select_related("ariza", "namuna_turi", "xulosa").prefetch_related("ariza__hujjatlar"))
+    qs = tur_filtr(request, Namuna.objects.select_related("ariza", "namuna_turi", "xulosa").prefetch_related("ariza__hujjatlar__ariza_namuna"))
     cols = [
         Column(_("Ariza raqami"), "__str__", "bold", url=lambda o: reverse("ariza_detail", args=[o.ariza_id])),
         Column(_("Ariza turi"), "ariza.get_turi_display"),
@@ -242,7 +242,8 @@ def namuna_list(request):
         Column(_("Namuna nomi"), "nomi"),
         Column(_("Namuna turi"), lambda o: str(o.namuna_turi)),
         Column(_("Namuna qabul qilingan vaqt"), "qabul_vaqti", "datetime"),
-        Column(_("Mavjud hujjatlar"), lambda o: korinadigan_hujjatlar(request.user, o.ariza.hujjatlar.all()), "file"),
+        Column(_("Mavjud hujjatlar"), lambda o: korinadigan_hujjatlar(request.user, o.ariza.hujjatlar.all(), namuna=o),
+               "file"),
         Column(_("Sinov bayonnomasi"), lambda o: [(o.xulosa.raqam, reverse("xulosa_hujjat", args=[o.xulosa.pk, "pdf"]),
                                                    "file", "btn")]
                if getattr(o, "xulosa", None) and o.xulosa.tasdiqlangan else [], "actions", excel=False),
@@ -289,7 +290,7 @@ def shartnoma_list(request):
     f = Filters(search_fields=["raqam", "ariza__buyurtmachi_nomi", "ariza__fish", "ariza__inn"],
                 date_field="created_at", holat_field="holat", holat_choices=Shartnoma.Holat.choices,
                 summa_field="jami_summa", turi_field="ariza__turi")
-    qs = qs.prefetch_related("ariza__hujjatlar")
+    qs = qs.prefetch_related("ariza__hujjatlar__ariza_namuna")
     m = sla.Muddat()
     return list_page(request, title=_("Shartnoma tuzilishi va bajarilishi"), qs=qs, columns=cols, filters=f,
                      turi_tabs=turi_tabs(), add_url=reverse("shartnoma_tanlash"), add_label=_("Shartnoma tuzish"),
