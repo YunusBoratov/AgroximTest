@@ -182,7 +182,23 @@ def ariza_detail(request, pk):
         "can_contract": role in (Role.ADMIN, Role.SUPER_ADMIN, *LAB) and ariza.holat == Ariza.Holat.QABUL
         and not ariza.shartnomalar.filter(is_active=True).exists(),
         "rad_form": RadForm(),
+        "lab": _lab_korinishi(ariza, request.user.lab_kategoriya) if role in LAB else None,
     })
+
+
+def _lab_korinishi(ariza, kat):
+    """Laboratoriya arizadagi faqat o'z guruhidagi namunalarni ko'radi (turi, bloklar, soni)."""
+    from .models import Kategoriya
+
+    nomi = dict(Kategoriya.choices).get(kat, "")
+    turlar = []
+    for n in ariza.namunalar.filter(namuna_turi__kategoriya=kat).select_related("namuna_turi"):
+        if str(n.namuna_turi) not in turlar:
+            turlar.append(str(n.namuna_turi))
+    bloklar = list(ariza.arizanamunalar.filter(kategoriya=kat))
+    return {"turi": f"{nomi}: {', '.join(turlar)}" if turlar else nomi, "bloklar": bloklar,
+            "soni": len(bloklar) or ariza.namunalar.filter(namuna_turi__kategoriya=kat).count(),
+            "aralash": ariza.aralash}
 
 
 @role_required(NQ)

@@ -5,13 +5,18 @@
   {% if ariza.buyurtmachi_nomi %}<div><span>{% trans "Buyurtmachi nomi" %}</span><b>{{ ariza.buyurtmachi_nomi }}</b></div>{% endif %}
   <div><span>{% trans "F.I.SH." %}</span><b>{{ ariza.fish }}</b></div>
   <div><span>{% trans "Telefon" %}</span><b>{{ ariza.telefon }}</b></div>
+  {% if lab %}
+  <div><span>{% trans "Namuna turi" %}</span><b>{{ lab.turi }}</b></div>
+  <div><span>{% trans "Namuna soni" %}</span><b>{{ lab.soni }}{% if lab.aralash %} <small class="help">({% blocktrans with n=ariza.namuna_soni %}arizada jami {{ n }} ta, qolganlari boshqa laboratoriyada{% endblocktrans %})</small>{% endif %}</b></div>
+  {% else %}
   <div><span>{% trans "Namuna turi" %}</span><b>{{ ariza.kategoriyalar_matni }}{% if ariza.turlar_matni != ariza.kategoriyalar_matni %}: {{ ariza.turlar_matni }}{% endif %}</b></div>
   <div><span>{% trans "Namuna soni" %}</span><b>{{ ariza.namuna_soni }}</b></div>
+  {% endif %}
   {% if ariza.chegara_maskani %}<div><span>{% trans "Chegara maskani" %}</span><b>{{ ariza.chegara_maskani }}</b></div>{% endif %}
   <div><span>{% trans "Yuborilgan vaqt" %}</span><b>{{ ariza.created_at|dt }} {{ ariza.created_at|tm }}</b></div>
   {% if ariza.rad_sababi %}<div class="full"><span>{% trans "Rad etish sababi" %}</span><b>{{ ariza.rad_sababi }}</b></div>{% endif %}
 </div>
-{% with bloklar=ariza.arizanamunalar.all %}{% if bloklar %}
+{% with bloklar=lab.bloklar|default:ariza.arizanamunalar.all %}{% if bloklar %}
 <h3 class="box-title">{% trans "Namunalar" %}</h3>
 <div class="table-wrap"><table class="t">
   <thead><tr><th>№</th><th>{% trans "Namuna turi" %}</th><th>{% trans "Namuna nomi" %}</th><th>{% trans "Partiya raqami (LOT)" %}</th><th>{% trans "Invoys raqami" %}</th></tr></thead>

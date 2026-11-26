@@ -1223,6 +1223,8 @@ class HujjatLabTests(BaseTest):
         r = self.client.get(reverse("ariza_detail", args=[a.pk]))
         self.assertContains(r, u1)
         self.assertNotContains(r, u2)
+        self.assertContains(r, "Mineral o&#x27;g&#x27;it: Azotli o&#x27;g&#x27;itlar")
+        self.assertNotContains(r, "Fungitsidlar")
         self.assertEqual(self.client.get(u2).status_code, 403)
         self.assertEqual(self.client.get(u1).status_code, 200)
         self.client.logout()
