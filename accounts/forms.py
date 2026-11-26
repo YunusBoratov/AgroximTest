@@ -78,7 +78,11 @@ class RoyxatForm(StyledMixin, forms.Form):
     def clean(self):
         data = super().clean()
         inn = (data.get("inn") or "").strip()
-        if inn and (not inn.isdigit() or len(inn) not in (9, 14)):
+        if inn and not inn.isdigit():
+            self.add_error("inn", _("Faqat raqamlar kiritilishi kerak"))
+        elif inn and data.get("turi") == "jismoniy" and len(inn) != 14:
+            self.add_error("inn", _("Jismoniy shaxs uchun 14 xonali JSHSHIR kiriting"))
+        elif inn and len(inn) not in (9, 14):
             self.add_error("inn", _("INN 9 ta, JSHSHIR 14 ta raqamdan iborat bo'ladi"))
         if data.get("turi") == "yuridik" and not data.get("tashkilot_nomi"):
             self.add_error("tashkilot_nomi", _("Tashkilot nomini kiriting"))

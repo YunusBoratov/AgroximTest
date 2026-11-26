@@ -11,7 +11,14 @@
     <a class="btn btn-light" href="{% url 'login' %}">{% trans "Menda hisob bor" %}</a></div>
 </form>
 <script>
-const t = document.getElementById("id_turi"), org = document.querySelector('[data-r="tashkilot_nomi"]');
-function f(){ org.hidden = t.value !== "yuridik"; } t.addEventListener("change", f); f();
+const t = document.getElementById("id_turi"), org = document.querySelector('[data-r="tashkilot_nomi"]'),
+      innLbl = document.querySelector('label[for="id_inn"]'), inn = document.getElementById("id_inn");
+const LBL = {yuridik: "{{ _('INN (tashkilot)')|escapejs }}", jismoniy: "{{ _('JSHSHIR (14 xonali)')|escapejs }}"};
+function f(){
+  org.hidden = t.value !== "yuridik";
+  innLbl.textContent = LBL[t.value] + " *";
+  inn.placeholder = t.value === "jismoniy" ? "12345678901234" : "123456789";
+}
+t.addEventListener("change", f); f();
 </script>
 {% endblock %}

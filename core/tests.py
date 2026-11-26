@@ -1166,3 +1166,21 @@ class KopNamunaTests(BaseTest):
         sh.refresh_from_db()
         self.assertEqual(sh.holat, Shartnoma.Holat.YUBORILGAN)
         self.assertEqual(sh.namunalar.count(), 2)
+
+
+class RoyxatJshshirTests(TestCase):
+    def _post(self, turi, inn):
+        return self.client.post(reverse("royxat"), {
+            "turi": turi, "telefon": "+998991571930", "fish": "Kazimjon", "inn": inn,
+            "tashkilot_nomi": "Agro MCHJ" if turi == "yuridik" else "", "parol1": "parol123", "parol2": "parol123"})
+
+    def test_jismoniy_faqat_14_xonali(self):
+        r = self._post("jismoniy", "456654456")
+        self.assertContains(r, "14 xonali JSHSHIR")
+        self.assertFalse(User.objects.filter(username="+998991571930").exists())
+        r = self._post("jismoniy", "12345678901234")
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(User.objects.get(username="+998991571930").pinfl, "12345678901234")
+
+    def test_yuridik_inn(self):
+        self.assertEqual(self._post("yuridik", "123456789").status_code, 302)
