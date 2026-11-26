@@ -1184,3 +1184,20 @@ class RoyxatJshshirTests(TestCase):
 
     def test_yuridik_inn(self):
         self.assertEqual(self._post("yuridik", "123456789").status_code, 302)
+
+
+class NqTahrirTests(BaseTest):
+    def test_nq_mijoz_arizasini_tahrirlay_olmaydi(self):
+        mijoz = User.objects.create_user("+998901230099", password="parol123", role=Role.MIJOZ)
+        a = Ariza.objects.create(mijoz=mijoz, turi="ixtiyoriy", inn="12345678901234", fish="Ali", telefon="+998",
+                                 kategoriya="mineral")
+        xodim_a = Ariza.objects.create(turi="ixtiyoriy", inn="12345678901234", fish="Vali", telefon="+998",
+                                       kategoriya="mineral")
+        self.login("namuna")
+        r = self.client.get(reverse("ariza_detail", args=[a.pk]))
+        self.assertNotContains(r, reverse("ariza_tahrirlash", args=[a.pk]))
+        self.assertContains(r, reverse("ariza_qabul", args=[a.pk]))  # qabul qilish tugmasi qoladi
+        self.assertEqual(self.client.get(reverse("ariza_tahrirlash", args=[a.pk])).status_code, 403)
+        self.assertEqual(self.client.post(reverse("ariza_tahrirlash", args=[a.pk]), {}).status_code, 403)
+        # xodimning o'zi yaratgan arizani tahrirlay oladi
+        self.assertEqual(self.client.get(reverse("ariza_tahrirlash", args=[xodim_a.pk])).status_code, 200)

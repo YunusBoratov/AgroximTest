@@ -108,6 +108,9 @@ def ariza_tahrirlash(request, pk):
             raise PermissionDenied
     elif role not in (NQ, Role.SUPER_ADMIN):
         raise PermissionDenied
+    elif role == NQ and ariza.mijoz_id:
+        # mijoz o'zi yuborgan arizani xodim o'zgartira olmaydi (faqat qabul yoki rad etadi)
+        raise PermissionDenied
     if ariza.holat == Ariza.Holat.QABUL:
         messages.error(request, _("Qabul qilingan arizani o'zgartirib bo'lmaydi"))
         return redirect("ariza_detail", pk=pk)
@@ -172,7 +175,8 @@ def ariza_detail(request, pk):
         "shartnomalar": ariza.shartnomalar.filter(is_active=True),
         "can_accept": role in (NQ, Role.SUPER_ADMIN) and ariza.holat == Ariza.Holat.YANGI,
         "can_edit": ariza.holat != Ariza.Holat.QABUL and (
-            role in (NQ, Role.SUPER_ADMIN) or (role == Role.MIJOZ and ariza.mijoz_id == request.user.id)),
+            role == Role.SUPER_ADMIN or (role == NQ and not ariza.mijoz_id)
+            or (role == Role.MIJOZ and ariza.mijoz_id == request.user.id)),
         "can_contract": role in (Role.ADMIN, Role.SUPER_ADMIN, *LAB) and ariza.holat == Ariza.Holat.QABUL
         and not ariza.shartnomalar.filter(is_active=True).exists(),
         "rad_form": RadForm(),
