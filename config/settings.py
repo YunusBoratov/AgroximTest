@@ -56,6 +56,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "accounts.middleware.ParolAlmashtirishMiddleware",
+    "accounts.middleware.XavfsizlikSarlavhalariMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -106,7 +107,11 @@ LOGIN_REDIRECT_URL = "bosh"
 LOGOUT_REDIRECT_URL = "bosh"
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 6}},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+     "OPTIONS": {"user_attributes": ("username", "fish", "telefon")}},
 ]
 
 LANGUAGE_CODE = "uz"
@@ -181,6 +186,7 @@ if not DEBUG and env("DJANGO_HTTPS", "1") == "1":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 
 LOGGING = {
     "version": 1,
@@ -202,3 +208,17 @@ CACHES = {
 }
 if "test" in __import__("sys").argv:  # testlar bir-biriga va oldingi ishga tushirishlarga bog'liq bo'lmasin
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
+
+# Xavfsizlik: sessiya va brauzer sarlavhalari
+SESSION_COOKIE_AGE = 60 * 60 * 12  # 12 soat harakatsizlikdan keyin qayta kirish
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; "
+       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; "
+       "img-src 'self' data: blob:; frame-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; "
+       "form-action 'self' https://my.click.uz")
+ADMIN_URL = env("ADMIN_URL", "django-admin/")  # serverda boshqa (taxmin qilib bo'lmaydigan) yo'l qo'yish mumkin

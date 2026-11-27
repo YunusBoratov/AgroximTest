@@ -1357,3 +1357,59 @@ class TelegramUlashTests(TestCase):
         self.assertEqual(url, "https://agroximtest.uz/telegram/webhook/s3cr3t/")
         self.assertNotIn("s3cr3t", out.getvalue())  # maxfiy qism ekranga chiqmaydi
         self.assertIn("@AgroximTestBot", out.getvalue())
+
+
+class XavfsizlikTests(BaseTest):
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def _kir(self, username, parol, ip="10.0.0.1"):
+        return self.client.post(reverse("login"), {"username": username, "password": parol},
+                                HTTP_X_FORWARDED_FOR=f"1.2.3.4, {ip}")
+
+    def test_5_xato_urinishdan_keyin_bloklanadi(self):
+        from .models import NazoratTarixi
+        for _i in range(5):
+            r = self._kir("admin", "notogri-parol")
+            self.assertEqual(r.status_code, 200)
+        r = self._kir("admin", "demo12345")  # to'g'ri parol bilan ham — bloklangan
+        self.assertContains(r, "daqiqaga to")
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertTrue(NazoratTarixi.objects.filter(turi=NazoratTarixi.Turi.XAVFSIZLIK).exists())
+        # boshqa foydalanuvchiga ta'sir qilmaydi
+        r = self._kir("buxgalter", "demo12345", ip="10.0.0.2")
+        self.assertEqual(r.status_code, 302)
+
+    def test_muvaffaqiyatli_kirish_hisobni_tozalaydi(self):
+        for _i in range(4):
+            self._kir("admin", "xato")
+        self.assertEqual(self._kir("admin", "demo12345").status_code, 302)
+        self.client.logout()
+        for _i in range(4):
+            self._kir("admin", "xato")
+        self.assertEqual(self._kir("admin", "demo12345").status_code, 302)
+
+    def test_ip_bloklanadi(self):
+        for i in range(20):
+            self._kir(f"yoq{i}", "xato", ip="10.9.9.9")
+        r = self._kir("admin", "demo12345", ip="10.9.9.9")
+        self.assertContains(r, "daqiqaga to")
+
+    def test_sarlavhalar_va_admin(self):
+        r = self.client.get(reverse("login"))
+        self.assertIn("default-src 'self'", r["Content-Security-Policy"])
+        self.assertEqual(r["X-Content-Type-Options"], "nosniff")
+        self.assertIn("camera=()", r["Permissions-Policy"])
+        r = self.client.get("/django-admin/")
+        self.assertEqual(r.status_code, 302)
+        r = self.client.get(r["Location"])  # admin login sahifasi -> himoyalangan umumiy kirish
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(r["Location"].startswith("/kirish/"))
+
+    def test_zaif_parol_qabul_qilinmaydi(self):
+        r = self.client.post(reverse("royxat"), {
+            "turi": "jismoniy", "telefon": "+998991110022", "fish": "Ali", "inn": "12345678901234",
+            "parol1": "12345678", "parol2": "12345678"})
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(User.objects.filter(username="+998991110022").exists())

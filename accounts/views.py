@@ -9,7 +9,7 @@ from core.permissions import SA, role_required
 
 from django.contrib.auth import login
 
-from .forms import LoginForm, RoyxatForm, XodimForm
+from .forms import LoginForm, RoyxatForm, XodimForm, normalize_phone
 from .models import STAFF_ROLES, Role, User
 
 
@@ -17,6 +17,32 @@ class LoginView(auth_views.LoginView):
     template_name = "auth/login.html"
     form_class = LoginForm
     redirect_authenticated_user = True
+
+    def _login(self):
+        raw = self.request.POST.get("username", "")
+        return normalize_phone(raw) if normalize_phone(raw) and not raw.isalpha() else raw.strip()
+
+    def post(self, request, *args, **kwargs):
+        from . import himoya
+
+        daqiqa = himoya.qolgan_vaqt(request, self._login())
+        if daqiqa:
+            form = self.get_form()
+            form.errors.clear()
+            return self.render_to_response(self.get_context_data(form=form, bloklangan=daqiqa))
+        return super().post(request, *args, **kwargs)
+
+    def form_invalid(self, form):
+        from . import himoya
+
+        himoya.xato_urinish(self.request, self._login())
+        return super().form_invalid(form)
+
+    def form_valid(self, form):
+        from . import himoya
+
+        himoya.muvaffaqiyatli(self.request, self._login())
+        return super().form_valid(form)
 
 
 def royxatdan_otish(request):
@@ -178,13 +204,20 @@ class _TelefonForm(forms.Form):
 class _KodForm(forms.Form):
     kod = forms.CharField(label=_("SMS kod"), max_length=6, widget=forms.TextInput(
         attrs={"class": "input", "inputmode": "numeric", "autocomplete": "one-time-code"}))
-    parol1 = forms.CharField(label=_("Yangi parol"), min_length=6, widget=forms.PasswordInput(attrs={"class": "input"}))
+    parol1 = forms.CharField(label=_("Yangi parol"), widget=forms.PasswordInput(attrs={"class": "input"}))
     parol2 = forms.CharField(label=_("Yangi parolni takrorlang"), widget=forms.PasswordInput(attrs={"class": "input"}))
 
     def clean(self):
         d = super().clean()
         if d.get("parol1") and d.get("parol1") != d.get("parol2"):
             self.add_error("parol2", _("Parollar mos kelmadi"))
+        elif d.get("parol1"):
+            from django.contrib.auth.password_validation import validate_password
+
+            try:
+                validate_password(d["parol1"])
+            except forms.ValidationError as e:
+                self.add_error("parol1", e)
         return d
 
 
@@ -206,6 +239,13 @@ def parol_unutdim(request):
                 messages.error(request, _("SMS xizmati hali ulanmagan. Parolni tiklash uchun markaz "
                                           "administratoriga murojaat qiling."))
                 return redirect("parol_unutdim")
+            from .himoya import mijoz_ip
+
+            ip_kalit = f"tiklash_ip:{mijoz_ip(request)}"
+            if (cache.get(ip_kalit) or 0) >= 10:  # bir IP'dan soatiga 10 tadan ortiq SMS so'ralmaydi
+                messages.error(request, _("Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring."))
+                return redirect("parol_unutdim")
+            cache.set(ip_kalit, (cache.get(ip_kalit) or 0) + 1, 3600)
             if tel and cache.get(f"tiklash_kutish:{tel}"):
                 messages.error(request, _("Kod yaqinda yuborildi. 1 daqiqadan so'ng qayta urinib ko'ring."))
                 return redirect("parol_unutdim")

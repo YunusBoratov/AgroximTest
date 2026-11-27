@@ -682,6 +682,7 @@ class NazoratTarixi(models.Model):
         XULOSA_QAYTARISH = "xulosa_qaytarish", _("Xulosa qaytarildi")
         SOZLAMA = "sozlama", _("Sozlamalar o'zgarishi")
         PAROL = "parol", _("Parol tiklandi")
+        XAVFSIZLIK = "xavfsizlik", _("Xavfsizlik: kirish bloklandi")
 
     vaqt = models.DateTimeField(_("Vaqt"), default=timezone.now, db_index=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("Xodim"), on_delete=models.SET_NULL,

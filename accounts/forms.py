@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import gettext_lazy as _
 
@@ -39,6 +40,12 @@ class XodimForm(StyledMixin, forms.ModelForm):
         if not self.instance.pk:
             self.fields["parol"].required = True
 
+    def clean_parol(self):
+        p = self.cleaned_data.get("parol")
+        if p:
+            validate_password(p, self.instance)
+        return p
+
     def save(self, commit=True):
         user = super().save(commit=False)
         if self.cleaned_data.get("parol"):
@@ -64,7 +71,8 @@ class RoyxatForm(StyledMixin, forms.Form):
     fish = forms.CharField(label=_("F.I.SH."), max_length=255)
     inn = forms.CharField(label=_("INN (tashkilot) yoki JSHSHIR"), max_length=14)
     tashkilot_nomi = forms.CharField(label=_("Tashkilot nomi"), max_length=255, required=False)
-    parol1 = forms.CharField(label=_("Parol"), widget=forms.PasswordInput, min_length=6)
+    parol1 = forms.CharField(label=_("Parol"), widget=forms.PasswordInput,
+                             help_text=_("Kamida 8 ta belgi; faqat raqamlardan yoki oddiy so'zdan iborat bo'lmasin."))
     parol2 = forms.CharField(label=_("Parolni takrorlang"), widget=forms.PasswordInput)
 
     def clean_telefon(self):
@@ -88,6 +96,12 @@ class RoyxatForm(StyledMixin, forms.Form):
             self.add_error("tashkilot_nomi", _("Tashkilot nomini kiriting"))
         if data.get("parol1") and data.get("parol1") != data.get("parol2"):
             self.add_error("parol2", _("Parollar mos kelmadi"))
+        elif data.get("parol1"):
+            try:
+                validate_password(data["parol1"], User(username=data.get("telefon") or "", fish=data.get("fish") or "",
+                                                       telefon=data.get("telefon") or ""))
+            except forms.ValidationError as e:
+                self.add_error("parol1", e)
         return data
 
     def save(self):
