@@ -188,3 +188,17 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "loggers": {"core": {"handlers": ["console"], "level": "INFO"}},
 }
+
+
+# Umumiy kesh (gunicorn bir nechta jarayonda ishlaydi: SMS kodi va hisoblagichlar hammasiga ko'rinishi kerak)
+import tempfile as _tempfile  # noqa: E402
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": env("CACHE_DIR", os.path.join(_tempfile.gettempdir(), "agroximtest-cache")),
+        "TIMEOUT": 60 * 60,
+    }
+}
+if "test" in __import__("sys").argv:  # testlar bir-biriga va oldingi ishga tushirishlarga bog'liq bo'lmasin
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}

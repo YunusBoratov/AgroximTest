@@ -673,6 +673,14 @@ class TelegramTests(BaseTest):
         havola = xabarnoma.telegram_ulash_havolasi(mijoz)
         self.assertTrue(havola.startswith("https://t.me/TestBot?start="))
         kod = havola.split("start=")[1]
+        import re
+        # Telegram start parametri: faqat A-Z a-z 0-9 _ - va 64 belgigacha (aks holda tashlab yuboriladi)
+        self.assertRegex(kod, r"^[A-Za-z0-9_-]{1,64}$")
+        self.assertIsNone(xabarnoma.telegram_kodni_tekshir(kod[:-1] + ("0" if kod[-1] != "0" else "1")))
+        import time
+        eski = xabarnoma._tg_kod(mijoz.pk, ts=time.time() - 2 * 24 * 3600)
+        self.assertIsNone(xabarnoma.telegram_kodni_tekshir(eski))
+        self.assertIsNone(re.search(r"[^A-Za-z0-9_-]", kod))
         with mock.patch("core.xabarnoma._http", return_value={"ok": True}) as http:
             r = self.client.post(reverse("telegram_webhook", args=["s3cret"]),
                                  data=json.dumps({"message": {"chat": {"id": 777}, "text": f"/start {kod}"}}),

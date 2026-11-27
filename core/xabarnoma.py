@@ -12,7 +12,6 @@ import urllib.request
 import uuid
 
 from django.conf import settings
-from django.core import signing
 from django.core.cache import cache
 from django.db import transaction
 
@@ -136,15 +135,39 @@ def telegram_ulash_havolasi(user):
     """Kabinetdagi 'Telegram'ni ulash' tugmasi uchun: t.me/<bot>?start=<imzolangan kod>."""
     if not (settings.TELEGRAM_BOT_USERNAME and telegram_sozlangan()):
         return ""
-    kod = signing.dumps(user.pk, salt="tg-ulash", compress=True)
-    return f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start={kod}"
+    return f"https://t.me/{settings.TELEGRAM_BOT_USERNAME.lstrip('@')}?start={_tg_kod(user.pk)}"
+
+
+# Telegram /start parametri faqat A-Z a-z 0-9 _ - belgilaridan va 64 tagacha bo'lishi kerak
+# (aks holda Telegram uni tashlab yuboradi). Shuning uchun kod: <user_id>_<vaqt>_<imzo>.
+TG_KOD_MUDDATI = 60 * 60 * 24
+
+
+def _tg_imzo(uid, ts):
+    from django.utils.crypto import salted_hmac
+
+    return salted_hmac("tg-ulash", f"{uid}:{ts}").hexdigest()[:20]
+
+
+def _tg_kod(uid, ts=None):
+    import time
+
+    ts = int(ts if ts is not None else time.time())
+    return f"{uid}_{ts:x}_{_tg_imzo(uid, ts)}"
 
 
 def telegram_kodni_tekshir(kod):
-    try:
-        return signing.loads(kod, salt="tg-ulash", max_age=60 * 60 * 24)
-    except signing.BadSignature:
+    import hmac
+    import re
+    import time
+
+    m = re.fullmatch(r"(\d+)_([0-9a-f]+)_([0-9a-f]{20})", kod or "")
+    if not m:
         return None
+    uid, ts, imzo = int(m.group(1)), int(m.group(2), 16), m.group(3)
+    if not hmac.compare_digest(imzo, _tg_imzo(uid, ts)) or time.time() - ts > TG_KOD_MUDDATI:
+        return None
+    return uid
 
 
 # ---------------------------------------------------------------------------
