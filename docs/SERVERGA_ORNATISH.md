@@ -66,17 +66,19 @@ Domen DNS'ida `A` yozuvi server IP manziliga yo'naltirilgan bo'lishi kerak.
 ## 5. Telegram bot
 
 1. Telegram'da **@BotFather** → `/newbot` → bot nomi va username (masalan `AgroximTestBot`).
-2. BotFather bergan tokenni `.env` dagi `TELEGRAM_BOT_TOKEN` ga, username'ni `TELEGRAM_BOT_USERNAME` ga yozing.
-   `TELEGRAM_WEBHOOK_SECRET` ga istalgan tasodifiy satr yozing.
+2. Serverda `.env` ga qo'shing (`nano /srv/agroximtest/.env`):
+   `TELEGRAM_BOT_TOKEN=...` (BotFather bergan token), `TELEGRAM_BOT_USERNAME=...` (@ belgisisiz),
+   `TELEGRAM_WEBHOOK_SECRET=...` (`openssl rand -hex 16` natijasi).
 3. `systemctl restart agroximtest`
-4. Webhook'ni ulang (TOKEN va SECRET o'rniga o'z qiymatlaringiz):
+4. Botni ulash (token `.env` dan olinadi):
 
 ```bash
-curl "https://api.telegram.org/botTOKEN/setWebhook?url=https://agroximtest.uz/telegram/webhook/SECRET/"
+cd /srv/agroximtest && sudo -u agroximtest venv/bin/python manage.py telegram_ulash
 ```
 
 Mijoz kabinetda **"Telegram'ni ulash"** tugmasini bosadi → botda **Start** → shundan keyin ariza, to'lov va tayyor
-sinov bayonnomasi (PDF) Telegram'ga keladi.
+sinov bayonnomasi (PDF) Telegram'ga keladi. Mas'ul xodimlar "Topshiriqlar" sahifasidagi xuddi shunday tugma bilan
+ulanadi va yangi topshiriq haqida xabar oladi.
 
 ## 6. Click (onlayn to'lov)
 

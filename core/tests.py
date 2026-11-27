@@ -1333,3 +1333,19 @@ class DalolatnomaYoqTests(LabJarayonTests):
         from core.forms import XulosaForm
         self.assertNotIn("dalolatnoma", XulosaForm.base_fields)
         self.assertNotIn("dalolatnoma", XulosaForm.Meta.fields)
+
+
+class TelegramUlashTests(TestCase):
+    def test_buyruq_webhook_ornatadi(self):
+        from unittest import mock
+        javob = {"getMe": {"ok": True, "result": {"username": "AgroximTestBot"}}, "setWebhook": {"ok": True},
+                 "getWebhookInfo": {"ok": True, "result": {}}}
+        with override_settings(TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="AgroximTestBot",
+                               TELEGRAM_WEBHOOK_SECRET="s3cr3t", PUBLIC_BASE_URL="https://agroximtest.uz"), \
+                mock.patch("core.xabarnoma._tg", side_effect=lambda m, **kw: javob[m]) as tg:
+            out = io.StringIO()
+            call_command("telegram_ulash", stdout=out)
+        url = [c for c in tg.call_args_list if c.args[0] == "setWebhook"][0].kwargs["json_body"]["url"]
+        self.assertEqual(url, "https://agroximtest.uz/telegram/webhook/s3cr3t/")
+        self.assertNotIn("s3cr3t", out.getvalue())  # maxfiy qism ekranga chiqmaydi
+        self.assertIn("@AgroximTestBot", out.getvalue())
