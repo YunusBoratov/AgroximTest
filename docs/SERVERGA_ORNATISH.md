@@ -124,11 +124,7 @@ platformani qayta ishga tushiradi. Oxirida `✅ Yangilandi` yozuvi chiqadi.
 
 ## 9. Zaxira nusxa (har kuni)
 
-```bash
-crontab -e
-# qo'shing:
-30 2 * * * pg_dump -U agroximtest agroximtest | gzip > /var/backups/agroximtest_$(date +\%F).sql.gz
-40 2 * * * tar czf /var/backups/agroximtest_media_$(date +\%F).tgz -C /srv/agroximtest media
-```
+Batafsil: `docs/ZAXIRA.md`. Qisqacha: `bash /srv/agroximtest/deploy/zaxira_sozlash.sh` (bir marta) —
+har kecha 02:30 da baza va hujjatlar `/var/backups/agroximtest/kunlik` ga nusxalanadi (14 kun saqlanadi),
+ofis kompyuteri ularni `deploy/windows/zaxira_olish.ps1` bilan o'ziga ko'chirib oladi.
 
-Yuklangan hujjatlar `media/` papkasida saqlanadi va faqat tizim orqali (ruxsat tekshirilib) beriladi.

@@ -6,7 +6,9 @@ cd /srv/agroximtest
 
 echo "1/5 Baza zaxira nusxasi..."
 mkdir -p /var/backups/agroximtest
-sudo -u postgres pg_dump agroximtest | gzip > "/var/backups/agroximtest/oldin_$(date +%F_%H%M).sql.gz"
+NUSXA="/var/backups/agroximtest/oldin_$(date +%F_%H%M).sql.gz"
+sudo -u postgres pg_dump agroximtest | gzip > "$NUSXA"
+chmod 600 /var/backups/agroximtest/oldin_*.sql.gz   # baza nusxasini faqat root o'qiydi
 ls -1t /var/backups/agroximtest/oldin_*.sql.gz | tail -n +21 | xargs -r rm --   # oxirgi 20 tasi saqlanadi
 
 echo "2/5 Yangi kod..."
